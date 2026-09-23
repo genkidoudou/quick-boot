@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.genkidoudou</groupId>
+        <artifactId>quickboot</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <description>主启动类</description>
+    <groupId>io.github.genkidoudou.web</groupId>
+    <artifactId>quickboot-web</artifactId>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 架构边界校验；mvn verify/install 必跑。紧急跳过：-DskipModulithArchitecture=true -->
+        <skipModulithArchitecture>false</skipModulithArchitecture>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.genkidoudou.system</groupId>
+            <artifactId>quickboot-system</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Boot 4：须用 starter 才会自动配置 Flyway；版本化迁移只执行一次 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <!-- Flyway 10+ MySQL/MariaDB 支持模块（BOM 已管理版本） -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+            <version>4.0.4</version>
+        </dependency>
+
+        <!-- Sa-Token（Boot4）+ Redis 持久化（StringRedisTemplate，避开 Jackson 版本冲突） -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot4-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Modulith 架构校验（ApplicationModules.verify） -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Git 信息读取插件 -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.2</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase> <!-- 在项目初始化阶段执行 -->
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- 生成 git.properties 文件 -->
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <!-- 指定生成路径（默认 target/classes） -->
+                    <!-- 包含的 Git 信息（按需配置） -->
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git\.tag$</includeOnlyProperty> <!-- 仅读取 Tag -->
+                        <includeOnlyProperty>^git\.commit\.time$</includeOnlyProperty> <!-- 提交时间 -->
+                        <includeOnlyProperty>^git\.branch$</includeOnlyProperty> <!-- 分支名 -->
+                    </includeOnlyProperties>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties
+                    </generateGitPropertiesFilename>
+                    <!-- 当无 Tag 时的默认值 -->
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <skipPoms>true</skipPoms>
+                    <prefix>git</prefix>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <!-- Modulith 校验改绑 verify，避免与 install 重复跑两遍 -->
+                    <excludes>
+                        <exclude>**/ModulithArchitectureTest.java</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>modulith-architecture</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <!-- 即使 -DskipTests 也执行；仅 skipModulithArchitecture 可关 -->
+                            <skipTests>false</skipTests>
+                            <skip>${skipModulithArchitecture}</skip>
+                            <excludes combine.self="override"/>
+                            <includes>
+                                <include>**/ModulithArchitectureTest.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

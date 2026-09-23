@@ -1,0 +1,286 @@
+@import './variables.module.scss';
+@import './mixin.scss';
+@import './sidebar.scss';
+@import './ruoyi.scss';
+
+// fade-transform transition（缩短动画，减轻路由切换卡顿感）
+.fade-transform-leave-active,
+.fade-transform-enter-active {
+  transition: all 0.15s ease-out;
+}
+.fade-transform-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+.fade-transform-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f7fa;
+  /* 移动端适配 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* 禁用长按菜单 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+button {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Element Plus 2.10.0 兼容性处理 */
+.el-message-box {
+  z-index: 2000;
+}
+
+.el-notification {
+  z-index: 2000;
+}
+
+.el-dialog {
+  z-index: 2000;
+}
+
+.el-drawer {
+  z-index: 2000;
+}
+
+.el-popover {
+  z-index: 2000;
+}
+
+.el-tooltip {
+  z-index: 2000;
+}
+
+/* Element Plus 按钮样式优化 */
+.el-button {
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Element Plus 表单样式优化 */
+.el-form-item {
+  margin-bottom: 22px;
+}
+
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--el-input-border-color, var(--el-border-color)) inset;
+}
+
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-input-hover-border-color, var(--el-color-primary)) inset;
+}
+
+/* Element Plus 卡片样式 */
+.el-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 平板设备 (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  body {
+    font-size: 15px;
+  }
+  
+  .el-button {
+    padding: 10px 20px;
+  }
+}
+
+/* 手机设备 (320px - 768px) */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .el-button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+  
+  .el-input {
+    font-size: 16px; /* 防止 iOS 自动放大 */
+  }
+  
+  .el-input__wrapper {
+    padding: 8px 12px;
+  }
+  
+  .el-checkbox {
+    font-size: 14px;
+  }
+  
+  .el-checkbox__label {
+    padding-left: 8px;
+  }
+}
+
+/* 小屏手机 (320px - 480px) */
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+  
+  .el-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .el-form-item {
+    margin-bottom: 16px;
+  }
+  
+  .el-input {
+    font-size: 16px;
+  }
+  
+  .el-input__wrapper {
+    padding: 6px 10px;
+  }
+}
+
+/* 异步导入提交成功：与 Element Plus 原生确认框对齐，避免内容区嵌套大按钮 */
+.qc-import-async-msgbox {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  border-radius: 8px;
+  padding-bottom: 4px;
+
+  .el-message-box__header {
+    padding-top: 18px;
+    padding-bottom: 10px;
+  }
+
+  .el-message-box__title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .el-message-box__status {
+    top: 20px;
+    font-size: 22px !important;
+  }
+
+  .el-message-box__content {
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+
+  .el-message-box__message {
+    padding-left: 36px;
+  }
+
+  .el-message-box__btns {
+    padding: 8px 16px 14px;
+
+    .el-button {
+      min-width: 88px;
+    }
+
+    .el-button--primary {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+  }
+
+  .qc-import-async-msgbox__body {
+    text-align: left;
+  }
+
+  .qc-import-async-msgbox__lead {
+    margin: 0 0 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--el-text-color-primary);
+  }
+
+  .qc-import-async-msgbox__task {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    background: var(--el-fill-color-light);
+    border-radius: 6px;
+    border: 1px solid var(--el-border-color-lighter);
+  }
+
+  .qc-import-async-msgbox__task-label {
+    flex-shrink: 0;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .qc-import-async-msgbox__task-id {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--el-text-color-regular);
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    word-break: break-all;
+  }
+
+  .qc-import-async-msgbox__hint {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--el-text-color-secondary);
+  }
+}
+

@@ -1,0 +1,141 @@
+<template>
+  <div :class="classObj" class="app-wrapper" :style="{ '--current-color': theme }">
+    <div v-if="device === 'mobile' && sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
+    <sidebar v-if="!isFullScreen && !sidebar.hide && navType !== 3" class="sidebar-container" />
+    <div
+      :class="{ hasTagsView: needTagsView && !isFullScreen, sidebarHide: sidebar.hide || isFullScreen, 'full-screen-mode': isFullScreen }"
+      class="main-container"
+    >
+      <div v-if="!isFullScreen" :class="{ 'fixed-header': fixedHeader }">
+        <navbar @setLayout="setLayout" />
+        <tags-view v-if="needTagsView" />
+      </div>
+      <app-main />
+      <settings ref="settingRef" />
+    </div>
+  </div>
+</template>
+
+<script setup>
+/**
+ * 应用主布局：侧栏 + 顶栏 + TagsView + 主内容区；
+ * 响应式切换移动端抽屉，并按 navType 应用混合/顶部导航布局。
+ */
+import { useWindowSize } from '@vueuse/core'
+import Sidebar from './components/Sidebar/index.vue'
+import { AppMain, Navbar, Settings, TagsView } from './components'
+import useAppStore from '@/store/modules/app'
+import useSettingsStore from '@/store/modules/settings'
+import usePermissionStore from '@/store/modules/permission'
+import { applyNavLayout, normalizeNavType } from '@/utils/navLayout'
+
+const settingsStore = useSettingsStore()
+const permissionStore = usePermissionStore()
+const appStore = useAppStore()
+const route = useRoute()
+const navType = computed(() => normalizeNavType(settingsStore.navType))
+const theme = computed(() => settingsStore.theme)
+const sidebar = computed(() => appStore.sidebar)
+const device = computed(() => appStore.device)
+const needTagsView = computed(() => settingsStore.tagsView)
+const fixedHeader = computed(() => settingsStore.fixedHeader)
+const isFullScreen = computed(() => !!route.meta?.fullScreen)
+
+const classObj = computed(() => ({
+  hideSidebar: !sidebar.value.opened,
+  openSidebar: sidebar.value.opened,
+  withoutAnimation: sidebar.value.withoutAnimation,
+  mobile: device.value === 'mobile'
+}))
+
+const { width } = useWindowSize()
+const WIDTH = 992
+
+watch(() => device.value, () => {
+  if (device.value === 'mobile' && sidebar.value.opened) {
+    appStore.closeSideBar({ withoutAnimation: false })
+  }
+})
+
+watchEffect(() => {
+  if (width.value - 1 < WIDTH) {
+    appStore.toggleDevice('mobile')
+    appStore.closeSideBar({ withoutAnimation: true })
+  } else {
+    appStore.toggleDevice('desktop')
+  }
+})
+
+watch(
+  () => [navType.value, permissionStore.topbarRouters.length, route.path],
+  () => {
+    applyNavLayout({
+      navType: navType.value,
+      permissionStore,
+      appStore,
+      route: route
+    })
+  },
+  { immediate: true }
+)
+
+/** 点击移动端遮罩关闭侧栏 */
+function handleClickOutside() {
+  appStore.closeSideBar({ withoutAnimation: false })
+}
+
+const settingRef = ref(null)
+/** 打开布局设置抽屉（由 Navbar 触发） */
+function setLayout() {
+  settingRef.value.openSetting()
+}
+</script>
+
+<style lang="scss" scoped>
+.app-wrapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
+
+  &.mobile.openSidebar {
+    position: fixed;
+    top: 0;
+  }
+}
+
+.drawer-bg {
+  background: #000;
+  opacity: 0.3;
+  width: 100%;
+  top: 0;
+  height: 100%;
+  position: absolute;
+  z-index: 999;
+}
+
+.fixed-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9;
+  width: calc(100% - 210px);
+  transition: width 0.28s;
+}
+
+.hideSidebar .fixed-header {
+  width: calc(100% - 54px);
+}
+
+.sidebarHide .fixed-header {
+  width: 100%;
+}
+
+.mobile .fixed-header {
+  width: 100%;
+}
+
+.full-screen-mode {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+</style>

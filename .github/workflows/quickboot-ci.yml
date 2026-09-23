@@ -1,0 +1,42 @@
+# Modulith 模块边界 + 后端测试
+name: quickboot-ci
+
+on:
+  push:
+    paths:
+      - "quickboot/**"
+      - ".github/workflows/quickboot-ci.yml"
+  pull_request:
+    paths:
+      - "quickboot/**"
+      - ".github/workflows/quickboot-ci.yml"
+
+jobs:
+  modulith-verify:
+    name: Modulith verify
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: quickboot
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: quickboot/pom.xml
+
+      - name: Verify Modulith architecture (install/verify 同阶段)
+        run: mvn -B -pl quickboot-web -am verify -DskipTests -DskipModulithArchitecture=false
+
+      - name: Upload Modulith docs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: modulith-docs
+          path: quickboot/quickboot-web/target/spring-modulith-docs/
+          if-no-files-found: ignore

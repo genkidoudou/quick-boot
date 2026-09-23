@@ -1,0 +1,11 @@
+{
+  "name": "quickboot-mysql-mcp",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "mysql-mcp-server": "^0.1.3"
+  },
+  "scripts": {
+    "postinstall": "node patch-validators.js"
+  }
+}
