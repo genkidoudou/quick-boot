@@ -239,6 +239,7 @@ import io.github.genkidoudou.{模块}.internal.mapper.{Name}Mapper;
 import io.github.genkidoudou.{模块}.internal.service.I{Name}Service;
 import io.github.genkidoudou.{模块}.internal.vo.{Name}Vo;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -281,6 +282,30 @@ public class {Name}ServiceImpl extends BaseVoServiceImpl<{Name}Mapper, {Name}, {
     }
 
     /**
+     * 新增；带事务。
+     *
+     * @param vo 视图对象
+     * @return 持久化后的实体
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public {Name} saveVo({Name}Vo vo) {
+        return super.saveVo(vo);
+    }
+
+    /**
+     * 修改；带事务。
+     *
+     * @param vo 视图对象
+     * @return 是否成功
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateVoById({Name}Vo vo) {
+        return super.updateVoById(vo);
+    }
+
+    /**
      * 按主键批量删除。
      *
      * @param ids 主键列表
@@ -292,18 +317,24 @@ public class {Name}ServiceImpl extends BaseVoServiceImpl<{Name}Mapper, {Name}, {
 }
 ```
 
-说明：`pageVo` / `saveVo` / `updateVoById` 无额外逻辑时**不要**再写转调，直接继承基类即可（接口仍声明）。
+说明：
 
-**仅 SysUser 类业务需要时覆盖 saveVo / updateVoById（密码加密）：**
+- `pageVo` 无额外逻辑时不要再写转调，直接继承基类即可（接口仍声明）。
+- **`saveVo` / `updateVoById` 必须覆盖并加 `@Transactional(rollbackFor = Exception.class)`**（即使只是 `super` 转调）。
+- 额外 import：`org.springframework.transaction.annotation.Transactional`。
+
+**仅 SysUser 类业务需要时，在上述事务方法内追加密码加密：**
 
 ```java
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public {Name} saveVo({Name}Vo vo) {
         encodePassword(vo);
         return super.saveVo(vo);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById({Name}Vo vo) {
         if (StrUtil.isBlank(vo.getPassword())) {
             vo.setPassword(null);
@@ -341,9 +372,11 @@ public class {Name}ServiceImpl extends BaseVoServiceImpl<{Name}Mapper, {Name}, {
 ```java
 package io.github.genkidoudou.{模块}.internal.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.api.R;
+import io.github.genkidoudou.common.idempotency.Idempotent;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
 import io.github.genkidoudou.{模块}.internal.service.I{Name}Service;
@@ -375,6 +408,7 @@ public class {Name}Controller {
      * @param pageRequest 分页与查询条件
      * @return 分页结果
      */
+    @SaCheckPermission("{权限前缀}:{资源}:list")
     @PostMapping("page")
     public R<PageInfo<{Name}Vo>> page(@RequestBody PageRequest<{Name}Vo> pageRequest) {
         return R.ok({name}Service.pageVo(pageRequest));
@@ -386,6 +420,7 @@ public class {Name}Controller {
      * @param id 主键
      * @return 详情
      */
+    @SaCheckPermission("{权限前缀}:{资源}:query")
     @GetMapping("{id}")
     public R<{Name}Vo> get(@PathVariable Long id) {
         return R.ok({name}Service.getVoById(id));
@@ -396,6 +431,8 @@ public class {Name}Controller {
      *
      * @param body 表单数据
      */
+    @SaCheckPermission("{权限前缀}:{资源}:add")
+    @Idempotent(ttlSeconds = 10, key = "#userId")
     @PostMapping("add")
     public R<Void> add(@RequestBody @Validated(AddGroup.class) {Name}Vo body) {
         {name}Service.saveVo(body);
@@ -407,6 +444,8 @@ public class {Name}Controller {
      *
      * @param body 表单数据
      */
+    @SaCheckPermission("{权限前缀}:{资源}:edit")
+    @Idempotent(ttlSeconds = 10, key = "#userId")
     @PostMapping("update")
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) {Name}Vo body) {
         {name}Service.updateVoById(body);
@@ -418,6 +457,7 @@ public class {Name}Controller {
      *
      * @param ids 主键列表
      */
+    @SaCheckPermission("{权限前缀}:{资源}:remove")
     @PostMapping("remove")
     public R<Void> remove(@RequestBody List<Long> ids) {
         {name}Service.removeByIds(ids);
@@ -427,6 +467,10 @@ public class {Name}Controller {
 ```
 
 其中 `{name}` 为 `{Name}` 的小驼峰，如 `SysNotice` → `sysNotice`。系统模块 `{映射}` = `sys/{resource}`。
+
+`{权限前缀}`：系统模块为 `system`，新模块为模块名。权限字：`list`（分页）、`query`（详情）、`add`、`edit`、`remove`。
+
+`add` / `update` **必须**加 `@Idempotent(ttlSeconds = 10, key = "#userId")`（`includeUri` 默认 true，接口间互不冲突）。
 
 禁止 `@PutMapping` / `@DeleteMapping`。Controller 只做校验与转发。
 
@@ -701,11 +745,14 @@ public class {Name}ServiceImpl extends ServiceImpl<{Name}Mapper, {Name}>
 3. 方法名：`pageVo` / `getVoById` / `saveVo` / `updateVoById` / `removeByIds`
 4. 无 PUT/DELETE；有 JavaDoc
 5. 默认 Vo 在 `internal.vo`；仅跨模块才写 `api`
+6. Controller：`@SaCheckPermission`（list/query/add/edit/remove）；`add`/`update` 有 `@Idempotent`
+7. ServiceImpl：`saveVo`/`updateVoById` 有 `@Transactional(rollbackFor = Exception.class)`
+8. 迁移含 `sys_menu`（C + F×4）；字典列已问枚举并写 `sys_dict_type`/`sys_dict_data`
 
 ### 关联表
 
 1. 仅 Entity + Mapper + 绑定 Service（§8）
-2. **无 Vo、无独立 Controller、无前端、无 api**
+2. **无 Vo、无独立 Controller、无前端、无 api、无菜单**
 3. Entity 按实有列建模；不误用 `BaseVoServiceImpl`
 4. 绑定通过主资源接口或主 Service 调用
 5. 仅用户点名「关联表独立 CRUD」时才改走业务表清单

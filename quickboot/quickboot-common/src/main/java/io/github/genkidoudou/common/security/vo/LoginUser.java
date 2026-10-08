@@ -23,10 +23,10 @@ public class LoginUser {
   private Long deptId;
 
   /** 菜单权限标识集合。 */
-  private Set<String> menuPermission;
+  private Set<String> permissions;
 
   /** 角色权限标识集合。 */
-  private Set<String> rolePermission;
+  private Set<String> roles;
 
   /** OAuth 客户端 id（多端登录场景）。 */
   private String clientId;

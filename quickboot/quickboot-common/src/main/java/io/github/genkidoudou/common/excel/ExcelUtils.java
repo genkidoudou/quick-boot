@@ -2,17 +2,16 @@ package io.github.genkidoudou.common.excel;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ClassPathResource;
-import cn.hutool.core.util.IdUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.enums.WriteDirectionEnum;
+import com.alibaba.excel.read.builder.ExcelReaderBuilder;
+import com.alibaba.excel.write.builder.ExcelWriterBuilder;
 import com.alibaba.excel.write.builder.ExcelWriterSheetBuilder;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.metadata.fill.FillConfig;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
-import com.alibaba.excel.read.builder.ExcelReaderBuilder;
-import com.alibaba.excel.write.builder.ExcelWriterBuilder;
 import io.github.genkidoudou.common.excel.conver.ExcelBigNumberConvert;
 import io.github.genkidoudou.common.excel.conver.ExcelDictConvert;
 import io.github.genkidoudou.common.excel.conver.merge.CellMergeStrategy;
@@ -26,12 +25,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -93,20 +92,35 @@ public class ExcelUtils {
     try {
       resetResponse(sheetName, response);
       ServletOutputStream os = response.getOutputStream();
-      ExcelWriterSheetBuilder builder = registerConverters(EasyExcel.write(os, clazz))
+      ExcelWriterBuilder writerBuilder = registerConverters(EasyExcel.write(os, clazz))
         .autoCloseStream(false)
-        .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-        .sheet(sheetName);
+        .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy());
+      // 导入模板约束需改表头样式；SXSSF 写完后不可回改，必须 inMemory
+      if (applyTemplateConstraints) {
+        writerBuilder.inMemory(Boolean.TRUE);
+        writerBuilder.registerWriteHandler(new TemplateConstraintWriteHandler(clazz));
+      }
+      ExcelWriterSheetBuilder builder = writerBuilder.sheet(sheetName);
       if (merge) {
         builder.registerWriteHandler(new CellMergeStrategy(list, true));
       }
-      if (applyTemplateConstraints) {
-        builder.registerWriteHandler(new TemplateConstraintWriteHandler(clazz));
-      }
+
       builder.doWrite(list);
     } catch (IOException e) {
       throw new ExcelException("导出 Excel 异常", e);
     }
+  }
+
+  /**
+   * 导出空导入模板：仅表头，并按 Validation / {@code @ExcelDictFormat} 写入提示与下拉。
+   *
+   * @param sheetName sheet / 文件名前缀
+   * @param clazz     行模型
+   * @param response  HTTP 响应
+   * @param <T>       行类型
+   */
+  public static <T> void exportImportTemplate(String sheetName, Class<T> clazz, HttpServletResponse response) {
+    exportExcel(Collections.emptyList(), sheetName, clazz, false, true, response);
   }
 
   /**

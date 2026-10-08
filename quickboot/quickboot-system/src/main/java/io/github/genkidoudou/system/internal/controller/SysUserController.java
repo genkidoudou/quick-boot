@@ -1,8 +1,10 @@
 package io.github.genkidoudou.system.internal.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.api.R;
+import io.github.genkidoudou.common.idempotency.Idempotent;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
@@ -34,6 +36,7 @@ public class SysUserController {
      * @param pageRequest 分页与查询条件
      * @return 分页结果
      */
+    @SaCheckPermission("system:user:list")
     @PostMapping("page")
     public R<PageInfo<SysUserVo>> page(@RequestBody PageRequest<SysUserVo> pageRequest) {
         return R.ok(sysUserService.pageVo(pageRequest));
@@ -45,6 +48,7 @@ public class SysUserController {
      * @param id 主键
      * @return 详情
      */
+    @SaCheckPermission("system:user:query")
     @GetMapping("{id}")
     public R<SysUserVo> get(@PathVariable Long id) {
         return R.ok(sysUserService.getVoById(id));
@@ -55,6 +59,8 @@ public class SysUserController {
      *
      * @param body 表单数据
      */
+    @SaCheckPermission("system:user:add")
+    @Idempotent(ttlSeconds = 10, key = "#userId")
     @PostMapping("add")
     public R<Void> add(@RequestBody @Validated(AddGroup.class) SysUserVo body) {
         sysUserService.saveVo(body);
@@ -66,6 +72,8 @@ public class SysUserController {
      *
      * @param body 表单数据
      */
+    @SaCheckPermission("system:user:edit")
+    @Idempotent(ttlSeconds = 10, key = "#userId")
     @PostMapping("update")
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) SysUserVo body) {
         sysUserService.updateVoById(body);
@@ -77,6 +85,7 @@ public class SysUserController {
      *
      * @param ids 主键列表
      */
+    @SaCheckPermission("system:user:remove")
     @PostMapping("remove")
     public R<Void> remove(@RequestBody List<Long> ids) {
         sysUserService.removeByIds(ids);

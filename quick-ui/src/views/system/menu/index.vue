@@ -12,7 +12,7 @@
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="query.status" placeholder="菜单状态" clearable style="width: 200px">
-          <el-option v-for="d in (sys_normal_disable || [])" :key="d.value" :label="d.label" :value="d.value" />
+          <el-option v-for="d in (COMMON_STATUS || [])" :key="d.value" :label="d.label" :value="d.value" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -25,15 +25,7 @@
       <el-col :span="1.5">
         <el-button type="primary" plain :icon="Plus" v-hasPermi="['system:menu:add']" @click="openAdd()">新增</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <C7ExcelDownload
-          type="warning"
-          plain
-          :download-fn="handleExport"
-          default-file-name="menu.xlsx"
-          v-hasPermi="['system:menu:export']"
-        >导出</C7ExcelDownload>
-      </el-col>
+
 
       <el-col :span="1.5">
         <el-button type="warning" plain :icon="Check" v-hasPermi="['system:menu:edit']" @click="handleSaveSort">
@@ -68,7 +60,7 @@
       <el-table-column label="类型" width="100" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.isFrame === '1' || isExternalLinkMenu(row)" type="danger" size="small">外链</el-tag>
-          <C7DictTag v-else :model-value="row.menuType" :options="sys_menu_menu_type" />
+          <C7DictTag v-else :model-value="row.menuType" :options="MENU_TYPE" />
         </template>
       </el-table-column>
       <el-table-column prop="orderNum" label="排序" width="120" align="center">
@@ -92,7 +84,7 @@
       </el-table-column>
       <el-table-column prop="status" label="状态" width="80" align="center">
         <template #default="{ row }">
-          <C7DictTag :model-value="row.status" :options="sys_normal_disable" />
+          <C7DictTag :model-value="row.status" :options="COMMON_STATUS" />
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="210" fixed="right">
@@ -100,7 +92,14 @@
           <el-button link type="primary" :icon="Edit" v-hasPermi="['system:menu:edit']" @click="openEdit(row)">
             修改
           </el-button>
-          <el-button link type="primary" :icon="Plus" v-hasPermi="['system:menu:add']" @click="openAdd(row)">
+          <el-button
+            v-if="row.menuType !== 'F'"
+            link
+            type="primary"
+            :icon="Plus"
+            v-hasPermi="['system:menu:add']"
+            @click="openAdd(row)"
+          >
             新增
           </el-button>
           <el-button link type="primary" :icon="Delete" v-hasPermi="['system:menu:remove']" @click="handleDelete(row)">
@@ -146,11 +145,9 @@ import AddOrUpdate from './add-or-update.vue'
 
 defineOptions({ name: 'SysMenu' })
 
-const { sys_normal_disable, sys_menu_menu_type, sys_show_hide } = useDict(
-  'sys_normal_disable',
-  'sys_menu_menu_type',
-  'sys_show_hide'
-)
+const { COMMON_STATUS, MENU_TYPE,sys_show_hide } = useDict('COMMON_STATUS', 'MENU_TYPE','sys_show_hide')
+
+
 
 const loading = ref(false)
 const menuList = ref([])
@@ -187,12 +184,20 @@ function recordOriginalOrders(list) {
 }
 
 function loadData() {
+  const searching = !!(query.value.menuName || query.value.status)
   loading.value = true
   listMenu(query.value)
     .then((res) => {
       menuList.value = res.data || []
       originalOrders.value = {}
       recordOriginalOrders(menuList.value)
+      if (searching) {
+        expandAll.value = true
+        refreshTable.value = false
+        nextTick(() => {
+          refreshTable.value = true
+        })
+      }
     })
     .finally(() => {
       loading.value = false
@@ -268,7 +273,10 @@ function onImportDialogClosed() {
  * @param {Record<string, any>} [row]
  */
 function openAdd(row) {
-  formRef.value?.open({ parentId: row?.menuId ?? 0 })
+  formRef.value?.open({
+    parentId: row?.menuId ?? row?.id ?? 0,
+    parentMenuType: row?.menuType
+  })
 }
 
 /**

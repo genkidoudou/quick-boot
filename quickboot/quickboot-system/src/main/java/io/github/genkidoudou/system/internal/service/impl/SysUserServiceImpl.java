@@ -7,12 +7,13 @@ import io.github.genkidoudou.common.crypto.PasswordCodecFactories;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
-import io.github.genkidoudou.core.entity.enums.CommonEnums;
+import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.entity.SysUser;
 import io.github.genkidoudou.system.internal.mapper.SysUserMapper;
 import io.github.genkidoudou.system.internal.service.ISysUserService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -67,6 +68,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
      * @return 持久化后的实体
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public SysUser saveVo(SysUserVo sysUserVo) {
         encodePassword(sysUserVo);
         return super.saveVo(sysUserVo);
@@ -79,6 +81,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
      * @return 是否成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById(SysUserVo sysUserVo) {
         if (StrUtil.isBlank(sysUserVo.getPassword())) {
             sysUserVo.setPassword(null);

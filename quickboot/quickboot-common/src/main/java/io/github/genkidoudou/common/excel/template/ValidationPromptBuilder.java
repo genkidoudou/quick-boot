@@ -1,9 +1,19 @@
 package io.github.genkidoudou.common.excel.template;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Negative;
+import jakarta.validation.constraints.NegativeOrZero;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.Length;
@@ -18,7 +28,7 @@ import java.util.List;
 /**
  * 根据 Jakarta Validation（及 Hibernate {@link Length}）组装 Excel 输入提示文案。
  *
- * <p>拼接顺序：必填 → 格式/长度 → 其它。
+ * <p>拼接顺序：必填 → 格式/长度/范围 → 其它。
  */
 public final class ValidationPromptBuilder {
 
@@ -40,6 +50,10 @@ public final class ValidationPromptBuilder {
     NotBlank notBlank = field.getAnnotation(NotBlank.class);
     if (notBlank != null) {
       required.add(msgOr(notBlank.message(), "该列不能为空", "{jakarta.validation.constraints.NotBlank.message}"));
+    }
+    NotEmpty notEmpty = field.getAnnotation(NotEmpty.class);
+    if (notEmpty != null) {
+      required.add(msgOr(notEmpty.message(), "该列不能为空", "{jakarta.validation.constraints.NotEmpty.message}"));
     }
     NotNull notNull = field.getAnnotation(NotNull.class);
     if (notNull != null) {
@@ -68,6 +82,50 @@ public final class ValidationPromptBuilder {
       format.add(msgOr(length.message(),
         "长度须在 " + length.min() + "～" + length.max(),
         "{org.hibernate.validator.constraints.Length.message}"));
+    }
+
+    Min min = field.getAnnotation(Min.class);
+    if (min != null) {
+      format.add(msgOr(min.message(), "须 ≥ " + min.value(), "{jakarta.validation.constraints.Min.message}"));
+    }
+    Max max = field.getAnnotation(Max.class);
+    if (max != null) {
+      format.add(msgOr(max.message(), "须 ≤ " + max.value(), "{jakarta.validation.constraints.Max.message}"));
+    }
+    DecimalMin decimalMin = field.getAnnotation(DecimalMin.class);
+    if (decimalMin != null) {
+      format.add(msgOr(decimalMin.message(), "须 ≥ " + decimalMin.value(),
+        "{jakarta.validation.constraints.DecimalMin.message}"));
+    }
+    DecimalMax decimalMax = field.getAnnotation(DecimalMax.class);
+    if (decimalMax != null) {
+      format.add(msgOr(decimalMax.message(), "须 ≤ " + decimalMax.value(),
+        "{jakarta.validation.constraints.DecimalMax.message}"));
+    }
+    Positive positive = field.getAnnotation(Positive.class);
+    if (positive != null) {
+      format.add(msgOr(positive.message(), "须为正数", "{jakarta.validation.constraints.Positive.message}"));
+    }
+    PositiveOrZero positiveOrZero = field.getAnnotation(PositiveOrZero.class);
+    if (positiveOrZero != null) {
+      format.add(msgOr(positiveOrZero.message(), "须 ≥ 0",
+        "{jakarta.validation.constraints.PositiveOrZero.message}"));
+    }
+    Negative negative = field.getAnnotation(Negative.class);
+    if (negative != null) {
+      format.add(msgOr(negative.message(), "须为负数", "{jakarta.validation.constraints.Negative.message}"));
+    }
+    NegativeOrZero negativeOrZero = field.getAnnotation(NegativeOrZero.class);
+    if (negativeOrZero != null) {
+      format.add(msgOr(negativeOrZero.message(), "须 ≤ 0",
+        "{jakarta.validation.constraints.NegativeOrZero.message}"));
+    }
+
+    Digits digits = field.getAnnotation(Digits.class);
+    if (digits != null) {
+      format.add(msgOr(digits.message(),
+        "整数位 ≤ " + digits.integer() + "，小数位 ≤ " + digits.fraction(),
+        "{jakarta.validation.constraints.Digits.message}"));
     }
 
     Email email = field.getAnnotation(Email.class);

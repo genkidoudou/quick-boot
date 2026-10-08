@@ -28,7 +28,7 @@ public class SysMenu extends BaseEntity implements Serializable {
     /** 摘要。 */
     private String digest;
 
-    /** 父 ID。 */
+    /** 父 id。 */
     private Long parentId;
 
     /** 菜单名称。 */
@@ -58,13 +58,13 @@ public class SysMenu extends BaseEntity implements Serializable {
     /** 路由 query。 */
     private String query;
 
-    /** 是否外链(0:否,1:是)。 */
+    /** 是否外链（0 否 1 是）。 */
     private String isFrame;
 
-    /** 是否缓存(0:缓存, 1:不缓存)。 */
+    /** 是否缓存（0 缓存 1 不缓存）。 */
     private String isCache;
 
-    /** 是否显示(0:显示,1:隐藏)。 */
+    /** 是否显示（0 显示 1 隐藏）。 */
     private String visible;
 
     /** 状态(COMMON_STATUS)。 */

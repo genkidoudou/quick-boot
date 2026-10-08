@@ -151,6 +151,7 @@ public abstract class ExcelListenerCallback<T> extends AnalysisEventListener<T> 
     excelResult.setFailCount(failNum);
     excelResult.setSuccessCount(totalNum - failNum);
     excelResult.setTotal(totalNum);
+    excelResult.writeErrorFile();
     return excelResult;
   }
 

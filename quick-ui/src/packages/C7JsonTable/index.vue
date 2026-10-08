@@ -1,5 +1,5 @@
 <template>
-  <div class="c7-json-table" v-bind="$attrs">
+  <div ref="rootRef" class="c7-json-table" v-bind="$attrs">
     <!-- 搜索区 -->
     <el-form
         v-if="searchColumns.length"
@@ -124,10 +124,11 @@
             type="warning"
             plain
             :icon="Download"
+            v-model:downloading="exportDownloading"
             :download-fn="exportDownloadFn"
             :default-file-name="exportDefaultFileName"
             @success="onExportBlobSuccess"
-        >{{ exportButtonText }}</C7ExcelDownload>
+        >{{ exportDownloading ? '导出中' : exportButtonText }}</C7ExcelDownload>
       </el-col>
       <el-col :span="12" style="text-align: right">
         <slot name="toolbar-right"/>
@@ -277,8 +278,12 @@ const props = defineProps({
   exportFunction: {type: Function, default: undefined},
   /** 导出默认文件名（响应头无 Content-Disposition 时） */
   exportDefaultFileName: {type: String, default: 'export.xlsx'},
-  /** 为 false 时不启用全屏 ElLoading，仅保留下载按钮 loading */
-  exportLoadingOptions: {type: [Boolean, Object], default: true},
+  /**
+   * 导出 Loading：默认在表格区域遮罩（文案「导出中」）。
+   * `false` 关闭区域遮罩（仅按钮 loading）；传对象可覆盖 ElLoading 配置；
+   * `true` 恢复旧版全屏遮罩。
+   */
+  exportLoadingOptions: {type: [Boolean, Object], default: undefined},
   /** 导入：uploadFn(file, strategy) */
   importFunction: {type: Function, default: undefined},
   /** 导入模板下载 */
@@ -370,6 +375,10 @@ const columnPopoverVisible = ref(false)
 /** 列设置勾选：prop -> 是否显示 */
 const columnCheck = reactive({})
 const importDialogVisible = ref(false)
+/** 导出按钮 loading（与 C7ExcelDownload v-model:downloading 同步） */
+const exportDownloading = ref(false)
+/** 表格根节点：导出区域遮罩挂载点 */
+const rootRef = ref(null)
 
 const STORAGE_PREFIX = 'c7-json-table:columns:'
 const userStore = useUserStore()
@@ -635,6 +644,7 @@ async function handleBatchDelete() {
 
 /**
  * 供 C7ExcelDownload：固定 searchParam 快照；有勾选时附加 ids。
+ * 默认在 `.c7-json-table` 区域遮罩；`exportLoadingOptions === false` 时仅按钮 loading。
  */
 function exportDownloadFn() {
   const snapshot = cloneDeep(searchParam)
@@ -652,10 +662,18 @@ function exportDownloadFn() {
   if (props.exportLoadingOptions === false) {
     return run()
   }
-  const loadingOpts =
-      typeof props.exportLoadingOptions === 'object' && props.exportLoadingOptions
-          ? props.exportLoadingOptions
-          : {fullscreen: true, text: '导出中…'}
+  let loadingOpts
+  if (typeof props.exportLoadingOptions === 'object' && props.exportLoadingOptions) {
+    loadingOpts = props.exportLoadingOptions
+  } else if (props.exportLoadingOptions === true) {
+    loadingOpts = {fullscreen: true, text: '导出中'}
+  } else {
+    loadingOpts = {
+      target: rootRef.value,
+      text: '导出中',
+      background: 'rgba(255, 255, 255, 0.7)',
+    }
+  }
   const inst = ElLoading.service(loadingOpts)
   return run().finally(() => {
     inst.close()
@@ -738,6 +756,10 @@ defineExpose({
 </script>
 
 <style scoped>
+.c7-json-table {
+  position: relative;
+}
+
 .c7-json-table__search {
   margin-bottom: 12px;
 }

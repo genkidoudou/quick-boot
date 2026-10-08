@@ -7,7 +7,6 @@
 import axios, { AxiosHeaders } from 'axios'
 import {ElMessageBox, ElMessage, ElLoading} from 'element-plus'
 import {getToken, removeToken} from '@/utils/auth'
-import errorCode from '@/utils/errorCode'
 import {tansParams, blobValidate} from '@/utils/ruoyi'
 import cache from '@/plugins/cache'
 import {saveAs} from 'file-saver'
@@ -22,6 +21,21 @@ import {
 
 let downloadLoadingInstance;
 let isShowReloginDialog = false;
+
+/** 服务端未返回 msg 时的兜底文案 */
+const DEFAULT_ERROR_MSG = '系统内部错误，请稍候再试'
+
+/**
+ * 优先使用接口返回的 msg，为空时用兜底。
+ *
+ * @param {unknown} serverMsg
+ * @param {string} [fallback]
+ * @returns {string}
+ */
+function resolveBizMessage(serverMsg, fallback = DEFAULT_ERROR_MSG) {
+    const msg = typeof serverMsg === 'string' ? serverMsg.trim() : ''
+    return msg !== '' ? msg : fallback
+}
 
 /** 模块加载时读取一次，避免每个请求重复解析 env */
 const monitorEnabled = isMonitorEnabled()
@@ -129,21 +143,18 @@ function tryHandleAxiosErrorResponseBody(error) {
     const bizCodeRaw = body.code
     const bizCode = bizCodeRaw !== undefined && bizCodeRaw !== null ? Number(bizCodeRaw) : NaN
     const hasBizCode = Number.isFinite(bizCode)
-    const tip = serverMsg !== ''
-        ? body.msg
-        : (hasBizCode ? (errorCode[String(bizCode)] || errorCode['default']) : '')
+    const tip = resolveBizMessage(body.msg, hasBizCode ? DEFAULT_ERROR_MSG : '')
 
     if (hasBizCode && bizCode === 401) {
-        const msg = serverMsg !== '' ? body.msg : (errorCode['401'] || errorCode['default'])
-        return handleUnauthorized(msg)
+        return handleUnauthorized(resolveBizMessage(body.msg, '登录状态已过期，请重新登录'))
     }
     if (hasBizCode && bizCode === 500) {
-        const msg = tip || errorCode['500']
+        const msg = tip || DEFAULT_ERROR_MSG
         ElMessage({ message: msg, type: 'error' })
         return Promise.reject(new Error(msg))
     }
     if (hasBizCode && bizCode !== 200) {
-        const msg = tip || errorCode[String(bizCode)] || errorCode['default']
+        const msg = tip || DEFAULT_ERROR_MSG
         ElMessage({ message: msg, type: 'error', duration: 5 * 1000 })
         return Promise.reject(error)
     }
@@ -172,7 +183,7 @@ service.interceptors.response.use(async (res) => {
                         return handleUnauthorized(json.msg || '登录状态已过期，请重新登录')
                     }
                     if (code !== 200) {
-                        const errMsg = errorCode[String(code)] || json.msg || errorCode['default'] || '导出失败'
+                        const errMsg = resolveBizMessage(json.msg, '导出失败')
                         ElMessage.error(errMsg)
                         return Promise.reject(new Error(errMsg))
                     }
@@ -188,12 +199,11 @@ service.interceptors.response.use(async (res) => {
             return res.data
         }
         const code = Number(res.data.code || 200);
-        const serverMsg = res.data.msg
-        // 401 优先使用服务端 msg（登录失败等），避免被 errorCode['401'] 固定文案覆盖
-        const msg =
-            code === 401 && serverMsg
-                ? serverMsg
-                : (errorCode[String(code)] || serverMsg || errorCode['default'])
+        // 一律优先接口 msg；401 无专用兜底
+        const msg = resolveBizMessage(
+            res.data.msg,
+            code === 401 ? '登录状态已过期，请重新登录' : DEFAULT_ERROR_MSG
+        )
 
         if (code === 401) {
             return handleUnauthorized(msg)
@@ -274,8 +284,7 @@ export function download(url, params, filename, config) {
         } else {
             const resText = await data.text();
             const rspObj = JSON.parse(resText);
-            const errMsg = errorCode[rspObj.code] || rspObj.msg || errorCode['default']
-            ElMessage.error(errMsg);
+            ElMessage.error(resolveBizMessage(rspObj.msg));
         }
         downloadLoadingInstance.close();
     }).catch((r) => {

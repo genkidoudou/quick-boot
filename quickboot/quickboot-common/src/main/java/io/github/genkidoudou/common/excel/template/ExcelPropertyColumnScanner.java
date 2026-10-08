@@ -75,7 +75,6 @@ public final class ExcelPropertyColumnScanner {
     for (Class<?> c = clazz; c != null && c != Object.class; c = c.getSuperclass()) {
       hierarchy.add(c);
     }
-    // 父类字段在前，与常见 EasyExcel 行为一致
     List<Field> result = new ArrayList<>();
     for (int i = hierarchy.size() - 1; i >= 0; i--) {
       for (Field field : hierarchy.get(i).getDeclaredFields()) {

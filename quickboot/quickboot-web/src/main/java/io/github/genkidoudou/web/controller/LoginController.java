@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+
 /**
  * 登录
  *
@@ -53,10 +55,13 @@ public class LoginController {
         if (null == loginUser) {
             throw new WarningException(401);
         }
+
+
         return R.ok(loginUser);
     }
 
-
-
-
+    @GetMapping("sys/menu/routes")
+    public R routes() {
+        return R.ok(new ArrayList<>());
+    }
 }

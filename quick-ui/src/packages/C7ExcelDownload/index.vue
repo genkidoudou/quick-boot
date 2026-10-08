@@ -11,7 +11,6 @@
 <script setup>
 import {computed, useAttrs} from 'vue'
 import {ElMessage} from 'element-plus'
-import errorCode from '@/utils/errorCode'
 import {blobValidate} from '@/utils/ruoyi'
 
 defineOptions({name: 'C7ExcelDownload', inheritAttrs: false})
@@ -238,7 +237,8 @@ async function messageFromJsonBlob(blob) {
   try {
     const text = await blob.text()
     const rspObj = JSON.parse(text)
-    return errorCode[rspObj.code] || rspObj.msg || errorCode['default'] || '导出失败'
+    const msg = typeof rspObj.msg === 'string' ? rspObj.msg.trim() : ''
+    return msg !== '' ? msg : '导出失败'
   } catch {
     return '导出失败'
   }

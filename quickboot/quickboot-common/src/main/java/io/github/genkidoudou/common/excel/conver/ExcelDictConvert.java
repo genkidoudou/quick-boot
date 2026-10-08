@@ -23,6 +23,12 @@ public class ExcelDictConvert implements Converter<String> {
     return String.class;
   }
 
+  @Override
+  public CellDataTypeEnum supportExcelTypeKey() {
+    // 全局注册时 AbstractReadHolder 会调用；未实现会抛 UnsupportedOperationException
+    return CellDataTypeEnum.STRING;
+  }
+
   /**
    * 导入：带 {@link ExcelDictFormat} 的字段 label→value，否则原样返回。
    */

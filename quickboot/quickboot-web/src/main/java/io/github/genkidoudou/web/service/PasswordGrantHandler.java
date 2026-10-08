@@ -10,7 +10,7 @@ import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.ErrorException;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.security.vo.LoginUser;
-import io.github.genkidoudou.core.entity.enums.CommonEnums;
+import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.api.SysUserApi;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import jakarta.servlet.http.HttpServletRequest;

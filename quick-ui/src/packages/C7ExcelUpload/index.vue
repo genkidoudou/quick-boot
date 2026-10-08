@@ -41,7 +41,7 @@
         导入结果：同步完成；总条数 {{ lastResult.total }}，成功 {{ lastResult.successCount }}，失败 {{ lastResult.failCount }}
       </div>
       <el-button
-        v-if="lastResult.failCount > 0 && lastResult.errorFileBase64"
+        v-if="lastResult.failCount > 0 && (lastResult.errorFileBase64 || lastResult.errorList?.length)"
         type="danger"
         link
         @click="downloadErrorFile(lastResult)"
@@ -161,13 +161,15 @@ function unwrapPayload(raw) {
 
 function normalizeUploadResult(raw) {
   const mapped = unwrapPayload(raw)
+  const errorList = Array.isArray(mapped.errorList) ? mapped.errorList : []
   return {
     mode: mapped.mode || 'sync',
     total: Number(mapped.total) || 0,
     successCount: Number(mapped.successCount) || 0,
     failCount: Number(mapped.failCount) || 0,
-    errorFileName: mapped.errorFileName || props.errorFileName,
+    errorFileName: mapped.errorFileName || '失败明细.txt',
     errorFileBase64: mapped.errorFileBase64 || '',
+    errorList,
   }
 }
 
@@ -201,20 +203,31 @@ async function handleImportClick() {
   }
 }
 
+function mimeForErrorFile(fileName) {
+  const n = (fileName || '').toLowerCase()
+  if (n.endsWith('.txt')) return 'text/plain;charset=utf-8'
+  if (n.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  if (n.endsWith('.xls')) return 'application/vnd.ms-excel'
+  return 'application/octet-stream'
+}
+
 function downloadErrorFile(result) {
-  const b64 = result?.errorFileBase64
-  if (!b64) {
-    pushNotify('error', '无失败明细文件')
-    return
-  }
+  const fileName = result?.errorFileName || '失败明细.txt'
   try {
-    const binary = atob(b64)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-    const blob = new Blob([bytes], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    saveAs(blob, result.errorFileName || props.errorFileName)
+    if (result?.errorFileBase64) {
+      const binary = atob(result.errorFileBase64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      saveAs(new Blob([bytes], {type: mimeForErrorFile(fileName)}), fileName)
+      return
+    }
+    const lines = Array.isArray(result?.errorList) ? result.errorList.filter(Boolean) : []
+    if (!lines.length) {
+      pushNotify('error', '无失败明细文件')
+      return
+    }
+    const text = lines.join('\n')
+    saveAs(new Blob([text], {type: 'text/plain;charset=utf-8'}), '失败明细.txt')
   } catch {
     pushNotify('error', '失败明细解析失败')
   }

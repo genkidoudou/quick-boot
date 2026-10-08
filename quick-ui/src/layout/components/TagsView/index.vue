@@ -13,8 +13,8 @@
         @contextmenu.prevent="openMenu(tag, $event)"
       >
         {{ tag.title }}
-        <span v-if="!isAffix(tag)" @click.prevent.stop="closeSelectedTag(tag)">
-          <close class="el-icon-close" style="width: 1em; height: 1em; vertical-align: middle;" />
+        <span v-if="!isAffix(tag)" class="el-icon-close" @click.prevent.stop="closeSelectedTag(tag)">
+          <el-icon :size="12"><Close /></el-icon>
         </span>
       </router-link>
     </scroll-pane>
@@ -38,22 +38,22 @@
     </div>
     <ul v-show="visible" :style="{ left: left + 'px', top: top + 'px' }" class="contextmenu">
       <li @click="refreshSelectedTag(selectedTag)">
-        <refresh-right style="width: 1em; height: 1em;" /> 刷新页面
+        <el-icon><RefreshRight /></el-icon> 刷新页面
       </li>
       <li v-if="!isAffix(selectedTag)" @click="closeSelectedTag(selectedTag)">
-        <close style="width: 1em; height: 1em;" /> 关闭当前
+        <el-icon><Close /></el-icon> 关闭当前
       </li>
       <li @click="closeOthersTags">
-        <circle-close style="width: 1em; height: 1em;" /> 关闭其他
+        <el-icon><CircleClose /></el-icon> 关闭其他
       </li>
       <li v-if="!isFirstView()" @click="closeLeftTags">
-        <back style="width: 1em; height: 1em;" /> 关闭左侧
+        <el-icon><Back /></el-icon> 关闭左侧
       </li>
       <li v-if="!isLastView()" @click="closeRightTags">
-        <right style="width: 1em; height: 1em;" /> 关闭右侧
+        <el-icon><Right /></el-icon> 关闭右侧
       </li>
       <li @click="closeAllTags(selectedTag)">
-        <circle-close style="width: 1em; height: 1em;" /> 全部关闭
+        <el-icon><CircleClose /></el-icon> 全部关闭
       </li>
     </ul>
   </div>
@@ -69,7 +69,7 @@ import useTagsViewStore from '@/store/modules/tagsView'
 import useSettingsStore from '@/store/modules/settings'
 import usePermissionStore from '@/store/modules/permission'
 import { useFullscreen } from '@vueuse/core'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Back, CircleClose, Close, RefreshRight, Right } from '@element-plus/icons-vue'
 
 const visible = ref(false)
 const top = ref(0)
@@ -360,6 +360,22 @@ function handleQuickCommand(command) {
       font-size: 12px;
       margin-left: 5px;
       margin-top: 4px;
+      .el-icon-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        margin-left: 4px;
+        vertical-align: 2px;
+        border-radius: 50%;
+        text-align: center;
+        transition: all .3s cubic-bezier(.645, .045, .355, 1);
+        &:hover {
+          background-color: #b4bccc;
+          color: #fff;
+        }
+      }
       &:first-of-type {
         margin-left: 15px;
       }

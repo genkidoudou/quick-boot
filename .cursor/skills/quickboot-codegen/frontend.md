@@ -46,6 +46,7 @@ export const removeNotice = crud.remove
       :add-button-permi="['system:notice:add']"
       :edit-button-permi="['system:notice:edit']"
       :delete-button-permi="['system:notice:remove']"
+      <!-- 列表数据权限与后端 page 一致：system:notice:list；详情接口为 system:notice:query -->
       @add-click="openForm()"
       @edit-click="openForm"
     />

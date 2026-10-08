@@ -26,6 +26,7 @@ import C7CardGrid from './C7CardGrid/index.vue'
 import C7Upload from './C7Upload/index.vue'
 import C7ExcelDownload from './C7ExcelDownload/index.vue'
 import C7ExcelUpload from './C7ExcelUpload/index.vue'
+import C7FormLabel from './C7FormLabel/index.vue'
 import {
   setMessageBoxDefaults,
   c7Confirm,
@@ -65,6 +66,7 @@ export {
   C7Upload,
   C7ExcelDownload,
   C7ExcelUpload,
+  C7FormLabel,
   setMessageBoxDefaults,
   c7Confirm,
   c7Alert,
@@ -108,4 +110,5 @@ export function installPackages(app) {
   app.component('C7Upload', C7Upload)
   app.component('C7ExcelDownload', C7ExcelDownload)
   app.component('C7ExcelUpload', C7ExcelUpload)
+  app.component('C7FormLabel', C7FormLabel)
 }

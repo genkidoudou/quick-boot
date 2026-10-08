@@ -1,6 +1,8 @@
 package io.github.genkidoudou.common.mybatisplus;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.reflect.GenericTypeUtils;
@@ -8,6 +10,7 @@ import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -111,5 +114,21 @@ public abstract class BaseVoServiceImpl<M extends BaseMapper<T>, T, V>
     public V getVoOne(LambdaQueryWrapper<T> lambdaQueryWrapper) {
         T entity = this.getOne(lambdaQueryWrapper, true);
         return toVo(entity, voClass());
+    }
+
+    /**
+     * 列表查询
+     *
+     * @param queryWrapper 构造条件
+     * @return
+     * @since 2026/9/30
+     */
+
+    public  List<V> listVo(Wrapper<T> queryWrapper) {
+        List<T> ts = this.baseMapper.selectList(queryWrapper);
+        if (CollectionUtil.isEmpty(ts)) {
+            return new ArrayList<>();
+        }
+        return BeanUtil.copyToList(ts, voClass());
     }
 }

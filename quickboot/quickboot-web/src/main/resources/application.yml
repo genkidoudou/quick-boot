@@ -70,6 +70,19 @@ spring:
       enabled: true
       max-file-size: 100MB
       max-request-size: 1000MB
+  sql:
+    init:
+      # 已改用 Flyway（classpath:db/migration），禁止 always 重复执行种子
+      mode: never
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # 积木演示 JSON 含 ${…}，禁止 Flyway 占位符替换
+    placeholder-replacement: false
+    # 本地改过已应用 SQL 的 checksum 对齐：见 DevFlywayRepairConfiguration（repair → migrate）
+    # 全新 data-dir 首次迁移全量执行；baseline 保留兼容旧库场景
+    baseline-on-migrate: true
+    baseline-version: 1
 
 logging:
   level:

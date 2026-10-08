@@ -1,87 +1,116 @@
 /**
- * 系统菜单管理 API，与后端 `/system/menu` 契约一致（写操作为 POST）。
- * <p>
- * 树形列表：优先 {@link pageMenu}（POST page），{@link listMenu} 为兼容别名（unwrap records）。
+ * 系统菜单 API，对齐后端 `/sys/menu`。
  */
+import { createCrudApi } from '@/api/_factory/createCrudApi'
 import request from '@/utils/request'
-import { createCrudApi, toPageRequest } from '@/api/_factory/createCrudApi'
 
-const crud = createCrudApi('/system/menu', { export: true })
-
-/** 菜单树形分页（POST page；records 为根节点树）。 */
-export const pageMenu = crud.page
+const BASE = '/sys/menu'
+const crud = createCrudApi(BASE)
 
 /**
- * 菜单树列表（兼容层：内部走 POST page 并 unwrap records）。
- * @param {Record<string, any>} [query] menuName、status
+ * 菜单树。后端 `POST /sys/menu/page` 按条件返回树，不是分页。
+ * @param {Record<string, any>} [params]
  */
-export function listMenu(query) {
-  return crud.page(toPageRequest({ ...query, current: 1, size: 9999 })).then((res) => ({
-    ...res,
-    data: res.data?.records ?? []
-  }))
+export function listMenu(params) {
+  return request({
+    url: `${BASE}/page`,
+    method: 'post',
+    data: params || {}
+  })
 }
 
 /**
- * 菜单下拉树
- * @param {{ excludeButton?: boolean, directoryOnly?: boolean }} [params]
- * directoryOnly 为 true 时仅目录（M）；excludeButton 为 true 时排除按钮（F）
+ * 父级菜单树（表单下拉）。
+ * @param {Record<string, any>} [params]
  */
 export function treeselectMenu(params) {
-  return request({ url: '/system/menu/treeselect', method: 'get', params })
+  return listMenu(params)
 }
 
-/** 角色菜单树（含已勾选 id） */
-export function roleMenuTreeselect(roleId) {
-  return request({ url: '/system/menu/roleMenuTreeselect/' + roleId, method: 'get' })
-}
-
-/** 菜单详情 */
 export const getMenu = crud.get
-/** 新增菜单 */
 export const addMenu = crud.add
-/** 修改菜单 */
 export const updateMenu = crud.update
 
-/** 批量保存菜单排序 */
-export function updateMenuSort(data) {
-  return request({ url: '/system/menu/updateSort', method: 'post', data })
+/**
+ * 删除。页面传入单个 id，后端 `remove` 要 id 数组。
+ * @param {string|number|Array<string|number>} id
+ */
+export function delMenu(id) {
+  const ids = id == null ? [] : Array.isArray(id) ? id : [id]
+  return crud.remove(ids)
 }
 
 /**
- * 删除菜单（单条）。
- * @param {string|number} menuId
+ * 一次保存菜单页及其按钮。
+ * @param {{ menu: Record<string, any>, buttons?: Array<Record<string, any>> }} data
  */
-export function delMenu(menuId) {
-  return request({ url: '/system/menu/remove/' + menuId, method: 'get' })
+export function batchAddMenu(data) {
+  return request({
+    url: `${BASE}/batch`,
+    method: 'post',
+    data
+  })
 }
 
-/** 批量删除。 */
-export const removeMenu = crud.remove
-/** 同步导出 xlsx。 */
-export const exportMenu = crud.export
+/**
+ * 解析 Controller 源码为菜单 + 按钮。
+ * @param {string} source
+ */
+export function parseMenuController(source) {
+  return request({
+    url: `${BASE}/parse`,
+    method: 'post',
+    data: { source }
+  })
+}
 
-/** 下载导入模板（菜单模块若后端未开放则调用方需自行处理 404） */
+/**
+ * 保存排序。
+ * @param {{ menuIds: Array<string|number>, orderNums: Array<number> }} data
+ */
+export function updateMenuSort(data) {
+  return request({
+    url: `${BASE}/sort`,
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 导出 Excel。
+ * @param {Record<string, any>} [query]
+ */
+export function exportMenu(query) {
+  return request({
+    url: `${BASE}/exportExcel`,
+    method: 'post',
+    data: query || {},
+    responseType: 'blob',
+    returnBlobWithHeaders: true
+  })
+}
+
+/** 下载导入模板。 */
 export function downloadMenuImportTemplate() {
   return request({
-    url: '/system/menu/import/template',
-    method: 'get',
+    url: `${BASE}/importExcelTemplate`,
+    method: 'post',
     responseType: 'blob',
     returnBlobWithHeaders: true
   })
 }
 
 /**
- * 同步导入。
+ * 导入 Excel。
  * @param {File} file
- * @param {string} strategy overwrite|ignore
+ * @param {'overwrite'|'ignore'} strategy
  */
 export function importMenu(file, strategy) {
   const form = new FormData()
   form.append('file', file)
   form.append('updateSupport', strategy === 'overwrite' ? 'true' : 'false')
   return request({
-    url: '/system/menu/import',
+    url: `${BASE}/importExcel`,
     method: 'post',
     data: form,
     timeout: 120000
