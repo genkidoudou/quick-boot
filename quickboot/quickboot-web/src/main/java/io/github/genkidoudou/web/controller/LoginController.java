@@ -6,13 +6,15 @@ import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.security.utils.LoginUserUtils;
 import io.github.genkidoudou.common.security.vo.LoginUser;
 import io.github.genkidoudou.core.security.LoginHelper;
+import io.github.genkidoudou.system.api.api.SysMenuApi;
+import io.github.genkidoudou.system.api.vo.RouterVo;
 import io.github.genkidoudou.web.service.LoginGrantDispatcher;
 import io.github.genkidoudou.web.vo.TokenResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 登录
@@ -27,6 +29,8 @@ public class LoginController {
 
 
     private final LoginGrantDispatcher loginGrantDispatcher;
+
+    private final SysMenuApi sysMenuApi;
 
     @PostMapping("/login")
     public R login(HttpServletRequest request) {
@@ -60,8 +64,15 @@ public class LoginController {
         return R.ok(loginUser);
     }
 
+    /**
+     * 获取当前登陆人的菜单路由
+     *
+     * @return
+     * @since 2026/10/8
+     */
     @GetMapping("sys/menu/routes")
-    public R routes() {
-        return R.ok(new ArrayList<>());
+    public R<List<RouterVo>> routes() {
+        LoginUser loginUser = LoginUserUtils.getLoginUser();
+        return R.ok(sysMenuApi.selectMenuTreeByUserId(loginUser.getUserId()));
     }
 }

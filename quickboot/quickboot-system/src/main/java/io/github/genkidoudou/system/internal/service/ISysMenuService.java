@@ -1,8 +1,7 @@
 package io.github.genkidoudou.system.internal.service;
 
 import cn.hutool.core.lang.tree.Tree;
-import io.github.genkidoudou.common.api.PageInfo;
-import io.github.genkidoudou.common.api.PageRequest;
+import io.github.genkidoudou.system.api.vo.RouterVo;
 import io.github.genkidoudou.system.internal.entity.SysMenu;
 import io.github.genkidoudou.system.api.vo.SysMenuVo;
 import io.github.genkidoudou.system.internal.vo.SysMenuBatchRequestVo;
@@ -88,4 +87,13 @@ public interface ISysMenuService {
      * @return 解析结果
      */
     SysMenuBatchRequestVo parseController(String source);
+
+    /**
+     * 根据用户id构建前端动态路由。
+     *
+     * @param userId 用户id
+     * @return 路由列表（若依 RouterVo 协议）
+     * @since 2026/10/8
+     */
+    List<RouterVo> selectMenuTreeByUserId(Long userId);
 }

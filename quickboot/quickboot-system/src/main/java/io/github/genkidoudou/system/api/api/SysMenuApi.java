@@ -1,5 +1,6 @@
 package io.github.genkidoudou.system.api.api;
 
+import io.github.genkidoudou.system.api.vo.RouterVo;
 import io.github.genkidoudou.system.api.vo.SysMenuVo;
 
 import java.util.List;
@@ -14,5 +15,16 @@ public interface SysMenuApi {
      * @since 2026/9/30
      */
     List<SysMenuVo> listByRoleIds(List<Long> roleIds);
+
+
+    /**
+     * 根据用户id获取前端动态路由
+     *
+     * @param userId 用户id
+     * @return 路由列表
+     * @since 2026/10/8
+     */
+    List<RouterVo> selectMenuTreeByUserId(Long userId);
+
 
 }

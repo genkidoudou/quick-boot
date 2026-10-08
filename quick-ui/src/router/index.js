@@ -36,33 +36,33 @@ export const constantRoutes = [
       }
     ]
   },
-  {
-    path: '/sys',
-    component: Layout,
-    redirect: '/sys/menu',
-    meta: { title: '系统管理', icon: 'dashboard' },
-    children: [
-      {
-        path: 'menu',
-        component: () => import('@/views/system/menu/index'),
-        name: 'SysMenu',
-        meta: { title: '菜单管理', icon: 'dashboard' }
-      },
-      {
-        path: 'dictType',
-        component: () => import('@/views/system/dict/type/index'),
-        name: 'SysDictType',
-        meta: { title: '字典管理', icon: 'dashboard' }
-      },
-      {
-        path: 'dictData',
-        component: () => import('@/views/system/dict/data/index.vue'),
-        name: 'SysDictData',
-        hidden: true,
-        meta: { title: '字典数据', activeMenu: '/sys/dictType' }
-      }
-    ]
-  },
+  // {
+  //   path: '/sys',
+  //   component: Layout,
+  //   redirect: '/sys/menu',
+  //   meta: { title: '系统管理', icon: 'dashboard' },
+  //   children: [
+  //     {
+  //       path: 'menu',
+  //       component: () => import('@/views/system/menu/index'),
+  //       name: 'SysMenu',
+  //       meta: { title: '菜单管理', icon: 'dashboard' }
+  //     },
+  //     {
+  //       path: 'dictType',
+  //       component: () => import('@/views/system/dict/type/index'),
+  //       name: 'SysDictType',
+  //       meta: { title: '字典管理', icon: 'dashboard' }
+  //     },
+  //     {
+  //       path: 'dictData',
+  //       component: () => import('@/views/system/dict/data/index.vue'),
+  //       name: 'SysDictData',
+  //       hidden: true,
+  //       meta: { title: '字典数据', activeMenu: '/sys/dictType' }
+  //     }
+  //   ]
+  // },
   // 404 必须放最后，否则会抢先匹配后面的业务路由
   {
     path: '/:pathMatch(.*)*',
