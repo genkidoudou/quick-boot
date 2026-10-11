@@ -340,11 +340,8 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
             router.setPath(getRouterPath(menu));
             router.setComponent(getComponent(menu));
             router.setQuery(menu.getQuery());
-            router.setMeta(new RouterVo.MetaVo(
-                    menu.getMenuName(),
-                    menu.getIcon(),
-                    "1".equals(menu.getIsCache()),
-                    menu.getPath()));
+            // meta.link 仅给内嵌 InnerLink（isFrame=0 且 path 为 http）；新标签外链(isFrame=1)不写 link
+            router.setMeta(buildMeta(menu));
             List<SysMenuVo> cMenus = menu.getChildren();
             if (CollectionUtil.isNotEmpty(cMenus)
                     && SysMenuEnums.MENU_TYPE_DIR.getDictValue().equals(menu.getMenuType())) {
@@ -358,11 +355,7 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
                 children.setPath(menu.getPath());
                 children.setComponent(menu.getComponent());
                 children.setName(routeNameOf(menu.getPath(), menu.getRouteName()));
-                children.setMeta(new RouterVo.MetaVo(
-                        menu.getMenuName(),
-                        menu.getIcon(),
-                        "1".equals(menu.getIsCache()),
-                        menu.getPath()));
+                children.setMeta(buildMeta(menu));
                 children.setQuery(menu.getQuery());
                 childrenList.add(children);
                 router.setChildren(childrenList);
@@ -431,6 +424,19 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
         return isRoot(menu)
                 && SysMenuEnums.MENU_TYPE_MENU.getDictValue().equals(menu.getMenuType())
                 && NO_FRAME.equals(menu.getIsFrame());
+    }
+
+    /**
+     * 构建路由 meta。
+     * <p>{@code link} 仅在「内嵌外链」（isFrame=0 且 path 为 http(s)）时写入，
+     * 避免新标签外链（isFrame=1）也带上 link 导致前端误走 router-link。
+     */
+    private RouterVo.MetaVo buildMeta(SysMenuVo menu) {
+        boolean noCache = "1".equals(menu.getIsCache());
+        if (isInnerLink(menu)) {
+            return new RouterVo.MetaVo(menu.getMenuName(), menu.getIcon(), noCache, menu.getPath());
+        }
+        return new RouterVo.MetaVo(menu.getMenuName(), menu.getIcon(), noCache);
     }
 
     /** 非外链且 path 为 http(s) → InnerLink */

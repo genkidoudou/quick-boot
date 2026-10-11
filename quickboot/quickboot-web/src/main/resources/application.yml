@@ -199,4 +199,6 @@ qc:
   monitor:
     operlog:
       print: true
+  idempotency:
+    ttl-seconds: 5
 ## 日志

@@ -4,8 +4,10 @@
     <el-form
         v-if="searchColumns.length"
         class="c7-json-table__search"
+        :class="{ 'c7-json-table__search--mobile': isMobile }"
         :model="searchParam"
-        label-width="auto"
+        :label-position="isMobile ? 'left' : 'right'"
+        :label-width="isMobile ? '88px' : 'auto'"
         @submit.prevent="handleSearchSubmit"
         @keyup.enter="handleSearchSubmit"
     >
@@ -13,13 +15,17 @@
         <el-col
             v-for="(col, idx) in sortedSearchColumns"
             :key="col.prop || col.label || idx"
-            :span="col.span ?? 6"
+            :xs="24"
+            :sm="12"
+            :md="col.span ?? 8"
+            :lg="col.span ?? 6"
         >
           <el-form-item :label="col.label" :prop="col.prop">
             <template v-if="col.type === 'input' || col.type === undefined || col.type === ''">
               <el-input
                   v-model="searchParam[col.prop]"
                   clearable
+                  style="width: 100%"
                   v-bind="col.props || {}"
               />
             </template>
@@ -55,8 +61,8 @@
             </template>
           </el-form-item>
         </el-col>
-        <el-col :span="6">
-          <el-form-item>
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item class="c7-json-table__search-actions">
             <el-button
                 v-if="showSearchButton"
                 type="primary"
@@ -77,8 +83,8 @@
     </el-form>
 
     <!-- 工具栏 -->
-    <el-row class="c7-json-table__toolbar" :gutter="8" align="middle">
-      <el-col :span="12">
+    <div class="c7-json-table__toolbar">
+      <div class="c7-json-table__toolbar-left">
         <slot
             name="toolbar-left"
             :selected-rows="selectedRows"
@@ -129,8 +135,8 @@
             :default-file-name="exportDefaultFileName"
             @success="onExportBlobSuccess"
         >{{ exportDownloading ? '导出中' : exportButtonText }}</C7ExcelDownload>
-      </el-col>
-      <el-col :span="12" style="text-align: right">
+      </div>
+      <div class="c7-json-table__toolbar-right">
         <slot name="toolbar-right"/>
         <el-button v-if="columnSettingKey" circle title="列设置" @click="columnPopoverVisible = true">
           <el-icon>
@@ -142,8 +148,8 @@
             <Refresh/>
           </el-icon>
         </el-button>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
 
     <el-drawer v-model="columnPopoverVisible" title="列设置" direction="rtl" size="280px">
       <div v-for="c in columnSettingItems" :key="c.prop" class="c7-json-table__col-setting-row">
@@ -152,37 +158,94 @@
       <el-button type="primary" link style="margin-top: 12px" @click="resetColumnSettings">重置列设置</el-button>
     </el-drawer>
 
-    <!-- 表格 -->
-    <el-table
-        ref="tableRef"
-        v-loading="listLoading"
-        :data="tableRows"
-        :border="border"
-        :stripe="stripe"
-        :row-key="rowKey"
-        :lazy="lazy"
-        :load="load"
-        :tree-props="treeProps"
-        @selection-change="onSelectionChange"
-        @sort-change="onSortChange"
-    >
-      <el-table-column v-if="showSelection" type="selection" width="48" align="center"/>
-      <el-table-column v-if="showIndex" type="index" label="#" width="55" align="center"/>
-      <slot
-          v-if="$slots['table-columns']"
-          name="table-columns"
-          :table-columns="effectiveTableColumns"
-          :search-param="searchParam"
-          :selected-rows="selectedRows"
-          :refresh-data="refreshData"
-          :get-data-list="getDataList"
-      />
-      <C7JsonTableColumn v-else :columns="effectiveTableColumns" :empty-text="emptyText">
-        <template v-for="name in forwardedSlotNames" :key="name" #[name]="scope">
-          <slot :name="name" v-bind="scope || {}"/>
-        </template>
-      </C7JsonTableColumn>
-    </el-table>
+    <!-- 桌面：表格 -->
+    <div v-if="!isMobile" class="c7-json-table__table-wrap">
+      <el-table
+          ref="tableRef"
+          v-loading="listLoading"
+          :data="tableRows"
+          :border="border"
+          :stripe="stripe"
+          :row-key="rowKey"
+          :lazy="lazy"
+          :load="load"
+          :tree-props="treeProps"
+          @selection-change="onSelectionChange"
+          @sort-change="onSortChange"
+      >
+        <el-table-column v-if="showSelection" type="selection" width="48" align="center"/>
+        <el-table-column v-if="showIndex" type="index" label="#" width="55" align="center"/>
+        <slot
+            v-if="$slots['table-columns']"
+            name="table-columns"
+            :table-columns="effectiveTableColumns"
+            :search-param="searchParam"
+            :selected-rows="selectedRows"
+            :refresh-data="refreshData"
+            :get-data-list="getDataList"
+        />
+        <C7JsonTableColumn v-else :columns="effectiveTableColumns" :empty-text="emptyText">
+          <template v-for="name in forwardedSlotNames" :key="name" #[name]="scope">
+            <slot :name="name" v-bind="scope || {}"/>
+          </template>
+        </C7JsonTableColumn>
+      </el-table>
+    </div>
+
+    <!-- 手机：卡片列表 -->
+    <div v-else v-loading="listLoading" class="c7-json-table__cards">
+      <div v-if="!tableRows.length" class="c7-json-table__cards-empty">暂无数据</div>
+      <div
+          v-for="(row, index) in tableRows"
+          :key="rowKeyOf(row) ?? index"
+          class="c7-json-table__card"
+          :class="{ 'is-selected': isRowSelected(row) }"
+      >
+        <div v-if="showSelection || cardTitleText(row)" class="c7-json-table__card-head">
+          <el-checkbox
+              v-if="showSelection"
+              :model-value="isRowSelected(row)"
+              @change="(v) => toggleCardRow(row, v)"
+          />
+          <div class="c7-json-table__card-title">{{ cardTitleText(row) }}</div>
+        </div>
+        <div class="c7-json-table__card-body">
+          <div
+              v-for="(col, cIdx) in cardBodyColumns"
+              :key="col.prop || col.slotName || cIdx"
+              class="c7-json-table__card-row"
+          >
+            <span class="c7-json-table__card-label">{{ col.label }}</span>
+            <div class="c7-json-table__card-value">
+              <C7DictTag
+                  v-if="resolveColType(col) === 'tag'"
+                  :model-value="row[col.prop]"
+                  :options="(col.options ?? col.dictList) ?? []"
+              />
+              <template v-else-if="resolveColType(col) === 'slot'">
+                <slot
+                    :name="String(col.slotName || col.prop || '')"
+                    :row="row"
+                    :$index="index"
+                    :column="col"
+                />
+              </template>
+              <span v-else>{{ formatCardCell(row, col) }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="cardActionColumns.length" class="c7-json-table__card-actions">
+          <template v-for="(col, aIdx) in cardActionColumns" :key="col.prop || col.slotName || aIdx">
+            <slot
+                :name="String(col.slotName || col.prop || '')"
+                :row="row"
+                :$index="index"
+                :column="col"
+            />
+          </template>
+        </div>
+      </div>
+    </div>
 
     <div class="c7-json-table__pagination">
       <C7Pagination
@@ -216,7 +279,7 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref, useSlots, watch} from 'vue'
+import {computed, onMounted, onUnmounted, reactive, ref, useSlots, watch} from 'vue'
 import {ElLoading, ElMessage, ElMessageBox} from 'element-plus'
 import {Delete, Download, Edit, Plus, Refresh, Search, Setting, Upload} from '@element-plus/icons-vue'
 import { cloneDeep, get } from '@/utils/object'
@@ -226,6 +289,7 @@ import C7Select from '../C7Select/index.vue'
 import C7DatePicker from '../C7DatePicker/index.vue'
 import C7ExcelDownload from '../C7ExcelDownload/index.vue'
 import C7ExcelUpload from '../C7ExcelUpload/index.vue'
+import C7DictTag from '../C7DictTag/index.vue'
 import {checkPermission} from '@/directive/permission/permissionUtils'
 import useUserStore from '@/store/modules/user'
 import {
@@ -511,6 +575,109 @@ const effectiveTableColumns = computed(() =>
     resolveEffectiveTableColumns(props.tableColumns, columnCheck),
 )
 
+const MOBILE_MQ = '(max-width: 767px)'
+const isMobile = ref(false)
+/** @type {MediaQueryList | null} */
+let mobileMql = null
+
+function syncMobileMode() {
+  isMobile.value = !!mobileMql?.matches
+}
+
+/**
+ * @param {Record<string, any>} col
+ */
+function resolveColType(col) {
+  const raw = col?.columnType
+  const t = raw == null || raw === '' ? 'text' : String(raw)
+  if (t === 'tag' || t === 'image' || t === 'link' || t === 'slot') return t
+  return 'text'
+}
+
+/**
+ * @param {Record<string, any>} col
+ */
+function isActionColumn(col) {
+  const name = String(col?.slotName || col?.prop || '')
+  return name === 'actions'
+}
+
+const cardFieldColumns = computed(() =>
+    (effectiveTableColumns.value || []).filter((c) => c && !isActionColumn(c)),
+)
+
+/** 卡片正文：第一列已作标题，从第二列起展示 */
+const cardBodyColumns = computed(() => cardFieldColumns.value.slice(1))
+
+const cardActionColumns = computed(() =>
+    (effectiveTableColumns.value || []).filter((c) => c && isActionColumn(c)),
+)
+
+/**
+ * @param {Record<string, any>} row
+ */
+function rowKeyOf(row) {
+  if (row == null) return undefined
+  return row[props.rowKey]
+}
+
+/**
+ * @param {Record<string, any>} row
+ */
+function isRowSelected(row) {
+  const key = rowKeyOf(row)
+  if (key == null) return false
+  return (selectedRows.value || []).some((r) => rowKeyOf(r) === key)
+}
+
+/**
+ * @param {Record<string, any>} row
+ * @param {boolean} checked
+ */
+function toggleCardRow(row, checked) {
+  const key = rowKeyOf(row)
+  if (key == null) return
+  if (checked) {
+    if (!isRowSelected(row)) {
+      selectedRows.value = [...(selectedRows.value || []), row]
+    }
+  } else {
+    selectedRows.value = (selectedRows.value || []).filter((r) => rowKeyOf(r) !== key)
+  }
+  emit('selection-change', selectedRows.value)
+}
+
+/**
+ * @param {Record<string, any>} row
+ */
+function cardTitleText(row) {
+  const first = cardFieldColumns.value[0]
+  if (!first?.prop) return ''
+  const v = row?.[first.prop]
+  if (v == null || v === '') return ''
+  return String(v)
+}
+
+/**
+ * @param {Record<string, any>} row
+ * @param {Record<string, any>} col
+ */
+function formatCardCell(row, col) {
+  if (!col?.prop) return props.emptyText ?? '-'
+  const v = row?.[col.prop]
+  if (v == null || v === '') return props.emptyText ?? '-'
+  if (typeof col.formatter === 'function') {
+    try {
+      const formatted = col.formatter(row, col, v, 0)
+      if (formatted == null || formatted === '') return props.emptyText ?? '-'
+      return formatted
+    } catch {
+      // fall through
+    }
+  }
+  return String(v)
+}
+
 function buildListParams() {
   return buildListRequest({
     current: currentPage.value,
@@ -603,17 +770,42 @@ function onSortChange(evt) {
   return fetchList()
 }
 
-async function handleBatchDelete() {
-  const rows = selectedRows.value
-  if (!rows.length) return
+/**
+ * 删除指定行（或 id 列表）：确认框 → {@code deleteFunction} → 刷新。
+ * 供工具栏批量删除与行内操作共用。
+ *
+ * @param {Record<string, any>|Array<Record<string, any>>|Array<string|number>|string|number} rowsOrIds
+ * @param {{ confirmMessage?: string }} [options]
+ */
+async function removeRows(rowsOrIds, options = {}) {
+  if (rowsOrIds == null) return
   const key = props.rowKey
-  const ids = rows.map((r) => r[key]).filter((v) => v != null)
+  const list = Array.isArray(rowsOrIds) ? rowsOrIds : [rowsOrIds]
+  if (!list.length) return
+
+  /** @type {Array<Record<string, any>>} */
+  const rows = []
+  /** @type {Array<string|number>} */
+  const ids = []
+  for (const item of list) {
+    if (item != null && typeof item === 'object') {
+      const id = item[key]
+      if (id == null) continue
+      rows.push(item)
+      ids.push(id)
+    } else if (item != null && item !== '') {
+      ids.push(item)
+    }
+  }
+  if (!ids.length) return
+
   if (typeof props.beforeDelete === 'function') {
     const ok = await props.beforeDelete(ids, rows)
     if (ok === false) return
   }
+  const message = options.confirmMessage || props.deleteConfirmMessage
   try {
-    await ElMessageBox.confirm(props.deleteConfirmMessage, '提示', {
+    await ElMessageBox.confirm(message, '提示', {
       type: 'warning',
       confirmButtonText: '确定',
       cancelButtonText: '取消',
@@ -640,6 +832,10 @@ async function handleBatchDelete() {
   } catch (e) {
     emit('fetch-error', e)
   }
+}
+
+async function handleBatchDelete() {
+  return removeRows(selectedRows.value)
 }
 
 /**
@@ -737,15 +933,36 @@ watch(
 )
 
 onMounted(() => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    mobileMql = window.matchMedia(MOBILE_MQ)
+    syncMobileMode()
+    if (typeof mobileMql.addEventListener === 'function') {
+      mobileMql.addEventListener('change', syncMobileMode)
+    } else if (typeof mobileMql.addListener === 'function') {
+      mobileMql.addListener(syncMobileMode)
+    }
+  }
   initSearchParam()
   syncColumnCheckFromStorage()
   emit('update:searchParam', {...searchParam})
   fetchList()
 })
 
+onUnmounted(() => {
+  if (!mobileMql) return
+  if (typeof mobileMql.removeEventListener === 'function') {
+    mobileMql.removeEventListener('change', syncMobileMode)
+  } else if (typeof mobileMql.removeListener === 'function') {
+    mobileMql.removeListener(syncMobileMode)
+  }
+  mobileMql = null
+})
+
 defineExpose({
   refreshData,
   getDataList,
+  /** 删除行/批量删除：确认 + deleteFunction + 刷新 */
+  removeRows,
   selectedRows,
   searchParam,
   currentPage,
@@ -758,33 +975,216 @@ defineExpose({
 <style scoped>
 .c7-json-table {
   position: relative;
+  min-width: 0;
 }
 
 .c7-json-table__search {
   margin-bottom: 12px;
 }
 
+.c7-json-table__search :deep(.el-form-item__content) {
+  min-width: 0;
+}
+
 .c7-json-table__search :deep(.el-select),
-.c7-json-table__search :deep(.el-date-editor) {
-  min-width: 180px;
+.c7-json-table__search :deep(.el-date-editor),
+.c7-json-table__search :deep(.el-input) {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .c7-json-table__search :deep(.el-select),
+  .c7-json-table__search :deep(.el-date-editor) {
+    min-width: 160px;
+  }
+}
+
+.c7-json-table__search-actions :deep(.el-form-item__content) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.c7-json-table__search-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .c7-json-table__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
-.c7-json-table__toolbar .el-button + .el-button {
-  margin-left: 8px;
+.c7-json-table__toolbar-left,
+.c7-json-table__toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.c7-json-table__toolbar-right {
+  margin-left: auto;
+}
+
+.c7-json-table__toolbar :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+.c7-json-table__table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.c7-json-table__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 80px;
+}
+
+.c7-json-table__cards-empty {
+  padding: 32px 12px;
+  text-align: center;
+  color: #909399;
+  font-size: 14px;
+  background: #fff;
+  border: 1px dashed #e4e7ed;
+  border-radius: 8px;
+}
+
+.c7-json-table__card {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.c7-json-table__card.is-selected {
+  border-color: var(--el-color-primary-light-5);
+  background: var(--el-color-primary-light-9);
+}
+
+.c7-json-table__card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.c7-json-table__card-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  word-break: break-all;
+}
+
+.c7-json-table__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.c7-json-table__card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.c7-json-table__card-label {
+  flex: 0 0 72px;
+  color: #909399;
+}
+
+.c7-json-table__card-value {
+  flex: 1;
+  min-width: 0;
+  color: #303133;
+  word-break: break-all;
+}
+
+.c7-json-table__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f2f5;
+  justify-content: flex-end;
 }
 
 .c7-json-table__pagination {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .c7-json-table__col-setting-row {
   padding: 6px 0;
+}
+
+.c7-json-table__search--mobile :deep(.el-form-item) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.c7-json-table__search--mobile :deep(.el-form-item__label) {
+  flex: 0 0 88px !important;
+  width: 88px !important;
+  max-width: 88px !important;
+  height: auto !important;
+  line-height: 32px !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding: 0 8px 0 0 !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+.c7-json-table__search--mobile :deep(.el-form-item__content) {
+  flex: 1 1 auto;
+  margin-left: 0 !important;
+  min-width: 0;
+  width: auto !important;
+}
+
+.c7-json-table__search--mobile .c7-json-table__search-actions :deep(.el-form-item__label) {
+  display: none;
+}
+
+.c7-json-table__search--mobile .c7-json-table__search-actions :deep(.el-form-item__content) {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .c7-json-table__toolbar-left,
+  .c7-json-table__toolbar-right {
+    width: 100%;
+  }
+
+  .c7-json-table__toolbar-right {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .c7-json-table__pagination {
+    justify-content: center;
+  }
 }
 </style>
 

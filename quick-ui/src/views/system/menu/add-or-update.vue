@@ -374,23 +374,13 @@ function onParentChange(parentId) {
   applyParentMenuType(node?.menuType)
 }
 
-function stringifyTreeIds(nodes) {
-  if (!Array.isArray(nodes)) {
-    return []
-  }
-  return nodes.map((node) => ({
-    ...node,
-    id: node?.id == null ? node.id : String(node.id),
-    children: stringifyTreeIds(node.children)
-  }))
-}
-
 function loadTree() {
   treeselectMenu().then((res) => {
+    // Long 已由后端序列化为 string
     treeData.value = [{
       id: ROOT,
       name: '主类目',
-      children: stringifyTreeIds(res.data || [])
+      children: res.data || []
     }]
   })
 }
@@ -398,7 +388,7 @@ function loadTree() {
 function fillForm(row) {
   Object.assign(form, emptyForm(), {
     id: row.id ?? row.menuId,
-    parentId: row.parentId == null ? ROOT : String(row.parentId),
+    parentId: row.parentId == null ? ROOT : row.parentId,
     menuName: row.menuName ?? '',
     menuType: row.menuType || 'C',
     path: row.path ?? '',
@@ -427,7 +417,7 @@ function open(payload = {}) {
   loadTree()
   const parentId = payload.parentId
   if (parentId != null) {
-    form.parentId = String(parentId)
+    form.parentId = parentId
   }
   const id = payload.menuId ?? payload.id
   if (id != null && id !== '') {

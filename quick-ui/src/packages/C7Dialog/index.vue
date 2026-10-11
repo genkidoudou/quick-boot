@@ -1,8 +1,8 @@
 <template>
   <el-dialog
-      v-if="mode === 'dialog'"
+      v-if="effectiveMode === 'dialog'"
       class="c7-dialog"
-      :class="attrs.class"
+      :class="[attrs.class, { 'c7-dialog--mobile': isMobile }]"
       :style="attrs.style"
       :model-value="isOpen"
       v-bind="dialogShellAttrs"
@@ -35,7 +35,7 @@
   <el-drawer
       v-else
       class="c7-dialog c7-dialog--drawer"
-      :class="attrs.class"
+      :class="[attrs.class, { 'c7-dialog--mobile': isMobile }]"
       :style="attrs.style"
       :model-value="isOpen"
       v-bind="drawerShellAttrs"
@@ -45,7 +45,9 @@
     <template v-if="slots.title" #header>
       <slot name="title"/>
     </template>
-    <slot/>
+    <div class="c7-dialog__drawer-body">
+      <slot/>
+    </div>
     <template v-if="footerSectionVisible" #footer>
       <slot v-if="slots.footer" name="footer"/>
       <div v-else class="c7-dialog__footer-default">
@@ -68,7 +70,7 @@
 </template>
 
 <script setup>
-import {computed, onBeforeUnmount, ref, useAttrs, useSlots, watch} from 'vue'
+import {computed, onBeforeUnmount, onMounted, onUnmounted, ref, useAttrs, useSlots, watch} from 'vue'
 import {resolveDialogOpen} from '../support/c7DialogSupport.js'
 
 defineOptions({name: 'C7Dialog', inheritAttrs: false})
@@ -125,6 +127,17 @@ const props = defineProps({
   width: {type: [String, Number], default: '520px'},
   /** Drawer 尺寸，对齐 `ElDrawer.size` */
   size: {type: [String, Number], default: undefined},
+  /**
+   * 窄屏（≤767px）且 `mode=dialog` 时的呈现：
+   * - `drawer`：底部抽屉（默认，更适合 H5 表单）
+   * - `fullscreen`：全屏 Dialog
+   * - `off`：保持桌面 Dialog，仅做宽度/表单样式收敛
+   */
+  mobileMode: {
+    type: String,
+    default: 'drawer',
+    validator: (v) => ['drawer', 'fullscreen', 'off'].includes(v),
+  },
   /** 合并进壳层；键冲突时优先于内部默认、弱于根组件上的非监听透传 */
   modalProps: {type: Object, default: () => ({})},
 })
@@ -148,9 +161,26 @@ const internalConfirmLoading = ref(false)
 /** 每个「打开周期」至多提示一次双源不一致 */
 const mismatchWarnedForCycle = ref(false)
 
+const MOBILE_MQ = '(max-width: 767px)'
+const isMobile = ref(false)
+/** @type {MediaQueryList | null} */
+let mobileMql = null
+
+function syncMobileMode() {
+  isMobile.value = !!mobileMql?.matches
+}
+
 const isOpen = computed(() => resolveDialogOpen(props.modelValue, props.visible))
 
 const footerSectionVisible = computed(() => Boolean(slots.footer) || props.footer)
+
+/** 窄屏下 dialog 可自动切为底部抽屉 */
+const effectiveMode = computed(() => {
+  if (isMobile.value && props.mode === 'dialog' && props.mobileMode === 'drawer') {
+    return 'drawer'
+  }
+  return props.mode
+})
 
 watch(
     () => [props.modelValue, props.visible, isOpen.value],
@@ -205,23 +235,38 @@ const forwardedShellListeners = computed(() => {
 })
 
 const dialogShellAttrs = computed(() => {
+  const mobileFullscreen = isMobile.value && props.mobileMode === 'fullscreen'
   const base = {
     title: slots.title ? undefined : props.title,
-    width: props.width,
+    width: isMobile.value ? '100%' : props.width,
+    fullscreen: mobileFullscreen,
     appendToBody: true,
+    alignCenter: !isMobile.value,
     ...props.modalProps,
     ...inheritedBindOnly.value,
+  }
+  if (isMobile.value && props.mobileMode !== 'fullscreen') {
+    base.width = '100%'
   }
   return base
 })
 
 const drawerShellAttrs = computed(() => {
+  const asMobileFormDrawer =
+      isMobile.value && props.mode === 'dialog' && props.mobileMode === 'drawer'
   const base = {
     /** 有 `#title` 插槽时交给插槽，否则走 `ElDrawer` 的 `title` 文案 */
     title: slots.title ? undefined : props.title,
-    size: props.size,
+    size: asMobileFormDrawer ? '92%' : props.size,
+    direction: asMobileFormDrawer ? 'btt' : undefined,
+    appendToBody: true,
     ...props.modalProps,
     ...inheritedBindOnly.value,
+  }
+  if (asMobileFormDrawer) {
+    // 允许 modalProps 覆盖，但缺省必须是底部大抽屉
+    if (base.direction == null) base.direction = 'btt'
+    if (base.size == null || base.size === props.size) base.size = '92%'
   }
   return base
 })
@@ -265,6 +310,28 @@ async function onConfirmBtnClick() {
   emit('submit')
 }
 
+onMounted(() => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    mobileMql = window.matchMedia(MOBILE_MQ)
+    syncMobileMode()
+    if (typeof mobileMql.addEventListener === 'function') {
+      mobileMql.addEventListener('change', syncMobileMode)
+    } else if (typeof mobileMql.addListener === 'function') {
+      mobileMql.addListener(syncMobileMode)
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (!mobileMql) return
+  if (typeof mobileMql.removeEventListener === 'function') {
+    mobileMql.removeEventListener('change', syncMobileMode)
+  } else if (typeof mobileMql.removeListener === 'function') {
+    mobileMql.removeListener(syncMobileMode)
+  }
+  mobileMql = null
+})
+
 onBeforeUnmount(() => {
   if (isOpen.value) {
     emitClose()
@@ -292,4 +359,113 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
+.c7-dialog__drawer-body {
+  min-height: 0;
+}
+</style>
+
+<!-- append-to-body 后用全局样式保证 H5 表单可读 -->
+<style lang="scss">
+@media (max-width: 767px) {
+  .c7-dialog.el-dialog:not(.is-fullscreen) {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px);
+    margin: 8px auto !important;
+  }
+
+  .c7-dialog.el-dialog .el-dialog__body,
+  .c7-dialog.el-drawer .el-drawer__body {
+    padding: 12px 16px;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .c7-dialog--drawer.el-drawer.btt,
+  .c7-dialog--drawer.el-drawer.rtl,
+  .c7-dialog--drawer.el-drawer.ltr {
+    border-radius: 12px 12px 0 0;
+  }
+
+  .c7-dialog--drawer .el-drawer__header {
+    margin-bottom: 0;
+    padding: 14px 16px 10px;
+  }
+
+  .c7-dialog--drawer .el-drawer__footer {
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #ebeef5;
+  }
+
+  /* 窄屏：标签与控件同一行，标签左对齐（覆盖 EP 默认右对齐） */
+  .c7-dialog .el-form-item {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .c7-dialog .el-form-item__label {
+    flex: 0 0 88px !important;
+    width: 88px !important;
+    max-width: 88px !important;
+    height: auto !important;
+    line-height: 32px !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding: 0 8px 0 0 !important;
+    margin-bottom: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .c7-dialog .el-form-item__label-wrap {
+    margin-left: 0 !important;
+  }
+
+  .c7-dialog .el-form-item__content {
+    flex: 1 1 auto;
+    margin-left: 0 !important;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .c7-dialog .el-input,
+  .c7-dialog .el-select,
+  .c7-dialog .el-textarea,
+  .c7-dialog .el-date-editor,
+  .c7-dialog .el-cascader,
+  .c7-dialog .el-tree-select {
+    width: 100%;
+  }
+
+  .c7-dialog .el-input__wrapper,
+  .c7-dialog .el-textarea__inner {
+    font-size: 16px; /* 避免 iOS 聚焦放大 */
+  }
+
+  .c7-dialog .c7-dialog__footer-default {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .c7-dialog .c7-dialog__footer-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .c7-dialog .c7-dialog__footer-actions .el-button {
+    flex: 1;
+    margin: 0;
+  }
+
+  .c7-dialog .el-radio-group,
+  .c7-dialog .c7-radio {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+}
 </style>

@@ -1,6 +1,6 @@
 /**
  * Web 启动与接入层 Modulith 应用模块。
- * <p>可依赖 common / core / system；禁止引用 {@code system.internal.**}（见 ModulithArchitectureTest）。
+ * <p>可依赖 common / core / system；禁止引用各业务模块 {@code internal.**}（见 ModulithArchitectureTest）。
  */
 @org.springframework.modulith.ApplicationModule(
   displayName = "web",

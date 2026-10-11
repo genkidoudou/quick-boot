@@ -748,6 +748,7 @@ public class {Name}ServiceImpl extends ServiceImpl<{Name}Mapper, {Name}>
 6. Controller：`@SaCheckPermission`（list/query/add/edit/remove）；`add`/`update` 有 `@Idempotent`
 7. ServiceImpl：`saveVo`/`updateVoById` 有 `@Transactional(rollbackFor = Exception.class)`
 8. 迁移含 `sys_menu`（C + F×4）；字典列已问枚举并写 `sys_dict_type`/`sys_dict_data`
+9. 前端：按 [frontend.md](frontend.md)，对齐仓库 `views/system/dict/type/index.vue`（`:on-confirm`、`computed` 列、`#actions`、`useDict`）
 
 ### 关联表
 

@@ -20,5 +20,6 @@ CREATE TABLE `sys_oper_log` (
   `oper_time` datetime DEFAULT NULL COMMENT '操作时间',
   `cost_time` bigint DEFAULT NULL COMMENT '耗时',
   `trace_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '链路id',
+  `del_flag` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除(0:正常,1:删除)',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';

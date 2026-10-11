@@ -24,7 +24,7 @@
         :key="child.path + index"
         :is-nest="true"
         :item="child"
-        :base-path="getNormalPath(props.basePath + '/' + child.path)"
+        :base-path="resolveNestBasePath(child.path)"
         class="nest-menu"
       />
     </el-sub-menu>
@@ -89,21 +89,41 @@ function hasOneShowingChild(children = [], parent) {
   return false
 }
 
-/** 拼接 basePath 与路由 path，内嵌 iframe（meta.link）须走 router-link */
+/**
+ * 嵌套子项的 basePath：外链 path 不可与父 path 拼接，否则会变成 /sys/https://...
+ */
+function resolveNestBasePath(childPath) {
+  if (isExternal(childPath)) {
+    return childPath
+  }
+  if (isExternal(props.basePath)) {
+    return props.basePath
+  }
+  return getNormalPath(`${props.basePath}/${childPath}`)
+}
+
+/** 拼接 basePath 与路由 path；http(s) 外链原样返回供新标签打开 */
 function resolvePath(routePath, routeQuery, routeMeta) {
-  const path = isExternal(routePath)
+  let path = isExternal(routePath)
     ? routePath
     : isExternal(props.basePath)
       ? props.basePath
-      : getNormalPath(props.basePath + '/' + routePath)
+      : getNormalPath(`${props.basePath}/${routePath}`)
 
-  // 内嵌 iframe（meta.link）：须走 router-link，不能因 path 含 http 被当成新标签页外链
+  // 纠正 `/https://...` 这种被拼坏的地址
+  if (/^\/+https?:/i.test(path)) {
+    path = path.replace(/^\/+/, '')
+  }
+
+  // 新标签外链：直接返回完整 URL
+  if (isExternal(path)) {
+    return path
+  }
+
+  // 内嵌 iframe（meta.link + 非 http path）走站内路由
   if (routeMeta?.link) {
     const query = parseRouteQuery(routeQuery)
     return query ? { path, query } : path
-  }
-  if (isExternal(routePath) || isExternal(props.basePath)) {
-    return path
   }
   const query = parseRouteQuery(routeQuery)
   return query ? { path, query } : path

@@ -8,7 +8,7 @@ description: >-
 
 为本仓库生成管理端业务代码。先收成字段表，再按同一条链写出后端、SQL、权限和管理端页面。`quick-h5` 不在本技能范围内。同步库表 DDL / 字典不在本技能范围内，见 [db_syn](../db_syn/SKILL.md)。
 
-生成前先读本仓库里最近的同类实现，再写代码。**后端以 `SysUser` 为权威参考（分层骨架），落文件必须按 [templates.md](templates.md) 模板替换占位符生成。** 权限 / 防重 / 事务 / 菜单与字典 SQL 以 [backend.md](backend.md) 与 templates 为准。类注释、注解和分层以现有代码为准；契约见下文。
+生成前先读本仓库里最近的同类实现，再写代码。**后端以 `SysUser` 为权威参考（分层骨架），落文件必须按 [templates.md](templates.md) 模板替换占位符生成。** 权限 / 防重 / 事务 / 菜单与字典 SQL 以 [backend.md](backend.md) 与 templates 为准。**前端以 `quick-ui/src/views/system/dict/type/index.vue` 为权威参考（通用 CRUD 骨架），按 [frontend.md](frontend.md) 生成；不要抄字典专属的便捷添加 / 跳转数据逻辑。** 类注释、注解和分层以现有代码为准；契约见下文。
 
 ## 先读哪份参考
 
@@ -16,7 +16,7 @@ description: >-
 |---|---|
 | 任何一次生成 | 本文件的字段表与契约 |
 | 写 Java / SQL | [backend.md](backend.md) + **完整模板 [templates.md](templates.md)** + 仓库 `SysUser*` |
-| 写 quick-ui | [frontend.md](frontend.md) |
+| 写 quick-ui | [frontend.md](frontend.md) + 仓库 **`views/system/dict/type/index.vue`**（必读） |
 | 新建 Maven 模块 | [module.md](module.md) |
 | 从库同步 DDL 或字典 | [db_syn](../db_syn/SKILL.md) |
 
@@ -80,8 +80,8 @@ description: >-
 4. **关联表：** 只按 templates §8 生成 Entity + Mapper + 绑定 Service；**不生成 Vo / Controller / 前端 / api / 菜单 / 字典 SQL**。
 5. 仅跨模块业务能力时再写 `api.api` + `api.vo` + ApiImpl（模板 §7）。
 6. Flyway SQL：建表 →（问完后的）字典 INSERT → **必写** `sys_menu` INSERT（C + F×5）。关联表跳过本步。
-7. 业务表再写 quick-ui；关联表跳过。
-8. 对照契约与检查清单自检。
+7. 业务表再写 quick-ui（先读 dict/type 页面再按 frontend.md 落文件）；关联表跳过。
+8. 对照契约与检查清单自检（含前端：`:on-confirm`、`computed` 列、`#actions`、`useDict`）。
 
 ## 契约
 
@@ -110,3 +110,4 @@ description: >-
 - 未要求跨模块时无无用 `api`。
 - 缺审计列的关联表 Entity 不继承 `BaseEntity`。
 - 新模块接线完整；业务表菜单路径与 `component` 正确。
+- **前端（业务表）：** 对齐 `dict/type` 骨架；`C7Dialog` 用 `:on-confirm`；`tableColumns`/`searchColumns` 为 `computed`；有 `#actions` + `handleDelete`；字典用 `useDict`；`defineOptions({ name })` 已写。

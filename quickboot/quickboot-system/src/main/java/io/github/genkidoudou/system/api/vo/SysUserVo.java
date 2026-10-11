@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 系统用户视图对象（对外暴露，供登录等跨模块场景使用）。
@@ -25,38 +26,56 @@ public class SysUserVo extends BaseEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 主键 ID。 */
+    /**
+     * 主键 ID。
+     */
     @NotNull(message = "用户ID不能为空", groups = UpdateGroup.class)
     private Long id;
 
-    /** 摘要。 */
+    /**
+     * 摘要。
+     */
     private String digest;
 
-    /** 部门 ID。 */
+    /**
+     * 部门 ID。
+     */
     private Long deptId;
 
-    /** 用户名。 */
+    /**
+     * 用户名。
+     */
     @NotBlank(message = "用户名不能为空", groups = {AddGroup.class, UpdateGroup.class})
     @Pattern(regexp = PatternConstants.USER_NAME, message = "用户名须大于6位且仅为字母或数字",
             groups = {AddGroup.class, UpdateGroup.class})
     private String userName;
 
-    /** 昵称。 */
+    /**
+     * 昵称。
+     */
     @NotBlank(message = "昵称不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private String nickName;
 
-    /** 用户类型(user_type)。 */
+    /**
+     * 用户类型(user_type)。
+     */
     private String userType;
 
-    /** 邮箱。 */
+    /**
+     * 邮箱。
+     */
     @Email
     private String email;
 
-    /** 手机号码。 */
+    /**
+     * 手机号码。
+     */
     @Pattern(regexp = PatternConstants.PHONE, message = "手机号格式不正确")
     private String phonenumber;
 
-    /** 性别(sex)。 */
+    /**
+     * 性别(sex)。
+     */
     private String sex;
 
     /**
@@ -69,6 +88,16 @@ public class SysUserVo extends BaseEntity implements Serializable {
             groups = AddGroup.class)
     private String password;
 
-    /** 用户状态(user_status)。 */
+    /**
+     * 用户状态(user_status)。
+     */
     private String status;
+
+    /**
+     * 角色id集合
+     *
+     * @since 2026/10/11
+     */
+
+    private List<Long> roleIds;
 }

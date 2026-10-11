@@ -1,4 +1,4 @@
-CREATE TABLE `sus_role` (
+CREATE TABLE `sys_role` (
   `id` bigint NOT NULL COMMENT '主键id',
   `create_by` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',

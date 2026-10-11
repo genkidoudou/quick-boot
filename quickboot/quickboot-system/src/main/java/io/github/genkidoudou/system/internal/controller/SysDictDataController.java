@@ -71,7 +71,7 @@ public class SysDictDataController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:dictData:add")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("add")
     public R<Void> add(@RequestBody @Validated(AddGroup.class) SysDictDataVo body) {
         sysDictDataService.saveVo(body);
@@ -84,7 +84,7 @@ public class SysDictDataController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:dictData:edit")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("update")
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) SysDictDataVo body) {
         sysDictDataService.updateVoById(body);

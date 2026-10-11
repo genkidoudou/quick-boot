@@ -44,6 +44,7 @@ defineOptions({name: 'C7Select', inheritAttrs: false})
  * C7 业务下拉：在 `ElSelect` 上统一静态/异步/远程选项加载与多选 `separator` 对外格式。
  *
  * **静态来源**：`dataList` 与 `options` 为别名语义；**同时存在时 `dataList` 优先**（见 props 说明）。
+ * **字段映射**：`labelKey` / `valueKey`（点路径，默认 `label` / `value`），对齐 `C7Radio`；未命中时 label 降级 `text` → `String(value)`。
  * **远程**：首次展开下拉触发 **不含 `query` 键** 的 `fetchData`；输入关键字经防抖后触发 `{ ...fetchParams, query }`。
  * **多选 + `separator`**：对外 `v-model` / `change` 为逗号分隔字符串，空为 `''`；对内始终数组。外部逗号字符串会解析为数组；
  * 若部分 value 不在当前选项中，**不静默删除**（保留策略）。
@@ -63,6 +64,8 @@ const RESERVED_ATTR_KEYS = new Set([
   'fetchParams',
   'resultKey',
   'dataFormatter',
+  'labelKey',
+  'valueKey',
   'autoLoad',
   'reloadOnClear',
   'separator',
@@ -92,6 +95,10 @@ const props = defineProps({
    * @returns {Array}
    */
   dataFormatter: {type: Function, default: undefined},
+  /** 从行对象取展示文案的点路径，默认 `label` */
+  labelKey: {type: String, default: 'label'},
+  /** 从行对象取选项值的点路径，默认 `value`；常用 `id` */
+  valueKey: {type: String, default: 'value'},
   /** `remote` 为 false 时，挂载后自动 `fetchData` 一次（无 `query`）；若已配置静态 `dataList`/`options` 则跳过以避免无意义请求 */
   autoLoad: {type: Boolean, default: false},
   /** 是否远程搜索模式（映射到 `ElSelect` 的 `remote`） */
@@ -179,19 +186,36 @@ function normalizeOptionRows(rows) {
 
 /**
  * @param {Record<string, *>} row
+ */
+function getOptionValue(row) {
+  if (row == null || typeof row !== 'object') return undefined
+  const fromKey = get(row, props.valueKey)
+  if (fromKey !== undefined && fromKey !== null) return fromKey
+  // 默认 valueKey=value 未命中时，兼容常见 id
+  if (props.valueKey === 'value' && row.id !== undefined && row.id !== null) return row.id
+  return undefined
+}
+
+/**
+ * @param {Record<string, *>} row
+ */
+function getOptionLabel(row) {
+  if (row == null || typeof row !== 'object') return ''
+  const fromKey = get(row, props.labelKey)
+  if (fromKey !== undefined && fromKey !== null && String(fromKey).length > 0) return fromKey
+  if (props.labelKey !== 'label' && row.label != null && String(row.label).length > 0) return row.label
+  if (row.text != null && String(row.text).length > 0) return row.text
+  const v = getOptionValue(row)
+  return v === undefined || v === null ? '' : String(v)
+}
+
+/**
+ * @param {Record<string, *>} row
  * @param {number} idx
  */
 function optionRowKey(row, idx) {
-  const v = row?.value ?? row?.id
+  const v = getOptionValue(row)
   return v !== undefined && v !== null ? String(v) : `i-${idx}`
-}
-
-function getOptionLabel(row) {
-  return row?.label ?? row?.text ?? String(row?.value ?? '')
-}
-
-function getOptionValue(row) {
-  return row?.value
 }
 
 /**

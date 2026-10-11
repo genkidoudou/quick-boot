@@ -63,7 +63,7 @@ public class SysDictTypeController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:dictType:add")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("add")
     public R<Void> add(@RequestBody @Validated(AddGroup.class) SysDictTypeVo body) {
         sysDictTypeService.saveVo(body);
@@ -88,7 +88,7 @@ public class SysDictTypeController {
      * @param body 类型 + 项
      */
     @SaCheckPermission("system:dictType:add")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("quickAdd")
     public R<Void> quickAdd(@RequestBody SysDictQuickVo body) {
         sysDictTypeService.quickSave(body);
@@ -101,7 +101,7 @@ public class SysDictTypeController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:dictType:edit")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("update")
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) SysDictTypeVo body) {
         sysDictTypeService.updateVoById(body);
@@ -156,7 +156,7 @@ public class SysDictTypeController {
      */
 
     @SaCheckPermission("system:dictType:import")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("importExcel")
     public R<ExcelResult<SysDictTypeVo>> importExcel(@RequestParam("file") MultipartFile file, @RequestParam(value = "updateSupport", defaultValue = "false")
     boolean updateSupport) throws IOException {

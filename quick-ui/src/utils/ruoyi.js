@@ -119,7 +119,9 @@ export function addDateRange(params, dateRange, propName) {
 }
 
 /**
- * 树 node-key 用 ID：雪花 ID 保持 string，避免 JS Number 精度丢失导致误勾选。
+ * 树 node-key 用 ID 规范化。
+ * <p>后端 Jackson 已将 Long 序列化为 string；此方法主要用于勾选 id 列表去噪，
+ * 以及兼容偶发 number / 空白。接口树数据一般无需再整树转换。
  * @param {string|number|null|undefined} id
  * @returns {string|number|null|undefined}
  */
@@ -129,6 +131,7 @@ export function stringifyTreeId(id) {
 }
 
 /**
+ * 勾选 id 列表规范化（去空、去 0/-1）。
  * @param {Array<string|number|null|undefined>} ids
  * @returns {string[]}
  */
@@ -140,7 +143,7 @@ export function stringifyTreeIds(ids) {
 }
 
 /**
- * 规范菜单权限树节点 id（与 el-tree node-key 一致，一律 string）。
+ * @deprecated 后端 Long 已转 string，新代码直接用接口树即可；保留供旧调用兼容。
  * @param {Array<Record<string, unknown>>} nodes
  */
 export function normalizeMenuTreeNodes(nodes) {

@@ -64,7 +64,7 @@ public class SysMenuController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:menu:add")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("add")
     public R<Void> add(@RequestBody @Validated(AddGroup.class) SysMenuVo body) {
         sysMenuService.saveVo(body);
@@ -77,7 +77,7 @@ public class SysMenuController {
      * @param body 菜单与按钮
      */
     @SaCheckPermission("system:menu:add")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("batch")
     public R<Void> batch(@RequestBody @Validated(AddGroup.class) SysMenuBatchRequestVo body) {
         sysMenuService.saveMenuWithButtons(body.getMenu(), body.getButtons());
@@ -102,7 +102,7 @@ public class SysMenuController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:menu:edit")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("update")
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) SysMenuVo body) {
         sysMenuService.updateVoById(body);

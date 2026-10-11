@@ -1,11 +1,9 @@
 /**
  * 系统菜单 API，对齐后端 `/sys/menu`。
  */
-import { createCrudApi } from '@/api/_factory/createCrudApi'
 import request from '@/utils/request'
 
 const BASE = '/sys/menu'
-const crud = createCrudApi(BASE)
 
 /**
  * 菜单树。后端 `POST /sys/menu/page` 按条件返回树，不是分页。
@@ -27,9 +25,40 @@ export function treeselectMenu(params) {
   return listMenu(params)
 }
 
-export const getMenu = crud.get
-export const addMenu = crud.add
-export const updateMenu = crud.update
+/**
+ * 详情。
+ * @param {string|number} id
+ */
+export function getMenu(id) {
+  return request({
+    url: `${BASE}/${id}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 新增。
+ * @param {Record<string, any>} data
+ */
+export function addMenu(data) {
+  return request({
+    url: `${BASE}/add`,
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 修改。
+ * @param {Record<string, any>} data
+ */
+export function updateMenu(data) {
+  return request({
+    url: `${BASE}/update`,
+    method: 'post',
+    data
+  })
+}
 
 /**
  * 删除。页面传入单个 id，后端 `remove` 要 id 数组。
@@ -37,7 +66,11 @@ export const updateMenu = crud.update
  */
 export function delMenu(id) {
   const ids = id == null ? [] : Array.isArray(id) ? id : [id]
-  return crud.remove(ids)
+  return request({
+    url: `${BASE}/remove`,
+    method: 'post',
+    data: ids
+  })
 }
 
 /**

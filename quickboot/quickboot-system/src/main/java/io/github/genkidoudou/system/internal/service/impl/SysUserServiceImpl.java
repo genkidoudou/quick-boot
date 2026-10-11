@@ -11,7 +11,9 @@ import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.entity.SysUser;
 import io.github.genkidoudou.system.internal.mapper.SysUserMapper;
+import io.github.genkidoudou.system.internal.service.ISysRoleService;
 import io.github.genkidoudou.system.internal.service.ISysUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +22,12 @@ import java.util.List;
 /**
  * 系统用户服务实现。
  */
+@RequiredArgsConstructor
 @Service
 public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser, SysUserVo>
         implements ISysUserService {
+
+    private final ISysRoleService sysRoleService;
 
     /**
      * 按查询条件组装 Wrapper。
@@ -58,6 +63,10 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         if (vo == null) {
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "用户不存在");
         }
+
+        // 查询关联的角色
+        List<Long> roleIds = sysRoleService.listRoleByUserId(id);
+        vo.setRoleIds(roleIds);
         return vo;
     }
 
@@ -71,7 +80,11 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
     @Transactional(rollbackFor = Exception.class)
     public SysUser saveVo(SysUserVo sysUserVo) {
         encodePassword(sysUserVo);
-        return super.saveVo(sysUserVo);
+        SysUser sysUser = super.saveVo(sysUserVo);
+        List<Long> roleIds =
+                sysUserVo.getRoleIds();
+        sysRoleService.bindUserRole(sysUser.getId(), roleIds);
+        return sysUser;
     }
 
     /**
@@ -88,6 +101,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         } else {
             encodePassword(sysUserVo);
         }
+        sysRoleService.bindUserRole(sysUserVo.getId(), sysUserVo.getRoleIds());
         return super.updateVoById(sysUserVo);
     }
 
@@ -99,6 +113,8 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+        sysRoleService.deleteBindRole(ids);
+
     }
 
     /**

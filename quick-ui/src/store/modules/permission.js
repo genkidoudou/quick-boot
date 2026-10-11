@@ -165,15 +165,24 @@ function isLayoutRoute(route) {
  * 若依菜单中「目录 + 多级菜单」经此处理后变为一级 children 列表。
  */
 function joinRoutePath(parentPath, childPath) {
-  const parent = String(parentPath || '').replace(/^\/+|\/+$/g, '')
-  const child = String(childPath || '').replace(/^\/+|\/+$/g, '')
-  if (!parent) {
+  const parent = String(parentPath || '')
+  const child = String(childPath || '')
+  // 外链保持原样，禁止拼成 sys/https://example.com
+  if (/^(https?:|mailto:|tel:)/.test(child)) {
     return child
   }
-  if (!child) {
+  if (/^(https?:|mailto:|tel:)/.test(parent)) {
     return parent
   }
-  return `${parent}/${child}`
+  const parentNorm = parent.replace(/^\/+|\/+$/g, '')
+  const childNorm = child.replace(/^\/+|\/+$/g, '')
+  if (!parentNorm) {
+    return childNorm
+  }
+  if (!childNorm) {
+    return parentNorm
+  }
+  return `${parentNorm}/${childNorm}`
 }
 
 function filterChildren(childrenMap, lastRouter = false) {

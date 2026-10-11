@@ -60,7 +60,7 @@ public class SysUserController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:user:add")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("add")
     public R<Void> add(@RequestBody @Validated(AddGroup.class) SysUserVo body) {
         sysUserService.saveVo(body);
@@ -73,7 +73,7 @@ public class SysUserController {
      * @param body 表单数据
      */
     @SaCheckPermission("system:user:edit")
-    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @Idempotent(ttlSeconds = -1, key = "#userId")
     @PostMapping("update")
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) SysUserVo body) {
         sysUserService.updateVoById(body);

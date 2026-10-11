@@ -4,6 +4,9 @@
 
 .app-container {
   padding: 20px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   /* 管理端表格/详情需可选中复制；body 为移动端做了 user-select:none */
   -webkit-user-select: text;
   user-select: text;
@@ -14,12 +17,24 @@
   }
 }
 
+@media (max-width: 767px) {
+  .app-container {
+    padding: 12px;
+  }
+}
+
 .el-form .el-form-item__label {
   font-weight: 700;
 }
 
 .el-dialog:not(.is-fullscreen) {
   margin-top: 6vh !important;
+}
+
+@media (max-width: 767px) {
+  .el-dialog:not(.is-fullscreen) {
+    margin-top: 8px !important;
+  }
 }
 
 .el-table {
