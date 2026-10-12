@@ -29,7 +29,7 @@ public class CaptchaConfigController {
     @GetMapping("/config")
     public Map<String, Object> config() {
         Map<String, Object> data = new LinkedHashMap<>(4);
-        data.put("captchaEnabled", true);
+        data.put("captchaEnabled", captchaProperties.getEnabled());
         data.put("type", captchaProperties.getType());
         return data;
     }

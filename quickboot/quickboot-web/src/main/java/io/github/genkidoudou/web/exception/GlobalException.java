@@ -36,6 +36,7 @@ public class GlobalException {
      */
     @ExceptionHandler(ErrorException.class)
     public R errorException(ErrorException ex) {
+        log.debug(ex.getMessage());
         int code = ex.getCode();
         String message = I18nUtil.getMessage(code, ex.getArgs());
         return R.error(code, message);
@@ -50,6 +51,7 @@ public class GlobalException {
      */
     @ExceptionHandler(WarningException.class)
     public R warningException(WarningException ex) {
+        log.debug(ex.getMessage());
         int code = ex.getCode();
 
         String message = I18nUtil.getMessage(code, ex.getArgs());

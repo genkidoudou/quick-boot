@@ -13,16 +13,16 @@
         :add-button-permi="['system:dictData:add']"
         :edit-button-permi="['system:dictData:edit']"
         :delete-button-permi="['system:dictData:remove']"
-        @add-click="openForm()"
-        @edit-click="openForm"
+        @add-click="() => formDialogRef?.open()"
+        @edit-click="(row) => formDialogRef?.open(row)"
     >
       <template #actions="{ row }">
         <el-button
             link
             type="primary"
             :icon="Edit"
-            v-hasPermi="['system:dictType:edit']"
-            @click="openForm(row)"
+            v-hasPermi="['system:dictData:edit']"
+            @click="formDialogRef?.open(row)"
         >
           修改
         </el-button>
@@ -30,15 +30,24 @@
             link
             type="primary"
             :icon="Delete"
-            v-hasPermi="['system:dictType:remove']"
-            @click="handleDelete(row)"
+            v-hasPermi="['system:dictData:remove']"
+            @click="tableRef?.removeRows(row, { confirmMessage: `确认删除字典数据「${row.dictLabel || row.dictValue || row.id}」？` })"
         >
           删除
         </el-button>
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" :title="title" :on-confirm="submitForm">
+    <C7FormDialog
+        ref="formDialogRef"
+        v-model="open"
+        :title="title"
+        :form="form"
+        :form-ref="formRef"
+        :get-payload="getPayload"
+        :submit="submitDictData"
+        :on-success="() => tableRef?.refreshData()"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="字典类型" prop="dictType">
           <el-input v-model="form.dictType" placeholder="请输入字典类型" maxlength="255"/>
@@ -66,24 +75,16 @@
           <el-input v-model="form.cssClass" placeholder="css class" maxlength="255"/>
         </el-form-item>
         <el-form-item label="是否默认" prop="isDefault">
-          <el-radio-group v-model="form.isDefault">
-            <el-radio v-for="item in COMMON_IS" :key="item.value" :value="item.value">
-              {{ item.label }}
-            </el-radio>
-          </el-radio-group>
+          <c7-radio :data-list="COMMON_IS" v-model="form.isDefault"/>
         </el-form-item>
         <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="form.status">
-            <el-radio v-for="item in COMMON_STATUS" :key="item.value" :value="item.value">
-              {{ item.label }}
-            </el-radio>
-          </el-radio-group>
+          <c7-radio :data-list="COMMON_STATUS" v-model="form.status"/>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="备注" :rows="3" maxlength="100"/>
         </el-form-item>
       </el-form>
-    </C7Dialog>
+    </C7FormDialog>
   </div>
 </template>
 
@@ -93,7 +94,6 @@
  */
 import {computed, reactive, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {ElMessage, ElMessageBox} from 'element-plus'
 import {LIST_CLASS_OPTIONS, useDict} from '@/utils/dict'
 import {
   addDictData,
@@ -101,13 +101,15 @@ import {
   removeDictData,
   updateDictData
 } from '@/api/system/dict/data'
-import {Delete, Edit} from "@element-plus/icons-vue";
-import {removeDictType} from "@/api/system/dict/type.js";
+import {Delete, Edit} from '@element-plus/icons-vue'
+
+defineOptions({name: 'SysDictData'})
 
 const route = useRoute()
 const {COMMON_STATUS, COMMON_IS} = useDict('COMMON_STATUS', 'COMMON_IS')
 
 const tableRef = ref(null)
+const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const dictType = computed(() => String(route.params.dictType || route.query.dictType || ''))
@@ -131,7 +133,6 @@ const tableColumns = computed(() => [
   {prop: 'status', label: '状态', columnType: 'tag', dictList: COMMON_STATUS.value || [], width: 90},
   {prop: 'remark', label: '备注', minWidth: 140, showOverflowTooltip: true},
   {prop: 'actions', label: '操作', columnType: 'slot', width: 160, fixed: 'right', align: 'center'}
-
 ])
 
 const searchColumns = computed(() => [
@@ -163,10 +164,8 @@ function emptyForm() {
   }
 }
 
-/**
- * @param {Record<string, any>} [row]
- */
-function openForm(row) {
+/** @param {Record<string, any>} [row] */
+function getPayload(row) {
   Object.assign(form, emptyForm())
   if (row && row.id != null) {
     Object.assign(form, {
@@ -182,11 +181,9 @@ function openForm(row) {
       remark: row.remark ?? ''
     })
   }
-  open.value = true
 }
 
-async function submitForm() {
-  await formRef.value?.validate()
+async function submitDictData() {
   const payload = {
     id: form.id,
     dictType: form.dictType,
@@ -201,36 +198,8 @@ async function submitForm() {
   }
   if (form.id) {
     await updateDictData(payload)
-    ElMessage.success('修改成功')
   } else {
     await addDictData(payload)
-    ElMessage.success('新增成功')
   }
-  tableRef.value?.refreshData()
-}
-
-
-
-/**
- * 行内删除。
- *
- * @param {Record<string, any>} row
- */
-async function handleDelete(row) {
-  if (row?.id == null) {
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确认删除字典类型「${row.dictName || row.dictType || row.id}」？`, '提示', {
-      type: 'warning',
-      confirmButtonText: '确定',
-      cancelButtonText: '取消'
-    })
-  } catch {
-    return
-  }
-  await removeDictData([row.id])
-  ElMessage.success('删除成功')
-  tableRef.value?.refreshData()
 }
 </script>

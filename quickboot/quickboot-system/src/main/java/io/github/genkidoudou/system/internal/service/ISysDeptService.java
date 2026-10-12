@@ -49,4 +49,13 @@ public interface ISysDeptService {
      * @param ids 主键列表
      */
     void removeByIds(List<Long> ids);
+
+    /**
+     * 根据部门id集合查询
+     *
+     * @param deptIds id集合
+     * @return
+     * @since 2026/10/12
+     */
+    List<SysDeptVo> listByIds(List<Long> deptIds);
 }

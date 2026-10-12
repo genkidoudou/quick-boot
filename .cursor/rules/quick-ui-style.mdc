@@ -1,0 +1,48 @@
+---
+description: quick-ui 管理端代码风格（对齐用户 / 字典页）
+globs: quick-ui/**/*.{vue,js}
+alwaysApply: false
+---
+
+# quick-ui 风格
+
+以 `views/system/user/index.vue` 与 `api/system/user.js` 为准；通用 CRUD 骨架可再对照 `views/system/dict/type/index.vue`。
+
+## 格式
+
+- `<script setup>`，不用 TypeScript
+- 2 空格；单引号；语句不加分号
+- import 花括号内不加空格：`import {computed, ref} from 'vue'`
+- 文件头一行中文 JSDoc，写明页面对齐哪个后端资源
+- `defineOptions({name: 'SysXxx'})`，与实体名一致
+
+## 列表与弹窗
+
+- 列表：`C7JsonTable`（`list-function` / `delete-function` / 权限 props / `@add-click` `@edit-click`）
+- 表单弹窗：优先 **`C7FormDialog`**（`:form` / `:form-ref` / `:get-payload` / `:submit`；打开用 `formDialogRef.open(row?)`）；`C7Dialog` 仅作壳或非 CRUD 场景
+- 表单：`label-width="96px"`
+- `tableColumns` / `searchColumns` / `rules` 必须是 `computed`
+- 字典：`useDict`；列 `columnType: 'tag'` + `dictList: xxx.value || []`；状态用 `c7-radio`
+- 操作列：`#actions`；删除用 `tableRef.removeRows(row, {confirmMessage})`
+- 列表 / 表单不展示 `createBy` / `createTime` / `updateBy` / `updateTime` / `delFlag`
+
+```vue
+<template #actions="{ row }">
+  <el-button link type="primary" :icon="Delete" v-hasPermi="['system:user:remove']"
+    @click="tableRef?.removeRows(row, { confirmMessage: `确认删除用户「${row.userName || row.id}」？` })">
+    删除
+  </el-button>
+</template>
+```
+
+## 表单
+
+- `const form = reactive(emptyForm())`
+- 打开时先 `Object.assign(form, emptyForm())`，再填详情
+
+## API
+
+- 手写 `request`，禁止 API 工厂
+- `BASE` **带**前导 `/`，与 Controller 路径一致
+- 函数名：`pageXxx` / `getXxx` / `addXxx` / `updateXxx` / `removeXxx`
+- 每个导出函数一行中文 JSDoc

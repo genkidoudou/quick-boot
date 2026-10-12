@@ -67,4 +67,12 @@ public interface ISysDictDataService {
     List<SysDictDataVo> listByDictType(String dictType);
 
 
+    /**
+     * 根据字典type删除字典项
+     *
+     * @param dictTypes 字典type
+     * @return
+     * @since 2026/10/12
+     */
+    void removeByDictTypes(List<String> dictTypes);
 }

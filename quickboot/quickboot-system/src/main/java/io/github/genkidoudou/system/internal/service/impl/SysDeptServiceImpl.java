@@ -30,7 +30,9 @@ import java.util.Set;
 public class SysDeptServiceImpl extends BaseVoServiceImpl<SysDeptMapper, SysDept, SysDeptVo>
         implements ISysDeptService {
 
-    /** 树根上级部门 ID。 */
+    /**
+     * 树根上级部门 ID。
+     */
     public static final Long ROOT_PARENT_ID = 0L;
 
     /**
@@ -191,5 +193,13 @@ public class SysDeptServiceImpl extends BaseVoServiceImpl<SysDeptMapper, SysDept
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+    }
+
+    @Override
+    public List<SysDeptVo> listByIds(List<Long> deptIds) {
+        if (CollectionUtil.isEmpty(deptIds)) {
+            return new ArrayList<>();
+        }
+        return super.listVoByIds(deptIds);
     }
 }

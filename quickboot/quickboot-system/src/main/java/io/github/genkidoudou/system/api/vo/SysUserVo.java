@@ -100,4 +100,23 @@ public class SysUserVo extends BaseEntity implements Serializable {
      */
 
     private List<Long> roleIds;
+
+
+    /**
+     * 角色名称
+     *
+     * @author luyanan
+     * @since 2026/10/12
+     */
+    private List<String> roleNames;
+
+
+    /**
+     * 部门名称
+     *
+     * @since 2026/10/12
+     */
+    
+
+    private String deptName;
 }

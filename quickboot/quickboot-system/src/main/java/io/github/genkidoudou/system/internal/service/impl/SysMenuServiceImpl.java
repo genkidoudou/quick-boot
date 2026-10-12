@@ -13,8 +13,10 @@ import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.vo.RouterVo;
 import io.github.genkidoudou.system.internal.entity.SysMenu;
+import io.github.genkidoudou.system.internal.entity.SysRoleMenu;
 import io.github.genkidoudou.system.internal.enums.SysMenuEnums;
 import io.github.genkidoudou.system.internal.mapper.SysMenuMapper;
+import io.github.genkidoudou.system.internal.mapper.SysRoleMenuMapper;
 import io.github.genkidoudou.system.internal.service.ISysMenuService;
 import io.github.genkidoudou.system.api.vo.SysMenuVo;
 import io.github.genkidoudou.system.internal.support.ControllerMenuParser;
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu, SysMenuVo>
         implements ISysMenuService {
 
+    private final SysRoleMenuMapper sysRoleMenuMapper;
 
     /**
      * 顶级菜单id
@@ -49,13 +52,21 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
 
     public static final Long parentId = 0L;
 
-    /** 布局组件 */
+    /**
+     * 布局组件
+     */
     private static final String LAYOUT = "Layout";
-    /** 内嵌外链组件 */
+    /**
+     * 内嵌外链组件
+     */
     private static final String INNER_LINK = "InnerLink";
-    /** 父级视图组件 */
+    /**
+     * 父级视图组件
+     */
     private static final String PARENT_VIEW = "ParentView";
-    /** 否外链 */
+    /**
+     * 否外链
+     */
     private static final String NO_FRAME = "0";
 
     /**
@@ -124,6 +135,21 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
      */
     @Override
     public void removeByIds(List<Long> ids) {
+        if (CollectionUtil.isEmpty(ids)) {
+            return;
+        }
+        // 校验下面有节点的时候不允许删除
+        for (Long id : ids) {
+            long count = this.count(new LambdaQueryWrapper<SysMenu>()
+                    .eq(SysMenu::getParentId, id));
+            if (count > 0) {
+                SysMenu sysMenu = this.baseMapper.selectById(id);
+                throw new WarningException(10005, sysMenu.getMenuName());
+            }
+        }
+        // 删除关联的角色
+        sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
+                .in(SysRoleMenu::getMenuId, ids));
         deleteByIds(ids);
     }
 
@@ -419,7 +445,9 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
         return component;
     }
 
-    /** 一级菜单（非目录）包一层 Layout */
+    /**
+     * 一级菜单（非目录）包一层 Layout
+     */
     private boolean isMenuFrame(SysMenuVo menu) {
         return isRoot(menu)
                 && SysMenuEnums.MENU_TYPE_MENU.getDictValue().equals(menu.getMenuType())
@@ -439,7 +467,9 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
         return new RouterVo.MetaVo(menu.getMenuName(), menu.getIcon(), noCache);
     }
 
-    /** 非外链且 path 为 http(s) → InnerLink */
+    /**
+     * 非外链且 path 为 http(s) → InnerLink
+     */
     private boolean isInnerLink(SysMenuVo menu) {
         return NO_FRAME.equals(menu.getIsFrame()) && isHttpPath(menu.getPath());
     }
@@ -459,10 +489,10 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
 
     private String innerLinkReplaceEach(String path) {
         return StrUtil.replace(StrUtil.replace(StrUtil.replace(StrUtil.replace(
-                        StrUtil.blankToDefault(path, StrUtil.EMPTY),
-                        "http://", StrUtil.EMPTY),
-                "https://", StrUtil.EMPTY),
-                "www.", StrUtil.EMPTY),
+                                        StrUtil.blankToDefault(path, StrUtil.EMPTY),
+                                        "http://", StrUtil.EMPTY),
+                                "https://", StrUtil.EMPTY),
+                        "www.", StrUtil.EMPTY),
                 ".", "/");
     }
 

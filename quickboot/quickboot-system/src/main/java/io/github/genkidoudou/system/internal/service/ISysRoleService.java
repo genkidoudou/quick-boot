@@ -68,7 +68,7 @@ public interface ISysRoleService {
      * @return
      * @since 2026/10/11
      */
-    List<Long> listRoleByUserId(Long userId);
+    List<Long> listRoleIdByUserId(Long userId);
 
     /**
      * 绑定用户和角色
@@ -88,4 +88,15 @@ public interface ISysRoleService {
      * @since 2026/10/11
      */
     void deleteBindRole(List<Long> userIds);
+
+
+    /**
+     * 根据用户id 获取关联的角色id
+     *
+     * @param userId 用户id
+     * @return
+     * @since 2026/10/12
+     */
+
+    List<SysRoleVo> listRoleByUserId(Long userId);
 }

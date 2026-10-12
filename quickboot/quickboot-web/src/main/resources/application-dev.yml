@@ -9,3 +9,6 @@ spring:
     url: jdbc:mysql://192.168.50.105:3406/quickboot-dev?characterEncoding=utf8&useUnicode=true&connectionCollation=utf8mb4_unicode_ci
     username: root
     password: rootroot
+qc:
+  captcha:
+    enabled: false

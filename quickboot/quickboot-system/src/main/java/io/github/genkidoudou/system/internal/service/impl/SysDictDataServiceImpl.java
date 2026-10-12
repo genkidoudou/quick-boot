@@ -75,6 +75,14 @@ public class SysDictDataServiceImpl extends BaseVoServiceImpl<SysDictDataMapper,
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SysDictData saveVo(SysDictDataVo vo) {
+
+        long count = super.count(new LambdaQueryWrapper<SysDictData>()
+                .eq(SysDictData::getDictType, vo.getDictType())
+                .eq(SysDictData::getDictValue, vo.getDictValue()));
+        if (count > 0) {
+            throw new WarningException(10004, vo.getDictValue());
+        }
+
         return super.saveVo(vo);
     }
 
@@ -88,6 +96,13 @@ public class SysDictDataServiceImpl extends BaseVoServiceImpl<SysDictDataMapper,
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById(SysDictDataVo vo) {
+        long count = super.count(new LambdaQueryWrapper<SysDictData>()
+                .eq(SysDictData::getDictType, vo.getDictType())
+                .ne(SysDictData::getId, vo.getId())
+                .eq(SysDictData::getDictValue, vo.getDictValue()));
+        if (count > 0) {
+            throw new WarningException(10004, vo.getDictValue());
+        }
         return super.updateVoById(vo);
     }
 
@@ -136,6 +151,15 @@ public class SysDictDataServiceImpl extends BaseVoServiceImpl<SysDictDataMapper,
             return Collections.emptyList();
         }
         return BeanUtil.copyToList(rows, SysDictDataVo.class);
+    }
+
+    @Override
+    public void removeByDictTypes(List<String> dictTypes) {
+        if (CollectionUtil.isEmpty(dictTypes)) {
+            return;
+        }
+        super.baseMapper.delete(new LambdaQueryWrapper<SysDictData>()
+                .in(SysDictData::getDictType, dictTypes));
     }
 
 

@@ -12,8 +12,8 @@
       :add-button-permi="['system:role:add']"
       :edit-button-permi="['system:role:edit']"
       :delete-button-permi="['system:role:remove']"
-      @add-click="openForm()"
-      @edit-click="openForm"
+      @add-click="() => formDialogRef?.open()"
+      @edit-click="(row) => formDialogRef?.open(row)"
     >
       <template #actions="{ row }">
         <el-button
@@ -21,7 +21,7 @@
           type="primary"
           :icon="Edit"
           v-hasPermi="['system:role:edit']"
-          @click="openForm(row)"
+          @click="formDialogRef?.open(row)"
         >
           修改
         </el-button>
@@ -30,14 +30,24 @@
           type="primary"
           :icon="Delete"
           v-hasPermi="['system:role:remove']"
-          @click="handleDelete(row)"
+          @click="tableRef?.removeRows(row, { confirmMessage: `确认删除角色「${row.roleName || row.roleCode || row.id}」？` })"
         >
           删除
         </el-button>
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" :title="title" width="680px" :on-confirm="submitForm">
+    <C7FormDialog
+      ref="formDialogRef"
+      v-model="open"
+      :title="title"
+      width="680px"
+      :form="form"
+      :form-ref="formRef"
+      :get-payload="getPayload"
+      :submit="submitRole"
+      :on-success="() => tableRef?.refreshData()"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="角色名称" prop="roleName">
           <el-input v-model="form.roleName" placeholder="请输入角色名称" maxlength="255" />
@@ -84,7 +94,7 @@
           <el-input v-model="form.remark" type="textarea" placeholder="备注" :rows="3" maxlength="100" />
         </el-form-item>
       </el-form>
-    </C7Dialog>
+    </C7FormDialog>
   </div>
 </template>
 
@@ -93,9 +103,9 @@
  * 角色管理：列表 / 新增 / 修改 / 删除；表单内勾选菜单权限（提交 menuIds）。
  * 回显依赖详情接口返回 menuIds（后端就绪后生效；目前未返回则树为空选）。
  */
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { Delete, Edit } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useDict } from '@/utils/dict'
 import { listMenu } from '@/api/system/menu'
 import { addRole, getRole, pageRole, removeRole, updateRole } from '@/api/system/role'
@@ -111,6 +121,7 @@ defineOptions({ name: 'SysRole' })
 const { COMMON_STATUS, USER_DATA_SCOPE } = useDict('COMMON_STATUS', 'USER_DATA_SCOPE')
 
 const tableRef = ref(null)
+const formDialogRef = ref(null)
 const formRef = ref(null)
 const menuTreeRef = ref(null)
 const open = ref(false)
@@ -244,12 +255,11 @@ async function echoMenuChecked(menuIds) {
 /**
  * @param {Record<string, any>} [row]
  */
-async function openForm(row) {
+async function getPayload(row) {
   Object.assign(form, emptyForm())
   menuExpand.value = false
   menuNodeAll.value = false
   menuCheckStrictly.value = true
-  open.value = true
 
   try {
     await loadMenuTree()
@@ -272,7 +282,6 @@ async function openForm(row) {
         remark: data.remark ?? '',
         menuIds: data.menuIds || []
       })
-      await echoMenuChecked(form.menuIds)
     } catch {
       Object.assign(form, {
         id: row.id,
@@ -285,35 +294,17 @@ async function openForm(row) {
         menuIds: []
       })
     }
-  } else {
-    await echoMenuChecked([])
   }
 }
 
-/**
- * 行内删除。
- * @param {Record<string, any>} row
- */
-async function handleDelete(row) {
-  if (row?.id == null) {
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确认删除角色「${row.roleName || row.roleCode || row.id}」？`, '提示', {
-      type: 'warning',
-      confirmButtonText: '确定',
-      cancelButtonText: '取消'
-    })
-  } catch {
-    return
-  }
-  await removeRole([row.id])
-  ElMessage.success('删除成功')
-  tableRef.value?.refreshData()
-}
+/** 弹窗打开且树挂载后再回显勾选 */
+watch(open, async (val) => {
+  if (!val) return
+  await nextTick()
+  await echoMenuChecked(form.menuIds || [])
+})
 
-async function submitForm() {
-  await formRef.value?.validate()
+async function submitRole() {
   const menuIds = collectMenuIds()
   const payload = {
     id: form.id,
@@ -327,13 +318,9 @@ async function submitForm() {
   }
   if (form.id) {
     await updateRole(payload)
-    ElMessage.success('修改成功')
   } else {
     await addRole(payload)
-    ElMessage.success('新增成功')
   }
-  open.value = false
-  tableRef.value?.refreshData()
 }
 </script>
 

@@ -1,0 +1,29 @@
+---
+description: quick-h5 移动端代码风格（对齐用户表单页）
+globs: quick-h5/**/*.{vue,ts}
+alwaysApply: false
+---
+
+# quick-h5 风格
+
+以 `pages/system/user/form.vue` 为准。
+
+## 格式
+
+- `<script setup lang="ts">`
+- 2 空格；单引号；语句不加分号
+- import 花括号内加空格；多项时保留尾逗号：`import { computed, ref } from 'vue'`
+- 类型就近声明；表单字段与接口返回写明确类型
+
+## 注释与模式
+
+- 文件头块注释写清新增 / 编辑 / 查看各自约束
+- 查看模式：控件只读，隐藏保存
+- 编辑提交必须带回后端「未传会清空」的关联字段（如 `deptId` / `roleIds`），并在注释写明原因
+
+## 工具约定
+
+- 字典：`@/composables/useDict`
+- 提示：`@/utils/toast`
+- 校验：`@/utils/validate` 的 `assert`
+- 权限：`hasPermi`

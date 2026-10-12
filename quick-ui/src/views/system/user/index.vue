@@ -12,11 +12,14 @@
         :add-button-permi="['system:user:add']"
         :edit-button-permi="['system:user:edit']"
         :delete-button-permi="['system:user:remove']"
-        @add-click="openForm()"
-        @edit-click="openForm"
+        @add-click="() => formDialogRef?.open()"
+        @edit-click="(row) => formDialogRef?.open(row)"
     >
+      <template #roleNames = "{row}">
+        <el-tag type="primary" v-for="roleName  in row.roleNames">{{roleName}}</el-tag>
+      </template>
       <template #actions="{ row }">
-        <el-button link type="primary" :icon="Edit" v-hasPermi="['system:user:edit']" @click="openForm(row)">
+        <el-button link type="primary" :icon="Edit" v-hasPermi="['system:user:edit']" @click="formDialogRef?.open(row)">
           修改
         </el-button>
         <el-button
@@ -31,7 +34,18 @@
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" :title="title" width="640px" mobile-mode="drawer" :on-confirm="submitForm">
+    <C7FormDialog
+        ref="formDialogRef"
+        v-model="open"
+        :title="title"
+        width="640px"
+        mobile-mode="drawer"
+        :form="form"
+        :form-ref="formRef"
+        :get-payload="getPayload"
+        :submit="submitUser"
+        :on-success="() => tableRef?.refreshData()"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px" label-position="right">
         <el-row :gutter="16">
           <el-col :span="24" :sm="12">
@@ -116,7 +130,7 @@
           <el-input v-model="form.remark" type="textarea" placeholder="备注" :rows="3" maxlength="100"/>
         </el-form-item>
       </el-form>
-    </C7Dialog>
+    </C7FormDialog>
   </div>
 </template>
 
@@ -126,7 +140,6 @@
  */
 import {computed, reactive, ref} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
-import {ElMessage} from 'element-plus'
 import {useDict} from '@/utils/dict'
 import {
   emailRules,
@@ -146,6 +159,7 @@ defineOptions({name: 'SysUser'})
 const {user_type, sex, user_status} = useDict('user_type', 'sex', 'user_status')
 
 const tableRef = ref(null)
+const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
@@ -153,14 +167,14 @@ const title = computed(() => (form.id ? '修改用户' : '新增用户'))
 
 const tableColumns = computed(() => [
   {prop: 'userName', label: '用户名', minWidth: 120, showOverflowTooltip: true},
-  {prop: 'nickName', label: '昵称', minWidth: 120, showOverflowTooltip: true},
-  {prop: 'deptId', label: '部门', minWidth: 120, showOverflowTooltip: true},
-  {prop: 'phonenumber', label: '手机号码', minWidth: 120},
-  {prop: 'email', label: '邮箱', minWidth: 160, showOverflowTooltip: true},
+  {prop: 'nickName', label: '昵称', minWidth: 100, showOverflowTooltip: true},
+  {prop: 'deptName', label: '部门', minWidth: 80, showOverflowTooltip: true},
+  {prop: 'roleNames', label: '角色', minWidth: 140, showOverflowTooltip: true,columnType: "slot"},
+  {prop: 'phonenumber', label: '手机号码', minWidth: 80},
+  {prop: 'email', label: '邮箱', minWidth: 120, showOverflowTooltip: true},
   {prop: 'userType', label: '用户类型', columnType: 'tag', dictList: user_type.value || [], width: 110},
   {prop: 'sex', label: '性别', columnType: 'tag', dictList: sex.value || [], width: 80},
   {prop: 'status', label: '状态', columnType: 'tag', dictList: user_status.value || [], width: 90},
-  {prop: 'remark', label: '备注', minWidth: 140, showOverflowTooltip: true},
   {prop: 'actions', label: '操作', columnType: 'slot', width: 160, fixed: 'right', align: 'center'}
 ])
 
@@ -175,7 +189,7 @@ const searchColumns = computed(() => [
 const rules = computed(() => ({
   userName: userNameRules,
   nickName: nickNameRules,
-  password: passwordRules({ required: !form.id }),
+  password: passwordRules({required: !form.id}),
   email: emailRules,
   phonenumber: phoneRules,
   status: [requiredRule('状态不能为空', 'change')]
@@ -199,9 +213,10 @@ function emptyForm() {
 }
 
 /**
+ * 初始化：直接写页面 form。
  * @param {Record<string, any>} [row]
  */
-async function openForm(row) {
+async function getPayload(row) {
   Object.assign(form, emptyForm())
   if (row && row.id != null) {
     const res = await getUser(row.id)
@@ -221,11 +236,10 @@ async function openForm(row) {
       roleIds: data.roleIds || []
     })
   }
-  open.value = true
 }
 
-async function submitForm() {
-  await formRef.value?.validate()
+/** 提交：组装业务差异 + 新增/修改分支（直接读页面 form） */
+async function submitUser() {
   const payload = {
     id: form.id,
     deptId: form.deptId === '' || form.deptId == null ? null : form.deptId,
@@ -244,14 +258,10 @@ async function submitForm() {
   } else if (!form.id) {
     payload.password = form.password
   }
-  if (form.id) {
+  if (payload.id) {
     await updateUser(payload)
-    ElMessage.success('修改成功')
   } else {
     await addUser(payload)
-    ElMessage.success('新增成功')
   }
-  open.value = false
-  tableRef.value?.refreshData()
 }
 </script>

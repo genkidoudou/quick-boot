@@ -1,7 +1,10 @@
 package io.github.genkidoudou.system.internal.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.github.genkidoudou.common.api.PageInfo;
+import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.crypto.PasswordCodec;
 import io.github.genkidoudou.common.crypto.PasswordCodecFactories;
 import io.github.genkidoudou.common.exception.ErrorCodes;
@@ -11,13 +14,18 @@ import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.entity.SysUser;
 import io.github.genkidoudou.system.internal.mapper.SysUserMapper;
+import io.github.genkidoudou.system.internal.service.ISysDeptService;
 import io.github.genkidoudou.system.internal.service.ISysRoleService;
 import io.github.genkidoudou.system.internal.service.ISysUserService;
+import io.github.genkidoudou.system.internal.vo.SysDeptVo;
+import io.github.genkidoudou.system.internal.vo.SysRoleVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 系统用户服务实现。
@@ -28,6 +36,8 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         implements ISysUserService {
 
     private final ISysRoleService sysRoleService;
+
+    private final ISysDeptService sysDeptService;
 
     /**
      * 按查询条件组装 Wrapper。
@@ -51,6 +61,26 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysUser::getStatus, param.getStatus());
     }
 
+    @Override
+    public PageInfo<SysUserVo> pageVo(PageRequest<SysUserVo> pageRequest) {
+        PageInfo<SysUserVo> pageVo = super.pageVo(pageRequest);
+
+        List<SysUserVo> records = pageVo.getRecords();
+        List<Long> deptIds = records.stream().map(SysUserVo::getDeptId).filter(Objects::nonNull).toList();
+        List<SysDeptVo> sysDeptVos = sysDeptService.listByIds(deptIds);
+        if (CollectionUtil.isNotEmpty(records)) {
+            // 查询用户关联的角色id集合
+            for (SysUserVo record : records) {
+                List<SysRoleVo> sysRoleVoList = sysRoleService.listRoleByUserId(record.getId());
+                record.setRoleNames(sysRoleVoList.stream().map(SysRoleVo::getRoleName).distinct().collect(Collectors.toList()));
+                if (null != record.getDeptId()) {
+                    record.setDeptName(sysDeptVos.stream().filter(a -> a.getId().equals(record.getDeptId())).findFirst().map(SysDeptVo::getDeptName).orElse(null));
+                }
+            }
+        }
+        return pageVo;
+    }
+
     /**
      * 按主键查详情；不存在时抛出业务异常。
      *
@@ -65,7 +95,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         }
 
         // 查询关联的角色
-        List<Long> roleIds = sysRoleService.listRoleByUserId(id);
+        List<Long> roleIds = sysRoleService.listRoleIdByUserId(id);
         vo.setRoleIds(roleIds);
         return vo;
     }
@@ -79,6 +109,21 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SysUser saveVo(SysUserVo sysUserVo) {
+        // 检查用户名不能重复
+        long count = super.count(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserName, sysUserVo.getUserName()));
+        if (count > 0) {
+            throw new WarningException(10002, sysUserVo.getUserName());
+        }
+        if (StrUtil.isNotBlank(sysUserVo.getPhonenumber())) {
+            // 检查手机号不能重复
+            long count2 = super.count(new LambdaQueryWrapper<SysUser>()
+                    .eq(SysUser::getPhonenumber, sysUserVo.getPhonenumber()));
+            if (count2 > 0) {
+                throw new WarningException(10003, sysUserVo.getPhonenumber());
+            }
+        }
+
         encodePassword(sysUserVo);
         SysUser sysUser = super.saveVo(sysUserVo);
         List<Long> roleIds =
@@ -96,6 +141,16 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById(SysUserVo sysUserVo) {
+        if (StrUtil.isNotBlank(sysUserVo.getPhonenumber())) {
+            // 检查手机号不能重复
+            long count2 = super.count(new LambdaQueryWrapper<SysUser>()
+                    .eq(SysUser::getPhonenumber, sysUserVo.getPhonenumber())
+                    .ne(SysUser::getId, sysUserVo.getId()));
+            if (count2 > 0) {
+                throw new WarningException(10003, sysUserVo.getPhonenumber());
+            }
+        }
+
         if (StrUtil.isBlank(sysUserVo.getPassword())) {
             sysUserVo.setPassword(null);
         } else {

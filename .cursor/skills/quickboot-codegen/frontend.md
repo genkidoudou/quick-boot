@@ -19,7 +19,7 @@
 | 项 | 约定 |
 |---|---|
 | 列表 | `C7JsonTable`：`list-function` / `delete-function` / 权限 props / `@add-click` `@edit-click` |
-| 弹窗 | `C7Dialog` 用 **`:on-confirm="submitForm"`**（不要用 `@confirm`；`onConfirm` resolve 后自动关弹窗） |
+| 弹窗 | CRUD 表单用 **`C7FormDialog`**（`form` / `form-ref` / `get-payload` / `submit`；`formDialogRef.open(row?)`）；非 CRUD 才用 `C7Dialog` + `:on-confirm` |
 | 列配置 | `tableColumns`、`searchColumns` 必须是 **`computed`**（字典异步加载后才能刷新） |
 | 字典 | `useDict('DICT_TYPE')`；列表 `columnType: 'tag'` + `dictList: XXX.value \|\| []`；查询 `type: 'select'` + `dataList` |
 | 状态类表单项 | 优先 `<c7-radio :data-list="XXX" v-model="form.status" />`（或 `el-radio-group` 遍历字典） |
@@ -126,8 +126,8 @@ export function removeNotice(ids) {
       :add-button-permi="['system:notice:add']"
       :edit-button-permi="['system:notice:edit']"
       :delete-button-permi="['system:notice:remove']"
-      @add-click="openForm()"
-      @edit-click="openForm"
+      @add-click="() => formDialogRef?.open()"
+      @edit-click="(row) => formDialogRef?.open(row)"
     >
       <!-- 仅当用户点名 Excel 时增加：
       show-import-button
@@ -144,7 +144,7 @@ export function removeNotice(ids) {
           type="primary"
           :icon="Edit"
           v-hasPermi="['system:notice:edit']"
-          @click="openForm(row)"
+          @click="formDialogRef?.open(row)"
         >
           修改
         </el-button>
@@ -160,7 +160,16 @@ export function removeNotice(ids) {
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" :title="title" :on-confirm="submitForm">
+    <C7FormDialog
+      ref="formDialogRef"
+      v-model="open"
+      :title="title"
+      :form="form"
+      :form-ref="formRef"
+      :get-payload="getPayload"
+      :submit="submitNotice"
+      :on-success="() => tableRef?.refreshData()"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="公告标题" prop="noticeTitle">
           <el-input v-model="form.noticeTitle" placeholder="请输入公告标题" maxlength="100" />
@@ -172,7 +181,7 @@ export function removeNotice(ids) {
           <el-input v-model="form.remark" type="textarea" placeholder="备注" :rows="3" maxlength="500" />
         </el-form-item>
       </el-form>
-    </C7Dialog>
+    </C7FormDialog>
   </div>
 </template>
 
@@ -182,7 +191,6 @@ export function removeNotice(ids) {
  */
 import { computed, reactive, ref } from 'vue'
 import { Delete, Edit } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { useDict } from '@/utils/dict'
 import {
   addNotice,
@@ -197,6 +205,7 @@ defineOptions({ name: 'SysNotice' })
 const { COMMON_STATUS } = useDict('COMMON_STATUS')
 
 const tableRef = ref(null)
+const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
@@ -228,10 +237,8 @@ function emptyForm() {
   }
 }
 
-/**
- * @param {Record<string, any>} [row]
- */
-function openForm(row) {
+/** 初始化：直接写页面 form（可在此拉详情） */
+function getPayload(row) {
   Object.assign(form, emptyForm())
   if (row && row.id != null) {
     Object.assign(form, {
@@ -241,26 +248,21 @@ function openForm(row) {
       remark: row.remark ?? ''
     })
   }
-  open.value = true
 }
 
-async function submitForm() {
-  await formRef.value?.validate()
+/** 提交：直接读页面 form */
+async function submitNotice() {
   const payload = {
     id: form.id,
     noticeTitle: form.noticeTitle,
     status: form.status,
     remark: form.remark
   }
-  if (form.id) {
+  if (payload.id) {
     await updateNotice(payload)
-    ElMessage.success('修改成功')
   } else {
     await addNotice(payload)
-    ElMessage.success('新增成功')
   }
-  open.value = false
-  tableRef.value?.refreshData()
 }
 </script>
 ```
@@ -284,8 +286,8 @@ async function submitForm() {
 
 - 只放字段表标记为表单的列；密码/密钥默认不进列表。
 - `remark` 若业务需要展示，可用 textarea，不强制。
-- `submitForm`：`validate` → `add`/`update` → `ElMessage.success` → `open = false` → `refreshData`。
-- 使用 `:on-confirm` 时，校验失败应 **throw**（或让 `validate` reject），这样弹窗不会误关。
+- CRUD 用 `C7FormDialog`：页面提供 `getPayload(row?)`（闭包写 `form`）+ `submit()`（闭包读 `form`）；打开用 `formDialogRef.open(row?)`；组件完成校验 / 提示 / 关窗。
+- 非 CRUD 才用 `C7Dialog` + `:on-confirm`；校验失败应 **throw**（或让 `validate` reject），避免误关。
 
 ## Excel（仅用户点名时）
 
@@ -301,7 +303,7 @@ async function submitForm() {
 ## 自检（前端）
 
 - [ ] 对照过 `views/system/dict/type/index.vue` 骨架（非字典专属逻辑）
-- [ ] `C7Dialog` 使用 `:on-confirm`，不是 `@confirm`
+- [ ] CRUD 用 `C7FormDialog`（`form` / `get-payload` / `submit`，`open(row?)`）；非 CRUD 才用 `C7Dialog` + `:on-confirm`
 - [ ] `tableColumns` / `searchColumns` 为 `computed`
 - [ ] 有 `#actions` 槽；行内删除用 `tableRef?.removeRows(row, { confirmMessage })`
 - [ ] 字典列用 `useDict` + `tag` / `select` / `c7-radio`

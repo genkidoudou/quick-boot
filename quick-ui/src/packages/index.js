@@ -12,6 +12,7 @@ import C7Radio from './C7Radio/index.vue'
 import C7Switch from './C7Switch/index.vue'
 import C7DictTag from './C7DictTag/index.vue'
 import C7Dialog from './C7Dialog/index.vue'
+import C7FormDialog from './C7FormDialog/index.vue'
 import C7Descriptions from './C7Descriptions/index.vue'
 import C7DatePicker from './C7DatePicker/index.vue'
 import C7TimePicker from './C7TimePicker/index.vue'
@@ -52,6 +53,7 @@ export {
   C7Switch,
   C7DictTag,
   C7Dialog,
+  C7FormDialog,
   C7Descriptions,
   C7DatePicker,
   C7TimePicker,
@@ -96,6 +98,7 @@ export function installPackages(app) {
   app.component('C7Switch', C7Switch)
   app.component('C7DictTag', C7DictTag)
   app.component('C7Dialog', C7Dialog)
+  app.component('C7FormDialog', C7FormDialog)
   app.component('C7Descriptions', C7Descriptions)
   app.component('C7DatePicker', C7DatePicker)
   app.component('C7TimePicker', C7TimePicker)

@@ -1,0 +1,61 @@
+---
+description: quickboot Java 代码风格（对齐 SysUser*）
+globs: quickboot/**/*.java
+alwaysApply: false
+---
+
+# Java 风格
+
+以 `SysUserController` / `SysUserServiceImpl` / `SysUser` / `SysUserVo` 为准。仓库里仍有旧的 2 空格文件，**不要批量改缩进**；新写与主动改动的文件用本规则。
+
+## 格式
+
+- 4 空格缩进
+- import 分三组：第三方 → 本项目 → `java.*`，组间空一行
+- 早返回；小内部数据优先 `record`
+- 工具类：`final` + 私有构造 + 静态方法
+
+## 注释
+
+- 类、公开方法、字段写中文 JavaDoc，句号结尾
+- 注释写约束和原因，例如「密码为空则不覆盖原密码」
+
+## 分层
+
+- Controller：权限、校验、转发；返回 `R<Vo>`；不做业务逻辑
+- ServiceImpl：查询、事务、加密、关联绑定
+- 命名：`IXxxService`、`XxxServiceImpl`、`XxxVo`
+- 方法名：`pageVo` / `getVoById` / `saveVo` / `updateVoById` / `removeByIds`
+
+## HTTP 与注解
+
+- 只用 `GET` / `POST`，禁止 `PUT` / `DELETE`
+- `@RequestMapping("sys/user")` **不加**前导 `/`
+- 注解顺序：`@SaCheckPermission` → `@Idempotent(ttlSeconds = -1, key = "#userId")` → 映射注解
+- 注入：`@RequiredArgsConstructor` + `private final`
+- Entity / Vo：`@Data`；有父类时 `@EqualsAndHashCode(callSuper = true)`
+
+```java
+@SaCheckPermission("system:user:add")
+@Idempotent(ttlSeconds = -1, key = "#userId")
+@PostMapping("add")
+public R<Void> add(@RequestBody @Validated(AddGroup.class) SysUserVo body) {
+    sysUserService.saveVo(body);
+    return R.ok();
+}
+```
+
+## 查询与异常
+
+- `LambdaQueryWrapper` 条件链；`StrUtil.isNotBlank` 决定是否拼接
+- 文本 `like`，枚举 / ID `eq`
+- 详情不存在：`throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "中文提示")`
+- 允许为空的查找返回 `null`，并在 JavaDoc 写明
+- `saveVo` / `updateVoById` 必须 `@Transactional(rollbackFor = Exception.class)`
+
+## Vo 校验
+
+- 分组：`AddGroup` / `UpdateGroup`
+- 正则：`PatternConstants`
+- 密码：`@JsonProperty(access = WRITE_ONLY)`
+- 字典字段注释：`状态(user_status)`

@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  * 字典类型服务实现。
@@ -168,7 +169,12 @@ public class SysDictTypeServiceImpl extends BaseVoServiceImpl<SysDictTypeMapper,
      */
     @Override
     public void removeByIds(List<Long> ids) {
+
+        // 删除字典项
+        List<SysDictType> sysDictTypes = super.listByIds(ids);
+        sysDictDataService.removeByDictTypes(sysDictTypes.stream().map(SysDictType::getDictType).distinct().collect(Collectors.toList()));
         deleteByIds(ids);
+
     }
 
     @Override
@@ -194,8 +200,8 @@ public class SysDictTypeServiceImpl extends BaseVoServiceImpl<SysDictTypeMapper,
                     sysDictTypeVo.setId(type.getId());
                     updateList.add(BeanUtil.toBean(sysDictTypeVo, SysDictType.class));
 
-                }else {
-                    throw  new ExcelDataCheckException(sysDictTypeVo.getDictType()+"重复,请勿重复添加");
+                } else {
+                    throw new ExcelDataCheckException(sysDictTypeVo.getDictType() + "重复,请勿重复添加");
                 }
 
             } else {

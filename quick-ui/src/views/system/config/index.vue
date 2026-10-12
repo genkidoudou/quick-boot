@@ -12,20 +12,35 @@
       :add-button-permi="['system:config:add']"
       :edit-button-permi="['system:config:edit']"
       :delete-button-permi="['system:config:remove']"
-      @add-click="openForm()"
-      @edit-click="openForm"
+      @add-click="() => formDialogRef?.open()"
+      @edit-click="(row) => formDialogRef?.open(row)"
     >
       <template #actions="{ row }">
-        <el-button link type="primary" :icon="Edit" v-hasPermi="['system:config:edit']" @click="openForm(row)">
+        <el-button link type="primary" :icon="Edit" v-hasPermi="['system:config:edit']" @click="formDialogRef?.open(row)">
           修改
         </el-button>
-        <el-button link type="primary" :icon="Delete" v-hasPermi="['system:config:remove']" @click="handleDelete(row)">
+        <el-button
+          link
+          type="primary"
+          :icon="Delete"
+          v-hasPermi="['system:config:remove']"
+          @click="tableRef?.removeRows(row, { confirmMessage: `确认删除参数「${row.configName || row.configKey || row.id}」？` })"
+        >
           删除
         </el-button>
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" :title="title" :on-confirm="submitForm">
+    <C7FormDialog
+      ref="formDialogRef"
+      v-model="open"
+      :title="title"
+      :form="form"
+      :form-ref="formRef"
+      :get-payload="getPayload"
+      :submit="submitConfig"
+      :on-success="() => tableRef?.refreshData()"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="参数名称" prop="configName">
           <el-input v-model="form.configName" placeholder="请输入参数名称" maxlength="255" />
@@ -43,7 +58,7 @@
           <el-input v-model="form.remark" type="textarea" placeholder="备注" :rows="3" maxlength="100" />
         </el-form-item>
       </el-form>
-    </C7Dialog>
+    </C7FormDialog>
   </div>
 </template>
 
@@ -53,7 +68,6 @@
  */
 import { computed, reactive, ref } from 'vue'
 import { Delete, Edit } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { useDict } from '@/utils/dict'
 import { addConfig, pageConfig, removeConfig, updateConfig } from '@/api/system/config'
 
@@ -62,6 +76,7 @@ defineOptions({ name: 'SysConfig' })
 const { COMMON_IS } = useDict('COMMON_IS')
 
 const tableRef = ref(null)
+const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
@@ -101,7 +116,8 @@ function emptyForm() {
   }
 }
 
-function openForm(row) {
+/** @param {Record<string, any>} [row] */
+function getPayload(row) {
   Object.assign(form, emptyForm())
   if (row && row.id != null) {
     Object.assign(form, {
@@ -113,34 +129,14 @@ function openForm(row) {
       remark: row.remark ?? ''
     })
   }
-  open.value = true
 }
 
-async function handleDelete(row) {
-  if (row?.id == null) return
-  try {
-    await ElMessageBox.confirm(`确认删除参数「${row.configName || row.configKey || row.id}」？`, '提示', {
-      type: 'warning'
-    })
-  } catch {
-    return
-  }
-  await removeConfig([row.id])
-  ElMessage.success('删除成功')
-  tableRef.value?.refreshData()
-}
-
-async function submitForm() {
-  await formRef.value?.validate()
+async function submitConfig() {
   const payload = { ...form }
   if (form.id) {
     await updateConfig(payload)
-    ElMessage.success('修改成功')
   } else {
     await addConfig(payload)
-    ElMessage.success('新增成功')
   }
-  open.value = false
-  tableRef.value?.refreshData()
 }
 </script>

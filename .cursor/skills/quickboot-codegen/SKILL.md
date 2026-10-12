@@ -110,4 +110,4 @@ description: >-
 - 未要求跨模块时无无用 `api`。
 - 缺审计列的关联表 Entity 不继承 `BaseEntity`。
 - 新模块接线完整；业务表菜单路径与 `component` 正确。
-- **前端（业务表）：** 对齐 `dict/type` 骨架；`C7Dialog` 用 `:on-confirm`；`tableColumns`/`searchColumns` 为 `computed`；有 `#actions` + `handleDelete`；字典用 `useDict`；`defineOptions({ name })` 已写。
+- **前端（业务表）：** 对齐 `dict/type` 骨架；CRUD 用 `C7FormDialog`（`form` / `get-payload` / `submit`，`open(row?)`）；`tableColumns`/`searchColumns` 为 `computed`；有 `#actions` + `removeRows`；字典用 `useDict`；`defineOptions({ name })` 已写。

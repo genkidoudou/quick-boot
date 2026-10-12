@@ -1,5 +1,15 @@
 <template>
-  <C7Dialog v-model="visible" :title="form.id ? '修改菜单' : '新增菜单'" width="800px" :on-confirm="submit">
+  <C7FormDialog
+      ref="formDialogRef"
+      v-model="visible"
+      :title="form.id ? '修改菜单' : '新增菜单'"
+      width="800px"
+      :form="form"
+      :form-ref="formRef"
+      :get-payload="getPayload"
+      :submit="submitMenu"
+      :on-success="() => emit('success')"
+  >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="108px">
       <el-form-item prop="parentId">
         <template #label>
@@ -203,7 +213,7 @@
         <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="100"/>
       </el-form-item>
     </el-form>
-  </C7Dialog>
+  </C7FormDialog>
 </template>
 
 <script setup>
@@ -245,6 +255,7 @@ const {COMMON_STATUS, MENU_TYPE, sys_show_hide} = useDict('COMMON_STATUS', 'MENU
 
 const emit = defineEmits(['success'])
 const visible = ref(false)
+const formDialogRef = ref(null)
 const iconPopoverVisible = ref(false)
 const formRef = ref(null)
 const treeData = ref([])
@@ -411,9 +422,8 @@ function fillForm(row) {
 /**
  * @param {{ id?: string|number, menuId?: string|number, parentId?: string|number, parentMenuType?: string }} [payload]
  */
-function open(payload = {}) {
+async function getPayload(payload = {}) {
   resetForm()
-  visible.value = true
   loadTree()
   const parentId = payload.parentId
   if (parentId != null) {
@@ -421,9 +431,8 @@ function open(payload = {}) {
   }
   const id = payload.menuId ?? payload.id
   if (id != null && id !== '') {
-    getMenu(id).then((res) => {
-      fillForm(res.data || {})
-    })
+    const res = await getMenu(id)
+    fillForm(res.data || {})
     return
   }
   applyParentMenuType(payload.parentMenuType)
@@ -499,39 +508,37 @@ function toPayload() {
   return body
 }
 
-async function submit() {
-  await formRef.value?.validate()
+async function submitMenu() {
   const body = toPayload()
   if (body.id) {
     await updateMenu(body)
-    ElMessage.success('修改成功')
-  } else {
-    const buttons = body.menuType === 'C' ? selectedButtons() : []
-    if (buttons.length) {
-      await batchAddMenu({
-        menu: body,
-        buttons: buttons.map((item) => ({
-          menuName: item.menuName,
-          menuType: 'F',
-          perms: item.perms,
-          orderNum: item.orderNum,
-          isFrame: '0',
-          isCache: '0',
-          visible: '0',
-          status: '0'
-        }))
-      })
-      ElMessage.success('已生成菜单和按钮')
-    } else {
-      await addMenu(body)
-      ElMessage.success('新增成功')
-    }
+    return '修改成功'
   }
-  visible.value = false
-  emit('success')
+  const buttons = body.menuType === 'C' ? selectedButtons() : []
+  if (buttons.length) {
+    await batchAddMenu({
+      menu: body,
+      buttons: buttons.map((item) => ({
+        menuName: item.menuName,
+        menuType: 'F',
+        perms: item.perms,
+        orderNum: item.orderNum,
+        isFrame: '0',
+        isCache: '0',
+        visible: '0',
+        status: '0'
+      }))
+    })
+    return '已生成菜单和按钮'
+  }
+  await addMenu(body)
+  return '新增成功'
 }
 
-defineExpose({open})
+defineExpose({
+  /** @param {{ id?: string|number, menuId?: string|number, parentId?: string|number, parentMenuType?: string }} [payload] */
+  open: (payload) => formDialogRef.value?.open(payload)
+})
 </script>
 
 <style scoped>

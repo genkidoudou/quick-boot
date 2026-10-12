@@ -141,7 +141,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
     }
 
     @Override
-    public List<Long> listRoleByUserId(Long userId) {
+    public List<Long> listRoleIdByUserId(Long userId) {
         return iSysUserRoleService.listRoleIdsByUserId(userId);
     }
 
@@ -169,5 +169,16 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         }
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .in(SysUserRole::getUserId, userIds));
+    }
+
+    @Override
+    public List<SysRoleVo> listRoleByUserId(Long userId) {
+        List<Long> roleIds = this.listRoleIdByUserId(userId);
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        return super.listVo(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getId, roleIds)
+                .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
     }
 }

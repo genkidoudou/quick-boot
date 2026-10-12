@@ -131,4 +131,9 @@ public abstract class BaseVoServiceImpl<M extends BaseMapper<T>, T, V>
         }
         return BeanUtil.copyToList(ts, voClass());
     }
+
+    public  List<V> listVoByIds(Collection<? extends Serializable> idList){
+        List<T> ts = this.baseMapper.selectByIds(idList);
+        return BeanUtil.copyToList(ts, voClass());
+    }
 }

@@ -13,8 +13,8 @@
         :add-button-permi="['system:dictType:add']"
         :edit-button-permi="['system:dictType:edit']"
         :delete-button-permi="['system:dictType:remove']"
-        @add-click="openForm()"
-        @edit-click="openForm"
+        @add-click="() => formDialogRef?.open()"
+        @edit-click="(row) => formDialogRef?.open(row)"
         :export-function="exportExcelDictType"
         :import-function="importExcelDictType"
         :import-template-download-fn="downloadDictTypeImportTemplate"
@@ -35,7 +35,7 @@
             type="primary"
             :icon="Edit"
             v-hasPermi="['system:dictType:edit']"
-            @click="openForm(row)"
+            @click="formDialogRef?.open(row)"
         >
           修改
         </el-button>
@@ -44,14 +44,23 @@
             type="primary"
             :icon="Delete"
             v-hasPermi="['system:dictType:remove']"
-            @click="handleDelete(row)"
+            @click="tableRef?.removeRows(row, { confirmMessage: `确认删除字典类型「${row.dictName || row.dictType || row.id}」？` })"
         >
           删除
         </el-button>
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" :title="title" :on-confirm="submitForm">
+    <C7FormDialog
+        ref="formDialogRef"
+        v-model="open"
+        :title="title"
+        :form="form"
+        :form-ref="formRef"
+        :get-payload="getPayload"
+        :submit="submitDictType"
+        :on-success="() => tableRef?.refreshData()"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="字典名称" prop="dictName">
           <el-input v-model="form.dictName" placeholder="请输入字典名称" maxlength="255"/>
@@ -60,15 +69,13 @@
           <el-input v-model="form.dictType" placeholder="请输入字典类型" maxlength="255" :disabled="form.id"/>
         </el-form-item>
         <el-form-item label="状态" prop="status">
-          <c7-radio :data-list="COMMON_STATUS" v-model="form.status">
-
-          </c7-radio>
+          <c7-radio :data-list="COMMON_STATUS" v-model="form.status"/>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="备注" :rows="3" maxlength="100"/>
         </el-form-item>
       </el-form>
-    </C7Dialog>
+    </C7FormDialog>
 
     <C7Dialog v-model="quickOpen" title="便捷添加字典" width="720px" :on-confirm="submitQuick">
       <el-alert type="info" :closable="false" show-icon class="mb-3" title="首行写名称和类型，后续每行一项。支持 = : 空格 以及逗号分隔。"/>
@@ -126,7 +133,7 @@
 import {computed, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {Delete, Edit, Plus} from '@element-plus/icons-vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import {useDict} from '@/utils/dict'
 import {
   addDictType,
@@ -139,7 +146,6 @@ import {
   parseDictType,
   quickAddDictType
 } from '@/api/system/dict/type'
-import C7Radio from "@/packages/C7Radio/index.vue";
 
 defineOptions({name: 'SysDictType'})
 
@@ -149,6 +155,7 @@ const router = useRouter()
 const {COMMON_STATUS} = useDict('COMMON_STATUS')
 
 const tableRef = ref(null)
+const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
@@ -184,10 +191,8 @@ function emptyForm() {
   }
 }
 
-/**
- * @param {Record<string, any>} [row]
- */
-function openForm(row) {
+/** @param {Record<string, any>} [row] */
+function getPayload(row) {
   Object.assign(form, emptyForm())
   if (row && row.id != null) {
     Object.assign(form, {
@@ -198,34 +203,9 @@ function openForm(row) {
       remark: row.remark ?? ''
     })
   }
-  open.value = true
 }
 
-/**
- * 行内删除。
- *
- * @param {Record<string, any>} row
- */
-async function handleDelete(row) {
-  if (row?.id == null) {
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确认删除字典类型「${row.dictName || row.dictType || row.id}」？`, '提示', {
-      type: 'warning',
-      confirmButtonText: '确定',
-      cancelButtonText: '取消'
-    })
-  } catch {
-    return
-  }
-  await removeDictType([row.id])
-  ElMessage.success('删除成功')
-  tableRef.value?.refreshData()
-}
-
-async function submitForm() {
-  await formRef.value?.validate()
+async function submitDictType() {
   const payload = {
     id: form.id,
     dictName: form.dictName,
@@ -235,13 +215,9 @@ async function submitForm() {
   }
   if (form.id) {
     await updateDictType(payload)
-    ElMessage.success('修改成功')
   } else {
     await addDictType(payload)
-    ElMessage.success('新增成功')
   }
-  open.value = false
-  tableRef.value?.refreshData()
 }
 
 const QUICK_PLACEHOLDER = `通用状态 COMMON_STATUS
