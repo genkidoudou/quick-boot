@@ -1,5 +1,7 @@
 package io.github.genkidoudou.web.exception;
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotSafeException;
 import io.github.genkidoudou.common.api.HttpCodes;
 import io.github.genkidoudou.common.api.R;
 import io.github.genkidoudou.common.exception.ErrorCodes;
@@ -65,6 +67,29 @@ public class GlobalException {
     public R handleNotFound(Exception ex) {
         log.warn("资源不存在: {}", ex.getMessage());
         return R.error(HttpCodes.NOT_FOUND, NOT_FOUND_MESSAGE);
+    }
+
+
+    /**
+     * token失效
+     *
+     * @param notLoginException
+     * @return
+     * @since 2026/10/13
+     */
+    @ExceptionHandler(NotLoginException.class)
+    public R notLoginException(NotLoginException notLoginException) {
+        log.warn("资源不存在: {}", notLoginException.getMessage());
+        return R.error(HttpCodes.UNAUTHORIZED, "请重新登录");
+    }
+
+    /**
+     * Sa-Token 二级认证未通过。
+     */
+    @ExceptionHandler(NotSafeException.class)
+    public R notSafeException(NotSafeException ex) {
+        log.warn("二级认证未通过: {}", ex.getMessage());
+        return R.error(10008, I18nUtil.getMessage(10008));
     }
 
     /**

@@ -58,4 +58,23 @@ public interface ISysUserService {
      * @return 用户视图，不存在时返回 {@code null}
      */
     SysUserVo findByUserName(String username);
+
+    /**
+     * 重置密码
+     *
+     * @param userId 用户id
+     * @return
+     * @since 2026/10/13
+     */
+    void resetPassword(Long userId);
+
+    /**
+     * 检查用户的密码是否正确
+     *
+     * @param userId   用户id
+     * @param password 密码
+     * @return
+     * @since 2026/10/13
+     */
+    void checkPassword(Long userId, String password);
 }

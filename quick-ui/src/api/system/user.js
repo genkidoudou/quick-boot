@@ -10,15 +10,15 @@ const BASE = '/sys/user'
  * @param {{ current?: number, size?: number, param?: Record<string, any> }} data PageRequest
  */
 export function pageUser(data) {
-  return request({
-    url: `${BASE}/page`,
-    method: 'post',
-    data: {
-      current: Number(data?.current ?? 1),
-      size: Number(data?.size ?? 10),
-      param: data?.param ?? {}
-    }
-  })
+    return request({
+        url: `${BASE}/page`,
+        method: 'post',
+        data: {
+            current: Number(data?.current ?? 1),
+            size: Number(data?.size ?? 10),
+            param: data?.param ?? {}
+        }
+    })
 }
 
 /**
@@ -26,10 +26,10 @@ export function pageUser(data) {
  * @param {string|number} id
  */
 export function getUser(id) {
-  return request({
-    url: `${BASE}/${id}`,
-    method: 'get'
-  })
+    return request({
+        url: `${BASE}/${id}`,
+        method: 'get'
+    })
 }
 
 /**
@@ -37,11 +37,11 @@ export function getUser(id) {
  * @param {Record<string, any>} data
  */
 export function addUser(data) {
-  return request({
-    url: `${BASE}/add`,
-    method: 'post',
-    data
-  })
+    return request({
+        url: `${BASE}/add`,
+        method: 'post',
+        data
+    })
 }
 
 /**
@@ -49,11 +49,11 @@ export function addUser(data) {
  * @param {Record<string, any>} data
  */
 export function updateUser(data) {
-  return request({
-    url: `${BASE}/update`,
-    method: 'post',
-    data
-  })
+    return request({
+        url: `${BASE}/update`,
+        method: 'post',
+        data
+    })
 }
 
 /**
@@ -61,9 +61,33 @@ export function updateUser(data) {
  * @param {Array<string|number>} ids
  */
 export function removeUser(ids) {
-  return request({
-    url: `${BASE}/remove`,
-    method: 'post',
-    data: ids
-  })
+    return request({
+        url: `${BASE}/remove`,
+        method: 'post',
+        data: ids
+    })
+}
+
+/**
+ * 重置密码
+ * @param id  用户id
+ * @returns {*}
+ */
+export function resetPassword(id) {
+    return request({
+        url: `${BASE}/resetPassword/` + id,
+        method: 'post'
+    })
+}
+
+/**
+ * 二级认证：校验当前登录密码并 openSafe。
+ * @param {string} password 当前登录密码
+ */
+export function openSafe(password) {
+    return request({
+        url: `${BASE}/openSafe`,
+        method: 'post',
+        params: {password}
+    })
 }

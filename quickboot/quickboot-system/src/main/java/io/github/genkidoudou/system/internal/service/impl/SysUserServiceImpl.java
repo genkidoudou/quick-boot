@@ -1,6 +1,12 @@
 package io.github.genkidoudou.system.internal.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.github.genkidoudou.common.api.PageInfo;
@@ -11,6 +17,7 @@ import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.core.enums.CommonEnums;
+import io.github.genkidoudou.system.api.api.SysConfigApi;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.entity.SysUser;
 import io.github.genkidoudou.system.internal.mapper.SysUserMapper;
@@ -23,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,6 +46,9 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
     private final ISysRoleService sysRoleService;
 
     private final ISysDeptService sysDeptService;
+
+    private final SysConfigApi sysConfigApi;
+
 
     /**
      * 按查询条件组装 Wrapper。
@@ -125,6 +136,16 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         }
 
         encodePassword(sysUserVo);
+        // 密码过期时间
+
+        String passwordValidityPeriod = sysConfigApi.getConfigValue("password_validity_period", "-1");
+        if (passwordValidityPeriod.equals("-1")) {
+            // 永久
+            sysUserVo.setPasswordExpireTime(DateUtil.parse("2099-12-31", DatePattern.NORM_DATE_PATTERN));
+        } else {
+            DateTime dateTime = DateUtil.offsetDay(new Date(), Integer.valueOf(passwordValidityPeriod));
+            sysUserVo.setPasswordExpireTime(dateTime);
+        }
         SysUser sysUser = super.saveVo(sysUserVo);
         List<Long> roleIds =
                 sysUserVo.getRoleIds();
@@ -151,11 +172,8 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
             }
         }
 
-        if (StrUtil.isBlank(sysUserVo.getPassword())) {
-            sysUserVo.setPassword(null);
-        } else {
-            encodePassword(sysUserVo);
-        }
+        //修改的时候不允许修改密码
+        sysUserVo.setPassword(null);
         sysRoleService.bindUserRole(sysUserVo.getId(), sysUserVo.getRoleIds());
         return super.updateVoById(sysUserVo);
     }
@@ -184,6 +202,49 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
             return null;
         }
         return getVoOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserName, username));
+    }
+
+    @Override
+    public void resetPassword(Long userId) {
+        // // 检查当前会话是否已通过二级认证，如未通过则抛出异常
+        StpUtil.checkSafe("checkPassword");
+
+        SysUser sysUser = super.getById(userId);
+        if (null == sysUser) {
+            throw new WarningException(10006);
+        }
+        SysUser param = new SysUser();
+        param.setId(userId);
+        String defaultPassword = sysConfigApi.getConfigValue("default_password", true);
+        PasswordCodec passwordCodec = PasswordCodecFactories.get(CommonEnums.PASSWORD_CODEC_ENCODED.getValue());
+        param.setPassword(passwordCodec.encrypt(defaultPassword));
+
+        // 设置密码默认时间
+        String passwordValidityPeriod = sysConfigApi.getConfigValue("password_validity_period", "-1");
+        if (passwordValidityPeriod.equals("-1")) {
+            // 永久
+            param.setPasswordExpireTime(DateUtil.parse("2099-12-31", DatePattern.NORM_DATE_PATTERN));
+        } else {
+            DateTime dateTime = DateUtil.offsetDay(new Date(), Integer.parseInt(passwordValidityPeriod));
+            param.setPasswordExpireTime(dateTime);
+        }
+        super.updateById(param);
+    }
+
+    @Override
+    public void checkPassword(Long userId, String password) {
+        SysUser sysUser = super.getById(userId);
+        if (null == sysUser) {
+            throw new WarningException(10006);
+        }
+        PasswordCodec passwordCodec = PasswordCodecFactories.get(CommonEnums.PASSWORD_CODEC_ENCODED.getValue());
+        boolean matches = passwordCodec.matches(password, sysUser.getPassword());
+        if (!matches) {
+            throw new WarningException(7002);
+        }
+        // 比对成功，为当前会话打开二级认证，有效期为120秒
+        StpUtil.openSafe("checkPassword", 120);
+
     }
 
     /**

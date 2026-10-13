@@ -15,21 +15,30 @@
         @add-click="() => formDialogRef?.open()"
         @edit-click="(row) => formDialogRef?.open(row)"
     >
-      <template #roleNames = "{row}">
-        <el-tag type="primary" v-for="roleName  in row.roleNames">{{roleName}}</el-tag>
+      <template #roleNames="{row}">
+        <el-tag type="primary" v-for="roleName  in row.roleNames">{{ roleName }}</el-tag>
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" :icon="Edit" v-hasPermi="['system:user:edit']" @click="formDialogRef?.open(row)">
           修改
         </el-button>
         <el-button
-          link
-          type="primary"
-          :icon="Delete"
-          v-hasPermi="['system:user:remove']"
-          @click="tableRef?.removeRows(row, { confirmMessage: `确认删除用户「${row.userName || row.nickName || row.id}」？` })"
+            link
+            type="primary"
+            :icon="Delete"
+            v-hasPermi="['system:user:remove']"
+            @click="tableRef?.removeRows(row, { confirmMessage: `确认删除用户「${row.userName || row.nickName || row.id}」？` })"
         >
           删除
+        </el-button>
+        <el-button
+            link
+            type="primary"
+            :icon="Edit"
+            v-hasPermi="['system:user:resetPassword']"
+            @click="resetUserPassword(row)"
+        >
+          重置密码
         </el-button>
       </template>
     </C7JsonTable>
@@ -140,6 +149,7 @@
  */
 import {computed, reactive, ref} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {useDict} from '@/utils/dict'
 import {
   emailRules,
@@ -150,7 +160,7 @@ import {
   userNameRules
 } from '@/utils/validate'
 import {treeselectDept} from '@/api/system/dept'
-import {addUser, getUser, pageUser, removeUser, updateUser} from '@/api/system/user'
+import {addUser, getUser, openSafe, pageUser, removeUser, resetPassword, updateUser} from '@/api/system/user'
 import {assignableRoles} from '@/api/system/role'
 import C7Select from '@/packages/C7Select/index.vue'
 
@@ -169,13 +179,13 @@ const tableColumns = computed(() => [
   {prop: 'userName', label: '用户名', minWidth: 120, showOverflowTooltip: true},
   {prop: 'nickName', label: '昵称', minWidth: 100, showOverflowTooltip: true},
   {prop: 'deptName', label: '部门', minWidth: 80, showOverflowTooltip: true},
-  {prop: 'roleNames', label: '角色', minWidth: 140, showOverflowTooltip: true,columnType: "slot"},
+  {prop: 'roleNames', label: '角色', minWidth: 140, showOverflowTooltip: true, columnType: "slot"},
   {prop: 'phonenumber', label: '手机号码', minWidth: 80},
   {prop: 'email', label: '邮箱', minWidth: 120, showOverflowTooltip: true},
   {prop: 'userType', label: '用户类型', columnType: 'tag', dictList: user_type.value || [], width: 110},
   {prop: 'sex', label: '性别', columnType: 'tag', dictList: sex.value || [], width: 80},
   {prop: 'status', label: '状态', columnType: 'tag', dictList: user_status.value || [], width: 90},
-  {prop: 'actions', label: '操作', columnType: 'slot', width: 160, fixed: 'right', align: 'center'}
+  {prop: 'actions', label: '操作', columnType: 'slot', width: 240, fixed: 'right', align: 'center'}
 ])
 
 const searchColumns = computed(() => [
@@ -238,6 +248,7 @@ async function getPayload(row) {
   }
 }
 
+
 /** 提交：组装业务差异 + 新增/修改分支（直接读页面 form） */
 async function submitUser() {
   const payload = {
@@ -262,6 +273,50 @@ async function submitUser() {
     await updateUser(payload)
   } else {
     await addUser(payload)
+  }
+}
+
+
+/**
+ * 重置用户密码：确认 → 二次认证密码 → openSafe → resetPassword。
+ * @param {Record<string, any>} row
+ */
+async function resetUserPassword(row) {
+  if (row?.id == null) {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+        `确认重置用户「${row.userName || row.nickName || row.id}」的密码？`,
+        '提示',
+        {
+          type: 'warning',
+          confirmButtonText: '确定',
+          cancelButtonText: '取消'
+        }
+    )
+  } catch {
+    return
+  }
+  let password
+  try {
+    const {value} = await ElMessageBox.prompt('请输入当前登录密码以完成二次认证', '二次认证', {
+      inputType: 'password',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputPlaceholder: '当前登录密码',
+      inputValidator: (v) => (String(v || '').trim() ? true : '密码不能为空')
+    })
+    password = value
+  } catch {
+    return
+  }
+  try {
+    await openSafe(password)
+    await resetPassword(row.id)
+    ElMessage.success('重置成功')
+  } catch {
+    // 业务错误已由 request 拦截器提示，避免冒泡到 AppMain 整页显示 error
   }
 }
 </script>

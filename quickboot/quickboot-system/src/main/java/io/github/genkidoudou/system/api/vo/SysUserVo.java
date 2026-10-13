@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -119,4 +120,13 @@ public class SysUserVo extends BaseEntity implements Serializable {
     
 
     private String deptName;
+
+
+    /**
+     * 密码有效期
+     *
+     * @since 2026/10/13
+     */
+
+    private Date passwordExpireTime;
 }

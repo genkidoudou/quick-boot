@@ -50,4 +50,14 @@ public interface ISysConfigService {
      * @param ids 主键列表
      */
     void removeByIds(List<Long> ids);
+
+    /**
+     * 根据配置的key 获取配置项
+     *
+     * @param configKey 配置key
+     * @return
+     * @since 2026/10/13
+     */
+    SysConfig getByConfigKey(String configKey);
+
 }

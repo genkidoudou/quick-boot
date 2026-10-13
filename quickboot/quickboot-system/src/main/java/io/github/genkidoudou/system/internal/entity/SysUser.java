@@ -78,5 +78,11 @@ public class SysUser extends BaseEntity implements Serializable {
      */
     private String status;
 
+    /**
+     * 密码有效期
+     *
+     * @since 2026/10/13
+     */
+
     private Date passwordExpireTime;
 }

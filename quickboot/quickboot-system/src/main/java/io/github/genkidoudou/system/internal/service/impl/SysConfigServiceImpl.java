@@ -2,6 +2,7 @@ package io.github.genkidoudou.system.internal.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
@@ -84,5 +85,11 @@ public class SysConfigServiceImpl extends BaseVoServiceImpl<SysConfigMapper, Sys
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+    }
+
+    @Override
+    public SysConfig getByConfigKey(String configKey) {
+        return super.getOne(new LambdaUpdateWrapper<SysConfig>()
+                .eq(SysConfig::getConfigKey, configKey), false);
     }
 }
