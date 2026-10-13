@@ -25,4 +25,9 @@ public class SysUserApiImpl implements SysUserApi {
     public SysUserVo findByUserName(String username) {
         return sysUserService.findByUserName(username);
     }
+
+    @Override
+    public SysUserVo getByUserId(Long userId) {
+        return sysUserService.getVoById(userId);
+    }
 }

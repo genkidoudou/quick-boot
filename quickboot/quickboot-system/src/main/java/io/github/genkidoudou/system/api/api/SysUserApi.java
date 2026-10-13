@@ -15,4 +15,13 @@ public interface SysUserApi {
      * @since 2026/9/18
      */
     SysUserVo findByUserName(String username);
+
+    /**
+     * 根据用户id查询
+     *
+     * @param userId 用户id
+     * @return
+     * @since 2026/10/13
+     */
+    SysUserVo getByUserId(Long userId);
 }

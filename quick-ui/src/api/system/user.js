@@ -91,3 +91,15 @@ export function openSafe(password) {
         params: {password}
     })
 }
+
+/**
+ * 修改当前登录用户密码。
+ * @param {{ oldPassword: string, newPassword: string }} data
+ */
+export function updatePassword(data) {
+    return request({
+        url: `${BASE}/updatePassword`,
+        method: 'post',
+        data
+    })
+}

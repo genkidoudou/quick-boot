@@ -1,19 +1,24 @@
 package io.github.genkidoudou.web.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.date.DateUtil;
 import io.github.genkidoudou.common.api.R;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.security.utils.LoginUserUtils;
 import io.github.genkidoudou.common.security.vo.LoginUser;
 import io.github.genkidoudou.core.security.LoginHelper;
 import io.github.genkidoudou.system.api.api.SysMenuApi;
+import io.github.genkidoudou.system.api.api.SysUserApi;
 import io.github.genkidoudou.system.api.vo.RouterVo;
+import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.web.service.LoginGrantDispatcher;
 import io.github.genkidoudou.web.vo.TokenResponse;
+import io.github.genkidoudou.web.vo.UserInfoVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -31,6 +36,8 @@ public class LoginController {
     private final LoginGrantDispatcher loginGrantDispatcher;
 
     private final SysMenuApi sysMenuApi;
+
+    private final SysUserApi sysUserApi;
 
     @PostMapping("/login")
     public R login(HttpServletRequest request) {
@@ -54,14 +61,26 @@ public class LoginController {
      * @since 2026/9/19
      */
     @GetMapping("/auth/me")
-    public R getInfo() {
+    public R<UserInfoVo> getInfo() {
         LoginUser loginUser = LoginUserUtils.getLoginUser();
         if (null == loginUser) {
             throw new WarningException(401);
         }
 
+        SysUserVo sysUserVo = sysUserApi.getByUserId(loginUser.getUserId());
+        if (null == sysUserVo) {
+            throw new WarningException(10006);
+        }
 
-        return R.ok(loginUser);
+
+        UserInfoVo infoVo = UserInfoVo.builder()
+                .userId(sysUserVo.getId())
+                .deptId(sysUserVo.getDeptId())
+                .permissions(loginUser.getPermissions())
+                .username(sysUserVo.getUserName())
+                .nickName(sysUserVo.getNickName())
+                .passwordExpire(DateUtil.compare(sysUserVo.getPasswordExpireTime(), new Date()) < 0).build();
+        return R.ok(infoVo);
     }
 
     /**

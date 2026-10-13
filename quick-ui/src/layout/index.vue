@@ -12,6 +12,7 @@
       </div>
       <app-main />
       <settings ref="settingRef" />
+      <force-change-password-dialog />
     </div>
   </div>
 </template>
@@ -24,6 +25,7 @@
 import { useWindowSize } from '@vueuse/core'
 import Sidebar from './components/Sidebar/index.vue'
 import { AppMain, Navbar, Settings, TagsView } from './components'
+import ForceChangePasswordDialog from './components/ForceChangePasswordDialog.vue'
 import useAppStore from '@/store/modules/app'
 import useSettingsStore from '@/store/modules/settings'
 import usePermissionStore from '@/store/modules/permission'

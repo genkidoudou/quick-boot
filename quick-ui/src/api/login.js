@@ -141,7 +141,8 @@ export function getInfo() {
                     avatar: ''
                 },
                 roles,
-                permissions
+                permissions,
+                passwordExpire: !!me.passwordExpire
             }
         }
     })

@@ -68,6 +68,7 @@ public class PasswordGrantHandler extends AbstractLoginGrantHandler {
         if (!sysUserVo.getStatus().equals(CommonEnums.STATUS_ENABLE.getValue())) {
             throw new WarningException(7003);
         }
+        // 判断密码有效期
 
         PasswordCodec passwordCodec = PasswordCodecFactories.get(CommonEnums.PASSWORD_CODEC_ENCODED.getValue());
         boolean matches = passwordCodec.matches(password, sysUserVo.getPassword());

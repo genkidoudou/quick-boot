@@ -4,6 +4,7 @@ import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.entity.SysUser;
+import io.github.genkidoudou.system.internal.vo.UpdatePasswordRequestVo;
 
 import java.util.List;
 
@@ -77,4 +78,15 @@ public interface ISysUserService {
      * @since 2026/10/13
      */
     void checkPassword(Long userId, String password);
+
+    /**
+     * 根据id 修改密码
+     *
+     * @param userId                  用户id
+     * @param updatePasswordRequestVo 密码
+     * @return
+     * @since 2026/10/13
+     */
+    void updatePassword(Long userId, UpdatePasswordRequestVo updatePasswordRequestVo);
+
 }

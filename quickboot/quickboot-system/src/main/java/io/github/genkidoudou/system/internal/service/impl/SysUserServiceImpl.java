@@ -26,6 +26,7 @@ import io.github.genkidoudou.system.internal.service.ISysRoleService;
 import io.github.genkidoudou.system.internal.service.ISysUserService;
 import io.github.genkidoudou.system.internal.vo.SysDeptVo;
 import io.github.genkidoudou.system.internal.vo.SysRoleVo;
+import io.github.genkidoudou.system.internal.vo.UpdatePasswordRequestVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -247,6 +248,33 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
 
     }
 
+    @Override
+    public void updatePassword(Long userId, UpdatePasswordRequestVo updatePasswordRequestVo) {
+        SysUser sysUser = super.getById(userId);
+        if (null == sysUser) {
+            throw new WarningException(10006);
+        }
+
+        PasswordCodec passwordCodec = PasswordCodecFactories.get(CommonEnums.PASSWORD_CODEC_ENCODED.getValue());
+        if (!passwordCodec.matches(updatePasswordRequestVo.getOldPassword(), sysUser.getPassword())) {
+            throw new WarningException(10009);
+        }
+        // 修改为新密码
+        SysUser param = new SysUser();
+        param.setPassword(passwordCodec.encrypt(updatePasswordRequestVo.getNewPassword()));
+        param.setId(userId);
+        // 设置密码默认时间
+        String passwordValidityPeriod = sysConfigApi.getConfigValue("password_validity_period", "-1");
+        if (passwordValidityPeriod.equals("-1")) {
+            // 永久
+            param.setPasswordExpireTime(DateUtil.parse("2099-12-31", DatePattern.NORM_DATE_PATTERN));
+        } else {
+            DateTime dateTime = DateUtil.offsetDay(new Date(), Integer.parseInt(passwordValidityPeriod));
+            param.setPasswordExpireTime(dateTime);
+        }
+        super.updateById(param);
+    }
+
     /**
      * 按登录同一套算法加密密码。
      *
@@ -256,4 +284,6 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         PasswordCodec passwordCodec = PasswordCodecFactories.get(CommonEnums.PASSWORD_CODEC_ENCODED.getValue());
         body.setPassword(passwordCodec.encrypt(body.getPassword()));
     }
+
+
 }

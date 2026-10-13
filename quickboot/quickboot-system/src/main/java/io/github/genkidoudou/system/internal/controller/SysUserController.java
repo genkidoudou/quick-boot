@@ -11,6 +11,7 @@ import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.service.ISysUserService;
+import io.github.genkidoudou.system.internal.vo.UpdatePasswordRequestVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -112,9 +113,21 @@ public class SysUserController {
      */
     @PostMapping("openSafe")
     public R openSafe(@RequestParam(value = "password", required = true) String password) {
-        sysUserService.checkPassword(LoginUserUtils.getLoginUser().getUserId(),password);
+        sysUserService.checkPassword(LoginUserUtils.getLoginUser().getUserId(), password);
         return R.ok();
     }
 
 
+    /**
+     * 修改当前用户的密码
+     *
+     * @param updatePasswordRequestVo 参数
+     * @return
+     * @since 2026/10/13
+     */
+    @PostMapping("updatePassword")
+    public R updatePassword(@RequestBody @Validated UpdatePasswordRequestVo updatePasswordRequestVo) {
+        sysUserService.updatePassword(LoginUserUtils.getLoginUser().getUserId(), updatePasswordRequestVo);
+        return R.ok();
+    }
 }
