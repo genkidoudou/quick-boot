@@ -14,22 +14,17 @@
       </template>
     </C7JsonTable>
 
-    <C7Dialog v-model="open" title="登录日志详情">
+    <C7Dialog v-model="open" title="登录日志详情" width="720px" mobile-mode="drawer">
       <template #footer>
-        <el-button @click="open = false">关闭</el-button>
+        <el-button type="primary" @click="open = false">关闭</el-button>
       </template>
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="用户名">{{ detail.userName }}</el-descriptions-item>
-        <el-descriptions-item label="用户ID">{{ detail.userId }}</el-descriptions-item>
-        <el-descriptions-item label="客户端">{{ detail.clientId }}</el-descriptions-item>
-        <el-descriptions-item label="IP">{{ detail.ipAddr }}</el-descriptions-item>
-        <el-descriptions-item label="地点">{{ detail.loginLocation }}</el-descriptions-item>
-        <el-descriptions-item label="浏览器">{{ detail.browser }}</el-descriptions-item>
-        <el-descriptions-item label="操作系统">{{ detail.os }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ statusLabel }}</el-descriptions-item>
-        <el-descriptions-item label="登录时间">{{ detail.loginTime }}</el-descriptions-item>
-        <el-descriptions-item label="备注">{{ detail.remark }}</el-descriptions-item>
-      </el-descriptions>
+      <C7Descriptions
+        :data="detail"
+        :items="detailItems"
+        :column="2"
+        border
+        label-width="96px"
+      />
     </C7Dialog>
   </div>
 </template>
@@ -51,18 +46,13 @@ const tableRef = ref(null)
 const open = ref(false)
 const detail = reactive({})
 
-const statusLabel = computed(() => {
-  const hit = (SYS_LOGIN_STATUS.value || []).find((d) => String(d.value) === String(detail.status))
-  return hit?.label ?? detail.status ?? ''
-})
-
 const tableColumns = computed(() => [
   { prop: 'userName', label: '用户名', minWidth: 120, showOverflowTooltip: true },
   { prop: 'ipAddr', label: 'IP', minWidth: 130 },
-  { prop: 'loginLocation', label: '地点', minWidth: 120, showOverflowTooltip: true },
-  { prop: 'browser', label: '浏览器', minWidth: 120, showOverflowTooltip: true },
-  { prop: 'os', label: '操作系统', minWidth: 120, showOverflowTooltip: true },
+  { prop: 'browser', label: '浏览器', minWidth: 110, showOverflowTooltip: true },
+  { prop: 'os', label: '操作系统', minWidth: 110, showOverflowTooltip: true },
   { prop: 'status', label: '状态', columnType: 'tag', dictList: SYS_LOGIN_STATUS.value || [], width: 90 },
+  { prop: 'traceId', label: '链路ID', minWidth: 160, showOverflowTooltip: true },
   { prop: 'loginTime', label: '登录时间', minWidth: 170 },
   { prop: 'actions', label: '操作', columnType: 'slot', width: 90, fixed: 'right', align: 'center' }
 ])
@@ -70,7 +60,21 @@ const tableColumns = computed(() => [
 const searchColumns = computed(() => [
   { prop: 'userName', label: '用户名', type: 'input' },
   { prop: 'ipAddr', label: 'IP', type: 'input' },
+  { prop: 'traceId', label: '链路ID', type: 'input' },
   { prop: 'status', label: '状态', type: 'select', dataList: SYS_LOGIN_STATUS.value || [] }
+])
+
+const detailItems = computed(() => [
+  { prop: 'userName', label: '用户名' },
+  { prop: 'userId', label: '用户ID', columnType: 'copy', emptyText: '-' },
+  { prop: 'status', label: '状态', columnType: 'tag', options: SYS_LOGIN_STATUS.value || [] },
+  { prop: 'loginTime', label: '登录时间' },
+  { prop: 'ipAddr', label: 'IP', columnType: 'copy' },
+  { prop: 'loginLocation', label: '地点', emptyText: '-' },
+  { prop: 'browser', label: '浏览器', emptyText: '-' },
+  { prop: 'os', label: '操作系统', emptyText: '-' },
+  { prop: 'clientId', label: '客户端', emptyText: '-' },
+  { prop: 'traceId', label: '链路ID', span: 2, columnType: 'copy', emptyText: '-' }
 ])
 
 async function openDetail(row) {

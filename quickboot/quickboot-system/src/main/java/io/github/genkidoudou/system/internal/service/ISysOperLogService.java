@@ -5,7 +5,7 @@ import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.system.internal.vo.SysOperLogVo;
 
 /**
- * 操作日志服务。仅查询，不提供新增、修改、删除。
+ * 操作日志服务。查询 + 切面写入；不提供修改、删除。
  */
 public interface ISysOperLogService {
 
@@ -24,4 +24,11 @@ public interface ISysOperLogService {
      * @return 详情
      */
     SysOperLogVo getVoById(Long id);
+
+    /**
+     * 写入一条操作日志。
+     *
+     * @param vo 操作访问信息
+     */
+    void record(SysOperLogVo vo);
 }

@@ -131,10 +131,12 @@ public class OperLogPublishingAspect {
       resultForLog = null;
     }
 
+    LoginUser loginUser = currentLoginUser();
     OperLogCapturePayload payload = OperLogCapturePayload.builder()
         .startTimeMs(start)
         .endTimeMs(end)
-        .traceId(TraceIds.current())
+        .traceId(TraceIds.currentOrCreate())
+        .clientId(loginUser != null ? loginUser.getClientId() : null)
         .signature(ms)
         .args(argsForLog)
         .result(resultForLog)
@@ -143,7 +145,8 @@ public class OperLogPublishingAspect {
         .requestUri(currentRequestUri())
         .requestIp(currentRequestIp())
         .userAgent(currentUserAgent())
-        .loginUserId(currentLoginUserId())
+        .loginUserId(loginUser != null ? loginUser.getUserId() : currentLoginUserId())
+        .loginUsername(loginUser != null ? loginUser.getUsername() : null)
         .build();
     try {
       eventPublisher.publishEvent(new OperLogCapturedEvent(payload));
@@ -298,6 +301,19 @@ public class OperLogPublishingAspect {
       var attrs = RequestContextHolder.getRequestAttributes();
       return attrs instanceof ServletRequestAttributes s ? s : null;
     } catch (IllegalStateException e) {
+      return null;
+    }
+  }
+
+  /**
+   * 在 Web 请求线程读取当前登录用户，供落库使用。
+   *
+   * @return 登录用户；未登录为 {@code null}
+   */
+  private static LoginUser currentLoginUser() {
+    try {
+      return LoginUserUtils.getLoginUser();
+    } catch (Exception ignored) {
       return null;
     }
   }

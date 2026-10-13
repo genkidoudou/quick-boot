@@ -79,7 +79,7 @@ public final class R<T> {
         r.code = code;
         r.msg = msg;
         r.data = data;
-        r.traceId = TraceIds.current();
+        r.traceId = TraceIds.currentOrCreate();
         r.timestamp = System.currentTimeMillis();
         return r;
     }

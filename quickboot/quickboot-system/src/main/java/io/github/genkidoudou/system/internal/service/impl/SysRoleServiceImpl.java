@@ -30,8 +30,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @Service
-public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole, SysRoleVo>
-        implements ISysRoleService {
+public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole, SysRoleVo> implements ISysRoleService {
 
     private final ISysRoleMenuService sysRoleMenuService;
 
@@ -52,10 +51,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         if (param == null) {
             return;
         }
-        query.like(StrUtil.isNotBlank(param.getRoleName()), SysRole::getRoleName, param.getRoleName())
-                .like(StrUtil.isNotBlank(param.getRoleCode()), SysRole::getRoleCode, param.getRoleCode())
-                .eq(StrUtil.isNotBlank(param.getDataScope()), SysRole::getDataScope, param.getDataScope())
-                .eq(StrUtil.isNotBlank(param.getStatus()), SysRole::getStatus, param.getStatus());
+        query.like(StrUtil.isNotBlank(param.getRoleName()), SysRole::getRoleName, param.getRoleName()).like(StrUtil.isNotBlank(param.getRoleCode()), SysRole::getRoleCode, param.getRoleCode()).eq(StrUtil.isNotBlank(param.getDataScope()), SysRole::getDataScope, param.getDataScope()).eq(StrUtil.isNotBlank(param.getStatus()), SysRole::getStatus, param.getStatus());
     }
 
     /**
@@ -86,6 +82,11 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
     @Transactional(rollbackFor = Exception.class)
     public SysRole saveVo(SysRoleVo vo) {
 
+        // 校验code唯一
+        long count = super.count(new LambdaQueryWrapper<SysRole>().eq(SysRole::getRoleCode, vo.getRoleCode()));
+        if (count > 0) {
+            throw new WarningException(10010, vo.getRoleCode());
+        }
         SysRole sysRole = super.saveVo(vo);
         sysRoleMenuService.saveOrUpdate(sysRole.getId(), vo.getMenuIds());
         return sysRole;
@@ -100,6 +101,11 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById(SysRoleVo vo) {
+        // 校验code唯一
+        long count = super.count(new LambdaQueryWrapper<SysRole>().eq(SysRole::getRoleCode, vo.getRoleCode()).ne(SysRole::getId, vo.getId()));
+        if (count > 0) {
+            throw new WarningException(10010, vo.getRoleCode());
+        }
         sysRoleMenuService.saveOrUpdate(vo.getId(), vo.getMenuIds());
         return super.updateVoById(vo);
     }
@@ -111,8 +117,21 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
      */
     @Override
     public void removeByIds(List<Long> ids) {
+        if (CollectionUtil.isEmpty(ids)) {
+            return;
+        }
+        // 判断如果该角色绑定用户 则不允许删除
+        for (Long id : ids) {
+            SysRole sysRole = super.getById(id);
+            Long count = sysUserRoleMapper.selectCount(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getRoleId, id));
+            if (count > 0) {
+                throw new WarningException(10011, sysRole.getRoleName());
+            }
+        }
         deleteByIds(ids);
         sysRoleMenuService.deleteByRoleIds(ids);
+
+
     }
 
     @Override
@@ -122,21 +141,16 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
             return new ArrayList<>();
         }
         // 这里判断一下 有没有超级管理员的code, 如果有的话就加载全部的角色id
-        List<SysRoleVo> sysRoleVoList = super.listVo(new LambdaQueryWrapper<SysRole>()
-                .in(SysRole::getId, roleIds)
-                .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+        List<SysRoleVo> sysRoleVoList = super.listVo(new LambdaQueryWrapper<SysRole>().in(SysRole::getId, roleIds).eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
         boolean isAdmin = sysRoleVoList.stream().anyMatch(a -> a.getRoleCode().equals("ROLE_ADMIN"));
         if (isAdmin) {
-            return super.listVo(new LambdaQueryWrapper<SysRole>()
-                    .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+            return super.listVo(new LambdaQueryWrapper<SysRole>().eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
         } else {
             List<Long> assignableRoleIds = sysRoleAssignableService.listAssignableRoleIdsByRoleIds(roleIds);
             if (CollectionUtil.isEmpty(assignableRoleIds)) {
                 return new ArrayList<>();
             }
-            return super.listVo(new LambdaQueryWrapper<SysRole>()
-                    .in(SysRole::getId, roleIds)
-                    .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+            return super.listVo(new LambdaQueryWrapper<SysRole>().in(SysRole::getId, roleIds).eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
         }
     }
 
@@ -148,8 +162,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
     @Override
     public void bindUserRole(Long userId, List<Long> roleIds) {
         // 删除绑定关系
-        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-                .eq(SysUserRole::getUserId, userId));
+        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
         if (CollectionUtil.isNotEmpty(roleIds)) {
             List<SysUserRole> userRoleList = roleIds.stream().map(a -> {
                 SysUserRole sysUserRole = new SysUserRole();
@@ -167,8 +180,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         if (CollectionUtil.isEmpty(userIds)) {
             return;
         }
-        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-                .in(SysUserRole::getUserId, userIds));
+        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().in(SysUserRole::getUserId, userIds));
     }
 
     @Override
@@ -177,8 +189,6 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         if (CollectionUtil.isEmpty(roleIds)) {
             return new ArrayList<>();
         }
-        return super.listVo(new LambdaQueryWrapper<SysRole>()
-                .in(SysRole::getId, roleIds)
-                .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+        return super.listVo(new LambdaQueryWrapper<SysRole>().in(SysRole::getId, roleIds).eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
     }
 }

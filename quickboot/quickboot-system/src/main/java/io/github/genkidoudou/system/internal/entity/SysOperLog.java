@@ -1,8 +1,6 @@
 package io.github.genkidoudou.system.internal.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import io.github.genkidoudou.core.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,10 +12,9 @@ import java.time.LocalDateTime;
 /**
  * 操作日志实体，与表 {@code sys_oper_log} 对应。
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @TableName("sys_oper_log")
-public class SysOperLog extends BaseEntity implements Serializable {
+public class SysOperLog  implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -76,4 +73,17 @@ public class SysOperLog extends BaseEntity implements Serializable {
 
     /** 链路 id。 */
     private String traceId;
+
+
+    /**
+     * 创建者用户 ID（字符串形式）。
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private String createBy;
+
+    /**
+     * 创建时间。
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
 }

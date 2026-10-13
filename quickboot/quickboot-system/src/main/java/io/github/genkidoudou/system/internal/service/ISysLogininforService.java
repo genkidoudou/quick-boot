@@ -5,7 +5,7 @@ import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.system.internal.vo.SysLogininforVo;
 
 /**
- * 登录日志服务。仅查询，不提供新增、修改、删除。
+ * 登录日志服务。查询 + 登录时写入；不提供修改、删除。
  */
 public interface ISysLogininforService {
 
@@ -24,4 +24,11 @@ public interface ISysLogininforService {
      * @return 详情
      */
     SysLogininforVo getVoById(Long id);
+
+    /**
+     * 写入一条登录日志。
+     *
+     * @param vo 登录访问信息
+     */
+    void record(SysLogininforVo vo);
 }

@@ -12,7 +12,7 @@ import io.github.genkidoudou.system.internal.vo.SysOperLogVo;
 import org.springframework.stereotype.Service;
 
 /**
- * 操作日志服务实现。仅查询。
+ * 操作日志服务实现。查询 + 写入。
  */
 @Service
 public class SysOperLogServiceImpl extends BaseVoServiceImpl<SysOperLogMapper, SysOperLog, SysOperLogVo>
@@ -32,6 +32,7 @@ public class SysOperLogServiceImpl extends BaseVoServiceImpl<SysOperLogMapper, S
         }
         query.like(StrUtil.isNotBlank(param.getOperName()), SysOperLog::getOperName, param.getOperName())
                 .like(StrUtil.isNotBlank(param.getOperUrl()), SysOperLog::getOperUrl, param.getOperUrl())
+                .like(StrUtil.isNotBlank(param.getTraceId()), SysOperLog::getTraceId, param.getTraceId())
                 .eq(StrUtil.isNotBlank(param.getRequestMethod()), SysOperLog::getRequestMethod, param.getRequestMethod())
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysOperLog::getStatus, param.getStatus())
                 .orderByDesc(SysOperLog::getOperTime);
@@ -50,5 +51,13 @@ public class SysOperLogServiceImpl extends BaseVoServiceImpl<SysOperLogMapper, S
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "操作日志不存在");
         }
         return vo;
+    }
+
+    @Override
+    public void record(SysOperLogVo vo) {
+        if (vo == null) {
+            return;
+        }
+        saveVo(vo);
     }
 }

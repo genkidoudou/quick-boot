@@ -37,8 +37,12 @@ public class OperLogProperties {
 
   private static List<String> defaultIgnorePatterns() {
     List<String> p = new ArrayList<>();
-    p.add("/login/captcha-config");
+    p.add("/login");
+    p.add("/login/**");
     p.add("/logout");
+    p.add("/auth/me");
+    p.add("/sys/operLog/**");
+    p.add("/sys/logininfor/**");
     p.add("/actuator/**");
     p.add("/swagger-ui/**");
     p.add("/v3/api-docs/**");

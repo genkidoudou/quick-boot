@@ -1,17 +1,15 @@
 package io.github.genkidoudou.common.api;
 
-import cn.hutool.crypto.SmUtil;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import org.slf4j.MDC;
 
 /**
  * 从 SLF4J {@link MDC} 读取链路 {@code traceId}，与 {@code logback} 中 {@code %X{traceId}} 约定一致。
  * <p>
- * {@code traceId} 依赖 <strong>Micrometer Tracing</strong>（及工程选用的 bridge）在 HTTP 请求观测路径上向 MDC
- * 写入与 {@link #MDC_KEY} 相同的键；本类<strong>不创建</strong> span、不替代框架侧传播逻辑。
- * <p>
- * 异步任务或自建线程池若未做 MDC / tracing 上下文传递，{@link #current()} 可能始终为 {@code null}，需由业务侧另行接入传播能力。
- * <p>
- * 若当前线程未设置 MDC（或值为空白），{@link #current()} 返回 {@code null}；{@link R} 序列化行为遵循全局 Jackson 策略（可能省略 null 字段）。
+ * 优先读 Micrometer Tracing 写入的 MDC；若当前线程尚无 traceId（例如部分过滤器链外、登录早期），
+ * {@link #currentOrCreate()} 会生成并回写 MDC，保证登录/操作日志与 {@link R} 能带上同一链路号。
+ * </p>
  */
 public final class TraceIds {
 
@@ -28,10 +26,28 @@ public final class TraceIds {
    */
   public static String current() {
     String v = MDC.get(MDC_KEY);
-    if (v == null) {
+    if (StrUtil.isBlank(v)) {
+      // 兼容部分 bridge 使用的键
+      v = MDC.get("trace_id");
+    }
+    if (StrUtil.isBlank(v)) {
       return null;
     }
-    String t = v.trim();
-    return t.isEmpty() ? null : t;
+    return v.trim();
+  }
+
+  /**
+   * 返回当前 traceId；若 MDC 中没有则生成并写入 MDC，供后续日志与响应共用。
+   *
+   * @return 非空 traceId
+   */
+  public static String currentOrCreate() {
+    String existing = current();
+    if (existing != null) {
+      return existing;
+    }
+    String created = IdUtil.fastSimpleUUID();
+    MDC.put(MDC_KEY, created);
+    return created;
   }
 }

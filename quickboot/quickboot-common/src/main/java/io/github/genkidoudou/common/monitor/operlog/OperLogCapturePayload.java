@@ -51,4 +51,7 @@ public class OperLogCapturePayload implements Serializable {
 
   /** 请求线程快照：登录用户 ID；未登录为 null。 */
   Long loginUserId;
+
+  /** 请求线程快照：登录用户名；未登录为 null。 */
+  String loginUsername;
 }

@@ -12,7 +12,7 @@ import io.github.genkidoudou.system.internal.vo.SysLogininforVo;
 import org.springframework.stereotype.Service;
 
 /**
- * 登录日志服务实现。仅查询。
+ * 登录日志服务实现。查询 + 写入。
  */
 @Service
 public class SysLogininforServiceImpl extends BaseVoServiceImpl<SysLogininforMapper, SysLogininfor, SysLogininforVo>
@@ -32,6 +32,7 @@ public class SysLogininforServiceImpl extends BaseVoServiceImpl<SysLogininforMap
         }
         query.like(StrUtil.isNotBlank(param.getUserName()), SysLogininfor::getUserName, param.getUserName())
                 .like(StrUtil.isNotBlank(param.getIpAddr()), SysLogininfor::getIpAddr, param.getIpAddr())
+                .like(StrUtil.isNotBlank(param.getTraceId()), SysLogininfor::getTraceId, param.getTraceId())
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysLogininfor::getStatus, param.getStatus())
                 .orderByDesc(SysLogininfor::getLoginTime);
     }
@@ -49,5 +50,13 @@ public class SysLogininforServiceImpl extends BaseVoServiceImpl<SysLogininforMap
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "登录日志不存在");
         }
         return vo;
+    }
+
+    @Override
+    public void record(SysLogininforVo vo) {
+        if (vo == null) {
+            return;
+        }
+        saveVo(vo);
     }
 }

@@ -320,18 +320,20 @@ function resolveCopyText(item) {
 }
 
 /**
- * 合并 **`copyProps`** 与解析后的 **`text`**（后者覆盖 **`copyProps.text`**，保证与 **`resolveCopyText`** 优先级一致）。
+ * 合并 **`copyProps`** 与解析后的 **`text`**。
+ * 详情场景默认 **`mode: 'text'`**（展示原文并可点复制）；`button` 默认只显示「复制」字样会看不到数据。
  *
  * @param {Record<string, *>} item
  * @returns {Record<string, *>}
  */
 function copyPropsMerged(item) {
   const text = resolveCopyText(item)
-  const cp = item.copyProps
-  if (cp && typeof cp === 'object') {
-    return {...cp, text}
+  const cp = item.copyProps && typeof item.copyProps === 'object' ? item.copyProps : {}
+  return {
+    mode: 'text',
+    ...cp,
+    text
   }
-  return {text}
 }
 
 /**
