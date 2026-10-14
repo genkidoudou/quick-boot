@@ -64,4 +64,13 @@ public class SysRoleVo extends BaseEntity implements Serializable {
      */
 
     private List<Long> menuIds;
+
+
+    /**
+     * 可授权的角色id集合
+     *
+     * @since 2026/10/14
+     */
+
+    private List<Long> assignableRoleIds;
 }

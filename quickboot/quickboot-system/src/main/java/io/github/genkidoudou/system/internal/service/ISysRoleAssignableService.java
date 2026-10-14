@@ -32,4 +32,13 @@ public interface ISysRoleAssignableService {
      */
     List<Long> listAssignableRoleIdsByRoleIds(List<Long> roleIds);
 
+    /**
+     * 根据角色id集合删除
+     *
+     * @param roleIds 角色id集合
+     * @return
+     * @since 2026/10/14
+     */
+    void deleteByRoleIds(List<Long> roleIds);
+
 }

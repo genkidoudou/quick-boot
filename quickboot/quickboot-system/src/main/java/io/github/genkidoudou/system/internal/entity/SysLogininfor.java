@@ -14,46 +14,70 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("sys_logininfor")
-public class SysLogininfor  implements Serializable {
+public class SysLogininfor implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 主键 ID。 */
+    /**
+     * 主键 ID。
+     */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    /** 摘要。 */
+    /**
+     * 摘要。
+     */
     private String digest;
 
-    /** 登录的用户 id。 */
+    /**
+     * 登录的用户 id。
+     */
     private Long userId;
 
-    /** 登录的用户名。 */
+    /**
+     * 登录的用户名。
+     */
     private String userName;
 
-    /** 登录的客户端 id。 */
+    /**
+     * 登录的客户端 id。
+     */
     private String clientId;
 
-    /** 登录的 ip。 */
+    /**
+     * 登录的 ip。
+     */
     private String ipAddr;
 
-    /** 浏览器类型。 */
+    /**
+     * 浏览器类型。
+     */
     private String browser;
 
-    /** 登录的地址。 */
+    /**
+     * 登录的地址。
+     */
     private String loginLocation;
 
-    /** 操作系统。 */
+    /**
+     * 操作系统。
+     */
     private String os;
 
-    /** 登录状态(SYS_LOGIN_STATUS)。 */
+    /**
+     * 登录状态(SYS_LOGIN_STATUS)。
+     */
     private String status;
 
-    /** 登录时间。 */
+    /**
+     * 登录时间。
+     */
     private LocalDateTime loginTime;
 
-    /** 链路 id。 */
+    /**
+     * 链路 id。
+     */
     private String traceId;
 
     /**

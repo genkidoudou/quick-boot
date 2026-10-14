@@ -66,6 +66,7 @@ public class SysRoleAssignableServiceImpl extends ServiceImpl<SysRoleAssignableM
                 .collect(Collectors.toList());
         saveBatch(rows);
     }
+
     @Override
     public List<Long> listAssignableRoleIdsByRoleIds(List<Long> roleIds) {
         if (CollectionUtil.isEmpty(roleIds)) {
@@ -77,5 +78,15 @@ public class SysRoleAssignableServiceImpl extends ServiceImpl<SysRoleAssignableM
                 .map(SysRoleAssignable::getAssignableRoleId)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteByRoleIds(List<Long> roleIds) {
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return;
+        }
+        this.baseMapper.delete(new LambdaQueryWrapper<SysRoleAssignable>()
+                .in(SysRoleAssignable::getRoleId, roleIds));
+        
     }
 }

@@ -89,6 +89,9 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         }
         SysRole sysRole = super.saveVo(vo);
         sysRoleMenuService.saveOrUpdate(sysRole.getId(), vo.getMenuIds());
+
+        // 可授权的角色id
+        sysRoleAssignableService.replaceAssignableRoleIds(sysRole.getId(), vo.getAssignableRoleIds());
         return sysRole;
     }
 
@@ -107,6 +110,11 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
             throw new WarningException(10010, vo.getRoleCode());
         }
         sysRoleMenuService.saveOrUpdate(vo.getId(), vo.getMenuIds());
+
+
+        // 可授权的角色id
+        sysRoleAssignableService.replaceAssignableRoleIds(vo.getId(), vo.getAssignableRoleIds());
+
         return super.updateVoById(vo);
     }
 
@@ -130,6 +138,9 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         }
         deleteByIds(ids);
         sysRoleMenuService.deleteByRoleIds(ids);
+
+        // 删除授权的角色id
+        sysRoleAssignableService.deleteByRoleIds(ids);
 
 
     }

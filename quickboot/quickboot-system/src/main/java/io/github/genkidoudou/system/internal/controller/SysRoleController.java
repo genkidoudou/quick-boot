@@ -26,7 +26,6 @@ import java.util.List;
 public class SysRoleController {
 
     private final ISysRoleService sysRoleService;
-
     /**
      * 分页查询。
      *
