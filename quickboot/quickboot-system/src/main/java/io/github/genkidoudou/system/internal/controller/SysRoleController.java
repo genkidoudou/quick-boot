@@ -26,6 +26,7 @@ import java.util.List;
 public class SysRoleController {
 
     private final ISysRoleService sysRoleService;
+
     /**
      * 分页查询。
      *
@@ -102,5 +103,18 @@ public class SysRoleController {
         return R.ok(sysRoleVoList);
     }
 
+
+    /**
+     * 角色列表(不包含自己)
+     *
+     * @param roleId 角色id
+     * @return
+     * @since 2026/10/15
+     */
+    @GetMapping("authRoleList")
+    public R<List<SysRoleVo>> authRoleList(@RequestParam(value = "roleId", required = false) Long roleId) {
+        List<SysRoleVo> sysRoleVoList = sysRoleService.authRoleList(roleId);
+        return R.ok(sysRoleVoList);
+    }
 
 }

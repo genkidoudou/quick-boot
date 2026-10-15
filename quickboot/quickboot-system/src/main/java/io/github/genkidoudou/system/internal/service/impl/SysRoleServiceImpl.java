@@ -202,4 +202,11 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         }
         return super.listVo(new LambdaQueryWrapper<SysRole>().in(SysRole::getId, roleIds).eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
     }
+
+    @Override
+    public List<SysRoleVo> authRoleList(Long roleId) {
+        return this.listVo(new LambdaQueryWrapper<SysRole>()
+                .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue())
+                .ne(null != roleId, SysRole::getId, roleId));
+    }
 }

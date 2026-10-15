@@ -93,15 +93,17 @@
 
 
         <el-form-item label="可授权角色">
-          <c7-select :fetch-data="assignableRoles" v-model="form.assignableRoleIds"
-                     label-key="roleName"
-                     value-key="id"
-                     auto-load
-                     multiple
-                     clearable
-                     filterable
-                     style="width: 100%"
-          ></c7-select>
+          <c7-select
+              :fetch-data="() => authRoleList(form.id)"
+              v-model="form.assignableRoleIds"
+              label-key="roleName"
+              value-key="id"
+              auto-load
+              multiple
+              clearable
+              filterable
+              style="width: 100%"
+          />
 
         </el-form-item>
         <el-form-item label="备注" prop="remark">
@@ -122,7 +124,7 @@ import { Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useDict } from '@/utils/dict'
 import { listMenu } from '@/api/system/menu'
-import { addRole, getRole, pageRole, removeRole, updateRole,assignableRoles } from '@/api/system/role'
+import { addRole, getRole, pageRole, removeRole, updateRole,authRoleList } from '@/api/system/role'
 import {
   echoTreeCheckedKeysWithoutCascade,
   stringifyTreeIds,
@@ -183,7 +185,7 @@ const rules = {
 
 function emptyForm() {
   return {
-    id: undefined,
+    id: '',
     roleName: '',
     roleCode: '',
     roleSort: 0,

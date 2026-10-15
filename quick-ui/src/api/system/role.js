@@ -81,3 +81,19 @@ export function assignableRoles() {
 
     })
 }
+
+
+/**
+ * 查询角色列表(不包含自己)
+ * @param roleId
+ */
+export function authRoleList(roleId) {
+    return request({
+        url: `${BASE}/authRoleList`,
+        method: 'get',
+        params:{
+            roleId:roleId
+        }
+
+    })
+}

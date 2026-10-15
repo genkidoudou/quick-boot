@@ -99,4 +99,13 @@ public interface ISysRoleService {
      */
 
     List<SysRoleVo> listRoleByUserId(Long userId);
+
+    /**
+     * 角色列表(不包含自己)
+     *
+     * @param roleId 角色id
+     * @return
+     * @since 2026/10/15
+     */
+    List<SysRoleVo> authRoleList(Long roleId);
 }
