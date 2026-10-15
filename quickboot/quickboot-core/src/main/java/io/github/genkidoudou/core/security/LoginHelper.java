@@ -31,15 +31,19 @@ public class LoginHelper {
 
 
     public static LoginUser getLogin() {
-
         Object object = SaHolder.getStorage().get(LOGIN_USER_KEY);
-        if (null == object) {
-            object = StpUtil.getTokenSession().get(LOGIN_USER_KEY);
-        }
-        if (null == object) {
-            return null;
-        } else {
+        if (object != null) {
             return (LoginUser) object;
+        }
+        try {
+            if (!StpUtil.isLogin()) {
+                return null;
+            }
+            object = StpUtil.getTokenSession().get(LOGIN_USER_KEY);
+            return object == null ? null : (LoginUser) object;
+        } catch (Exception ignored) {
+            // token 冻结/过期等：操作日志、审计填充等场景需安全降级
+            return null;
         }
     }
 

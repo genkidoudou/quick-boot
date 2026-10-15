@@ -38,8 +38,7 @@ public class LoginUserUtils {
             LoginUserService loginUserService = SpringUtil.getBean(LoginUserService.class);
             return loginUserService == null ? null : loginUserService.getLoginUser();
         } catch (Throwable ignored) {
-            ignored.printStackTrace();
-            // 尚未接入登录实现（如 sa-token）时视为未登录
+            // token 冻结/过期、尚未接入登录实现等：视为未登录，不打印堆栈
             return null;
         }
     }

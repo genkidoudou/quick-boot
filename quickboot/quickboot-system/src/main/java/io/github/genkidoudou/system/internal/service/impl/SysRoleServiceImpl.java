@@ -69,6 +69,11 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         // 查询绑定的角色id集合
         List<Long> menuIds = sysRoleMenuService.listByRoleId(id);
         vo.setMenuIds(menuIds);
+
+
+        // 可授权角色
+        List<Long> assignableRoleIdsByRoleIds = sysRoleAssignableService.listAssignableRoleIdsByRoleIds(CollectionUtil.newArrayList(id));
+        vo.setAssignableRoleIds(assignableRoleIdsByRoleIds);
         return vo;
     }
 
