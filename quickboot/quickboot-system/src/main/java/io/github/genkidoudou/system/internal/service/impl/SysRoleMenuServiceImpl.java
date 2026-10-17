@@ -2,11 +2,10 @@ package io.github.genkidoudou.system.internal.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import io.github.genkidoudou.system.internal.entity.SysRoleMenu;
 import io.github.genkidoudou.system.internal.mapper.SysRoleMenuMapper;
 import io.github.genkidoudou.system.internal.service.ISysRoleMenuService;
-import io.github.genkidoudou.system.internal.vo.SysRoleVo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

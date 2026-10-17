@@ -32,4 +32,14 @@ public class SysMenuApiImpl implements SysMenuApi {
     public List<RouterVo> selectMenuTreeByUserId(Long userId) {
         return sysMenuService.selectMenuTreeByUserId(userId);
     }
+
+    @Override
+    public List<String> listPermsByUserId(Long userId) {
+        return sysMenuService.listPermsByUserId(userId);
+    }
+
+    @Override
+    public List<String> listRoleCodesByUserId(Long userId) {
+        return sysMenuService.listRoleCodesByUserId(userId);
+    }
 }

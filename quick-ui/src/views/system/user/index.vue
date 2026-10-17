@@ -71,10 +71,9 @@
             <el-form-item label="角色" prop="roleIds">
               <c7-select
                   v-model="form.roleIds"
-                  :fetch-data="assignableRoles"
+                  :data-list="roleOptions"
                   label-key="roleName"
                   value-key="id"
-                  auto-load
                   multiple
                   clearable
                   filterable
@@ -147,7 +146,7 @@
 /**
  * 系统用户：列表 / 新增 / 修改 / 删除（对齐后端 SysUser）。
  */
-import {computed, reactive, ref} from 'vue'
+import {computed, reactive, ref, watch} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {useDict} from '@/utils/dict'
@@ -173,6 +172,10 @@ const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
+/** 可授权角色 + 当前用户已有但无权调整的角色（disabled） */
+const roleOptions = ref([])
+/** 无权取消的角色 id，与选项 value 保持同一类型 */
+const lockedRoleIds = ref([])
 const title = computed(() => (form.id ? '修改用户' : '新增用户'))
 
 const tableColumns = computed(() => [
@@ -223,14 +226,43 @@ function emptyForm() {
 }
 
 /**
+ * 下拉选项 = 当前人可授权角色，再加上被编辑用户已拥有、但当前人无权授予的角色。
+ * 后者禁用，只用于显示名称，不能新增也不能取消。
+ * @param {Array<string|number>} roleIds
+ * @param {string[]} roleNames
+ */
+async function loadRoleOptions(roleIds = [], roleNames = []) {
+  const res = await assignableRoles()
+  const assignable = Array.isArray(res?.data) ? res.data : []
+  const grantable = new Set(assignable.map((role) => String(role.id)))
+  const locked = []
+  const extras = []
+  roleIds.forEach((id, index) => {
+    if (id == null || grantable.has(String(id))) {
+      return
+    }
+    locked.push(id)
+    extras.push({
+      id,
+      roleName: `${roleNames[index] || id}（无权调整）`,
+      disabled: true
+    })
+  })
+  lockedRoleIds.value = locked
+  roleOptions.value = [...assignable, ...extras]
+}
+
+/**
  * 初始化：直接写页面 form。
  * @param {Record<string, any>} [row]
  */
 async function getPayload(row) {
   Object.assign(form, emptyForm())
+  lockedRoleIds.value = []
   if (row && row.id != null) {
     const res = await getUser(row.id)
     const data = res?.data || row
+    const roleIds = data.roleIds || []
     Object.assign(form, {
       id: data.id,
       deptId: data.deptId == null || data.deptId === '' ? undefined : data.deptId,
@@ -243,10 +275,30 @@ async function getPayload(row) {
       password: '',
       status: data.status ?? '0',
       remark: data.remark ?? '',
-      roleIds: data.roleIds || []
+      roleIds
     })
+    await loadRoleOptions(roleIds, data.roleNames || [])
+    return
   }
+  await loadRoleOptions()
 }
+
+/** 禁用项的关闭按钮仍可能删掉已选值，这里把无权调整的角色补回去 */
+watch(
+  () => form.roleIds,
+  (ids) => {
+    const locked = lockedRoleIds.value
+    if (!locked.length) {
+      return
+    }
+    const current = Array.isArray(ids) ? ids : []
+    const currentKeys = new Set(current.map((id) => String(id)))
+    const missing = locked.filter((id) => !currentKeys.has(String(id)))
+    if (missing.length) {
+      form.roleIds = [...current, ...missing]
+    }
+  }
+)
 
 
 /** 提交：组装业务差异 + 新增/修改分支（直接读页面 form） */

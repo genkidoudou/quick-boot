@@ -3,7 +3,7 @@ package io.github.genkidoudou.system.internal.service;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.system.internal.entity.SysRole;
-import io.github.genkidoudou.system.internal.vo.SysRoleVo;
+import io.github.genkidoudou.system.api.vo.SysRoleVo;
 
 import java.util.List;
 
@@ -108,4 +108,15 @@ public interface ISysRoleService {
      * @since 2026/10/15
      */
     List<SysRoleVo> authRoleList(Long roleId);
+
+
+    /**
+     * 根据角色id集合查询
+     *
+     * @param roleIds 角色id集合
+     * @param status  状态
+     * @return
+     * @since 2026/10/17
+     */
+    List<SysRoleVo> listByIds(List<Long> roleIds, String status);
 }

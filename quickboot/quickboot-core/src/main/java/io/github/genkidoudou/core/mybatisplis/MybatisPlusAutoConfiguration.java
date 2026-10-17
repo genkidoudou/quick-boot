@@ -2,8 +2,10 @@ package io.github.genkidoudou.core.mybatisplis;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.DataPermissionInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import io.github.genkidoudou.common.datascope.CustomDataPermissionHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +40,7 @@ public class MybatisPlusAutoConfiguration {
     @ConditionalOnMissingBean
     public MybatisPlusInterceptor mybatisPlusInterceptor(ObjectProvider<InnerInterceptor> innerInterceptors) {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new DataPermissionInterceptor(new CustomDataPermissionHandler()));
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         innerInterceptors.orderedStream().forEach(interceptor::addInnerInterceptor);
         return interceptor;

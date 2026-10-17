@@ -1,9 +1,7 @@
 package io.github.genkidoudou.system.internal.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
@@ -13,9 +11,12 @@ import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.crypto.PasswordCodec;
 import io.github.genkidoudou.common.crypto.PasswordCodecFactories;
+import io.github.genkidoudou.common.datascope.annotation.DataPermission;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
+import io.github.genkidoudou.common.security.utils.LoginUserUtils;
+import io.github.genkidoudou.common.security.vo.LoginUser;
 import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.api.SysConfigApi;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
@@ -25,15 +26,18 @@ import io.github.genkidoudou.system.internal.service.ISysDeptService;
 import io.github.genkidoudou.system.internal.service.ISysRoleService;
 import io.github.genkidoudou.system.internal.service.ISysUserService;
 import io.github.genkidoudou.system.internal.vo.SysDeptVo;
-import io.github.genkidoudou.system.internal.vo.SysRoleVo;
+import io.github.genkidoudou.system.api.vo.SysRoleVo;
 import io.github.genkidoudou.system.internal.vo.UpdatePasswordRequestVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -73,6 +77,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysUser::getStatus, param.getStatus());
     }
 
+    @DataPermission(tables = "sys_user", userField = "id")
     @Override
     public PageInfo<SysUserVo> pageVo(PageRequest<SysUserVo> pageRequest) {
         PageInfo<SysUserVo> pageVo = super.pageVo(pageRequest);
@@ -106,9 +111,15 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "用户不存在");
         }
 
-        // 查询关联的角色
+        // 查询关联的角色（含名称，供编辑回显；停用角色也保留名称）
         List<Long> roleIds = sysRoleService.listRoleIdByUserId(id);
         vo.setRoleIds(roleIds);
+        List<SysRoleVo> roles = sysRoleService.listByIds(roleIds, null);
+        java.util.Map<Long, String> roleNameMap = roles.stream()
+                .collect(Collectors.toMap(SysRoleVo::getId, SysRoleVo::getRoleName, (a, b) -> a));
+        vo.setRoleNames(roleIds.stream()
+                .map(roleId -> roleNameMap.getOrDefault(roleId, String.valueOf(roleId)))
+                .collect(Collectors.toList()));
         return vo;
     }
 
@@ -148,9 +159,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
             sysUserVo.setPasswordExpireTime(dateTime);
         }
         SysUser sysUser = super.saveVo(sysUserVo);
-        List<Long> roleIds =
-                sysUserVo.getRoleIds();
-        sysRoleService.bindUserRole(sysUser.getId(), roleIds);
+        bindRolesWithinGrant(sysUser.getId(), sysUserVo.getRoleIds(), false);
         return sysUser;
     }
 
@@ -175,7 +184,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
 
         //修改的时候不允许修改密码
         sysUserVo.setPassword(null);
-        sysRoleService.bindUserRole(sysUserVo.getId(), sysUserVo.getRoleIds());
+        bindRolesWithinGrant(sysUserVo.getId(), sysUserVo.getRoleIds(), true);
         return super.updateVoById(sysUserVo);
     }
 
@@ -273,6 +282,72 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
             param.setPasswordExpireTime(dateTime);
         }
         super.updateById(param);
+    }
+
+    @Override
+    public SysUserVo getProfile(Long userId) {
+        SysUserVo vo = getVoById(userId);
+        List<SysRoleVo> roles = sysRoleService.listRoleByUserId(userId);
+        vo.setRoleNames(roles.stream().map(SysRoleVo::getRoleName).distinct().collect(Collectors.toList()));
+        if (vo.getDeptId() != null) {
+            List<SysDeptVo> depts = sysDeptService.listByIds(List.of(vo.getDeptId()));
+            vo.setDeptName(CollectionUtil.isEmpty(depts) ? null : depts.get(0).getDeptName());
+        }
+        return vo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateProfile(Long userId, SysUserVo body) {
+        if (body == null) {
+            throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "参数不能为空");
+        }
+        if (StrUtil.isNotBlank(body.getPhonenumber())) {
+            long count = super.count(new LambdaQueryWrapper<SysUser>()
+                    .eq(SysUser::getPhonenumber, body.getPhonenumber())
+                    .ne(SysUser::getId, userId));
+            if (count > 0) {
+                throw new WarningException(10003, body.getPhonenumber());
+            }
+        }
+        SysUser param = new SysUser();
+        param.setId(userId);
+        param.setNickName(body.getNickName());
+        param.setEmail(body.getEmail());
+        param.setPhonenumber(body.getPhonenumber());
+        param.setSex(body.getSex());
+        super.updateById(param);
+    }
+
+    /**
+     * 只允许操作人授予自己可授权的角色。
+     * 修改时，目标用户已有、但操作人无权授予的角色会原样保留，避免被这次保存清掉。
+     *
+     * @param userId     目标用户
+     * @param submitted  前端提交的角色
+     * @param keepLocked 是否保留无权调整的已有角色
+     */
+    private void bindRolesWithinGrant(Long userId, List<Long> submitted, boolean keepLocked) {
+        LoginUser operator = LoginUserUtils.getLoginUser();
+        if (operator == null || operator.getUserId() == null) {
+            throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "未登录");
+        }
+        Set<Long> grantable = sysRoleService.getAssignableByUserId(operator.getUserId()).stream()
+                .map(SysRoleVo::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        LinkedHashSet<Long> merged = new LinkedHashSet<>();
+        if (CollectionUtil.isNotEmpty(submitted)) {
+            submitted.stream().filter(Objects::nonNull).filter(grantable::contains).forEach(merged::add);
+        }
+        if (keepLocked) {
+            for (Long roleId : sysRoleService.listRoleIdByUserId(userId)) {
+                if (roleId != null && !grantable.contains(roleId)) {
+                    merged.add(roleId);
+                }
+            }
+        }
+        sysRoleService.bindUserRole(userId, new ArrayList<>(merged));
     }
 
     /**

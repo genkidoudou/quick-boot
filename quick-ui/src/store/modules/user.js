@@ -21,8 +21,10 @@ const useUserStore = defineStore(
       avatar: '',
       roles: [],
       permissions: [],
+      /** 是否仍为默认密码，为 true 时强制改密弹窗 */
+      defaultPassword: false,
       /** 密码是否已过期，为 true 时强制改密弹窗 */
-      passwordExpire: false
+      passwordExpired: false
     }),
     actions: {
       /**
@@ -63,7 +65,8 @@ const useUserStore = defineStore(
             this.id = user.userId
             this.name = user.userName
             this.avatar = avatar
-            this.passwordExpire = !!res.data.passwordExpire
+            this.defaultPassword = !!res.data.defaultPassword
+            this.passwordExpired = !!res.data.passwordExpired
             resolve(res)
           }).catch(error => {
             reject(error)
@@ -83,7 +86,8 @@ const useUserStore = defineStore(
             this.token = ''
             this.roles = []
             this.permissions = []
-            this.passwordExpire = false
+            this.defaultPassword = false
+            this.passwordExpired = false
             removeToken()
             clearSessionId()
           })

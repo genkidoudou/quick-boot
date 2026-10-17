@@ -103,3 +103,25 @@ export function updatePassword(data) {
         data
     })
 }
+
+/**
+ * 当前登录用户个人资料。
+ */
+export function getUserProfile() {
+    return request({
+        url: `${BASE}/profile`,
+        method: 'get'
+    })
+}
+
+/**
+ * 更新当前登录用户个人资料。
+ * @param {{ nickName?: string, email?: string, phonenumber?: string, sex?: string }} data
+ */
+export function updateUserProfile(data) {
+    return request({
+        url: `${BASE}/updateProfile`,
+        method: 'post',
+        data
+    })
+}

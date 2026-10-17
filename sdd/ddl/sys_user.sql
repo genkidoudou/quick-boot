@@ -16,5 +16,6 @@ CREATE TABLE `sys_user` (
   `sex` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '性别(sex)',
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码',
   `status` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户状态(user_status)',
+  `password_expire_time` datetime DEFAULT NULL COMMENT '密码过期时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统用户表';

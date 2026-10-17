@@ -142,7 +142,8 @@ export function getInfo() {
                 },
                 roles,
                 permissions,
-                passwordExpire: !!me.passwordExpire
+                defaultPassword: !!me.defaultPassword,
+                passwordExpired: !!me.passwordExpired
             }
         }
     })

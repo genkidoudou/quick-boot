@@ -4,6 +4,8 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.api.R;
+import io.github.genkidoudou.common.datascope.annotation.DataPermission;
+import io.github.genkidoudou.common.desensitization.SensitiveResponse;
 import io.github.genkidoudou.common.idempotency.Idempotent;
 import io.github.genkidoudou.common.security.utils.LoginUserUtils;
 import io.github.genkidoudou.common.security.vo.LoginUser;
@@ -34,6 +36,8 @@ public class SysUserController {
      * @param pageRequest 分页与查询条件
      * @return 分页结果
      */
+
+    @SensitiveResponse
     @SaCheckPermission("system:user:list")
     @PostMapping("page")
     public R<PageInfo<SysUserVo>> page(@RequestBody PageRequest<SysUserVo> pageRequest) {
@@ -130,4 +134,26 @@ public class SysUserController {
         sysUserService.updatePassword(LoginUserUtils.getLoginUser().getUserId(), updatePasswordRequestVo);
         return R.ok();
     }
+
+    /**
+     * 当前登录用户个人资料。
+     */
+    @GetMapping("profile")
+    public R<SysUserVo> profile() {
+        LoginUser loginUser = LoginUserUtils.getLoginUser();
+        return R.ok(sysUserService.getProfile(loginUser.getUserId()));
+    }
+
+    /**
+     * 更新当前登录用户个人资料（昵称、邮箱、手机、性别）。
+     */
+    @Idempotent(ttlSeconds = -1, key = "#userId")
+    @PostMapping("updateProfile")
+    public R<Void> updateProfile(@RequestBody SysUserVo body) {
+        LoginUser loginUser = LoginUserUtils.getLoginUser();
+        sysUserService.updateProfile(loginUser.getUserId(), body);
+        return R.ok();
+    }
+
+
 }

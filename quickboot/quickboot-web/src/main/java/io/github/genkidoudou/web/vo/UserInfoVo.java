@@ -57,10 +57,19 @@ public class UserInfoVo {
     private String username;
 
     /**
-     * 是否需要修改密码
+     * 是否为默认密码
      *
      * @since 2026/10/13
      */
 
-    private boolean needUpdatePassword;
+    private boolean defaultPassword;
+
+
+    /**
+     * 密码时间过期
+     *
+     * @since 2026/10/17
+     */
+
+    private boolean passwordExpired;
 }

@@ -26,5 +26,19 @@ public interface SysMenuApi {
      */
     List<RouterVo> selectMenuTreeByUserId(Long userId);
 
+    /**
+     * 当前用户的权限标识。超级管理员返回 {@code *:*:*}。
+     *
+     * @param userId 用户 id
+     * @return 权限标识
+     */
+    List<String> listPermsByUserId(Long userId);
 
+    /**
+     * 当前用户已启用角色的角色编码。
+     *
+     * @param userId 用户 id
+     * @return 角色编码
+     */
+    List<String> listRoleCodesByUserId(Long userId);
 }

@@ -3,19 +3,22 @@ package io.github.genkidoudou.web.service;
 import cn.hutool.core.util.StrUtil;
 import io.github.genkidoudou.common.security.vo.LoginUser;
 import io.github.genkidoudou.system.api.api.SysMenuApi;
+import io.github.genkidoudou.system.api.api.SysUserApi;
 import io.github.genkidoudou.system.api.vo.SysMenuVo;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public abstract class AbstractLoginGrantHandler implements LoginGrantHandler {
 
+    private final SysMenuApi sysMenuApi;
 
-    @Autowired
-    private SysMenuApi sysMenuApi;
+    private final SysUserApi sysUserApi;
 
     protected LoginUser buildLoginUser(SysUserVo user) {
         LoginUser loginUser = new LoginUser();
@@ -23,12 +26,10 @@ public abstract class AbstractLoginGrantHandler implements LoginGrantHandler {
         loginUser.setUsername(user.getUserName());
         loginUser.setNickName(user.getNickName());
         loginUser.setDeptId(user.getDeptId());
-        List<SysMenuVo> sysMenuVos = sysMenuApi.listByRoleIds(new ArrayList<>());
-//        loginUser.setClientId(oauthClientVo.getClientId());
-//        List<String> roleKeys = sysPermissionService.listRoleKeys(user.getUserId() + "");
-//        Set<String> permissions = sysPermissionService.listPermissions(user.getUserId() + "");
-        loginUser.setPermissions(sysMenuVos.stream().map(SysMenuVo::getPerms).filter(StrUtil::isNotBlank).collect(Collectors.toSet()));
-//        loginUser.setRolePermission(new HashSet<>(roleKeys));
+        List<String> perms = sysMenuApi.listPermsByUserId(user.getId());
+        loginUser.setPermissions(new HashSet<>(perms));
+        List<String> roleCodes = sysUserApi.listRoleCodesByUserId(user.getId());
+        loginUser.setRoles(new HashSet<>(roleCodes));
         return loginUser;
     }
 }

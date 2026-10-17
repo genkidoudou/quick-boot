@@ -1,7 +1,7 @@
 <template>
   <el-dialog
       :model-value="visible"
-      title="密码已过期，请修改密码"
+      :title="dialogTitle"
       width="460px"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
@@ -14,7 +14,7 @@
         :closable="false"
         show-icon
         class="mb-3"
-        title="密码已失效，修改后才能继续使用系统"
+        :title="dialogAlert"
     />
     <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
       <el-form-item label="原密码" prop="oldPassword">
@@ -54,7 +54,7 @@
 
 <script setup>
 /**
- * 密码过期强制改密弹窗：不可关闭，改密成功后清除 passwordExpire。
+ * 强制改密弹窗：默认密码或密码过期时弹出，不可关闭；改密成功后清除标记。
  */
 import {computed, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
@@ -70,7 +70,27 @@ const userStore = useUserStore()
 const formRef = ref(null)
 const submitting = ref(false)
 
-const visible = computed(() => !!userStore.passwordExpire)
+const visible = computed(() => !!userStore.defaultPassword || !!userStore.passwordExpired)
+
+const dialogTitle = computed(() => {
+  if (userStore.defaultPassword && userStore.passwordExpired) {
+    return '请修改密码'
+  }
+  if (userStore.defaultPassword) {
+    return '当前为默认密码，请修改密码'
+  }
+  return '密码已过期，请修改密码'
+})
+
+const dialogAlert = computed(() => {
+  if (userStore.defaultPassword && userStore.passwordExpired) {
+    return '当前为默认密码且已过期，修改后才能继续使用系统'
+  }
+  if (userStore.defaultPassword) {
+    return '首次登录或重置后请立即修改默认密码'
+  }
+  return '密码已失效，修改后才能继续使用系统'
+})
 
 const form = reactive({
   oldPassword: '',
@@ -125,7 +145,8 @@ async function handleSubmit() {
       oldPassword: form.oldPassword,
       newPassword: form.newPassword
     })
-    userStore.passwordExpire = false
+    userStore.defaultPassword = false
+    userStore.passwordExpired = false
     ElMessage.success('密码修改成功')
   } catch {
     // 业务错误已由 request 拦截器提示

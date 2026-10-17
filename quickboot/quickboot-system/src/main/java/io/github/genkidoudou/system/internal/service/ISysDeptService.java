@@ -58,4 +58,22 @@ public interface ISysDeptService {
      * @since 2026/10/12
      */
     List<SysDeptVo> listByIds(List<Long> deptIds);
+
+    /**
+     * 查询指定部门和所有的下级部门
+     *
+     * @param deptId 部门id
+     * @return
+     * @since 2026/10/17
+     */
+    List<Long> listSelfAndChildIds(Long deptId);
+
+    /**
+     * 根据角色id集合查询关联的部门id集合
+     *
+     * @param roleIds 角色id集合
+     * @return
+     * @since 2026/10/17
+     */
+    List<Long> listByRoleId(List<Long> roleIds);
 }

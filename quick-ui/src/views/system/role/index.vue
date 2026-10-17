@@ -68,6 +68,25 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item v-if="form.dataScope === '2'" label="数据范围">
+          <div class="role-menu-panel">
+            <div class="role-menu-panel__toolbar">
+              <el-checkbox v-model="deptExpand" @change="handleDeptExpand">展开/折叠</el-checkbox>
+              <el-checkbox v-model="deptNodeAll" @change="handleDeptNodeAll">全选/全不选</el-checkbox>
+              <el-checkbox v-model="deptCheckStrictly">父子联动</el-checkbox>
+            </div>
+            <el-tree
+              ref="deptTreeRef"
+              class="role-menu-panel__tree"
+              node-key="id"
+              show-checkbox
+              :data="deptOptions"
+              :props="deptTreeProps"
+              :check-strictly="!deptCheckStrictly"
+              empty-text="加载中，请稍候"
+            />
+          </div>
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <c7-radio :data-list="COMMON_STATUS" v-model="form.status" />
         </el-form-item>
@@ -92,7 +111,7 @@
         </el-form-item>
 
 
-        <el-form-item label="可授权角色">
+        <el-form-item label="可授权角色" prop="assignableRoleIds">
           <c7-select
               :fetch-data="() => authRoleList(form.id)"
               v-model="form.assignableRoleIds"
@@ -124,6 +143,7 @@ import { Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useDict } from '@/utils/dict'
 import { listMenu } from '@/api/system/menu'
+import { listDept } from '@/api/system/dept'
 import { addRole, getRole, pageRole, removeRole, updateRole,authRoleList } from '@/api/system/role'
 import {
   echoTreeCheckedKeysWithoutCascade,
@@ -141,6 +161,7 @@ const tableRef = ref(null)
 const formDialogRef = ref(null)
 const formRef = ref(null)
 const menuTreeRef = ref(null)
+const deptTreeRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
 
@@ -150,6 +171,13 @@ const menuNodeAll = ref(false)
 /** true：勾选父子联动；false：父子不关联（与 el-tree check-strictly 相反） */
 const menuCheckStrictly = ref(true)
 const menuTreeProps = { label: 'menuName', children: 'children' }
+
+const deptOptions = ref([])
+const deptExpand = ref(false)
+const deptNodeAll = ref(false)
+/** 自定义数据权限默认父子不联动，只保存勾选到的部门 */
+const deptCheckStrictly = ref(false)
+const deptTreeProps = { label: 'deptName', children: 'children' }
 
 const title = computed(() => (form.id ? '修改角色' : '新增角色'))
 
@@ -193,7 +221,8 @@ function emptyForm() {
     status: '0',
     remark: '',
     menuIds: [],
-    assignableRoleIds:[]
+    assignableRoleIds: [],
+    deptIds: []
   }
 }
 
@@ -210,6 +239,22 @@ function toMenuTree(nodes) {
     id: n?.id ?? n?.menuId,
     children: toMenuTree(n?.children || [])
   }))
+}
+
+function toDeptTree(nodes) {
+  if (!Array.isArray(nodes)) {
+    return []
+  }
+  return nodes.map((n) => ({
+    ...n,
+    id: n?.id ?? n?.deptId,
+    children: toDeptTree(n?.children || [])
+  }))
+}
+
+async function loadDeptTree() {
+  const res = await listDept({})
+  deptOptions.value = toDeptTree(res?.data || [])
 }
 
 async function loadMenuTree() {
@@ -232,6 +277,51 @@ function setTreeExpand(expand) {
 
 function handleMenuExpand(val) {
   setTreeExpand(!!val)
+}
+
+function setDeptTreeExpand(expand) {
+  const tree = deptTreeRef.value
+  if (!tree?.store?.nodesMap) {
+    return
+  }
+  Object.values(tree.store.nodesMap).forEach((node) => {
+    node.expanded = expand
+  })
+}
+
+function handleDeptExpand(val) {
+  setDeptTreeExpand(!!val)
+}
+
+function handleDeptNodeAll(val) {
+  const tree = deptTreeRef.value
+  if (!tree) {
+    return
+  }
+  if (val) {
+    tree.setCheckedNodes(deptOptions.value)
+  } else {
+    tree.setCheckedKeys([])
+  }
+}
+
+/** 只提交勾选节点；父子不联动时半选父节点不代表该部门有数据权限 */
+function collectDeptIds() {
+  const tree = deptTreeRef.value
+  if (!tree) {
+    return toApiLongIds(form.deptIds || [])
+  }
+  return toApiLongIds(tree.getCheckedKeys(false) || [])
+}
+
+async function echoDeptChecked(deptIds) {
+  await nextTick()
+  const tree = deptTreeRef.value
+  if (!tree) {
+    return
+  }
+  tree.setCheckedKeys([])
+  echoTreeCheckedKeysWithoutCascade(tree, stringifyTreeIds(deptIds))
 }
 
 function handleMenuNodeAll(val) {
@@ -278,12 +368,21 @@ async function getPayload(row) {
   menuExpand.value = false
   menuNodeAll.value = false
   menuCheckStrictly.value = true
+  deptExpand.value = false
+  deptNodeAll.value = false
+  deptCheckStrictly.value = false
 
   try {
     await loadMenuTree()
   } catch {
     menuOptions.value = []
     ElMessage.error('菜单权限树加载失败')
+  }
+  try {
+    await loadDeptTree()
+  } catch {
+    deptOptions.value = []
+    ElMessage.error('部门树加载失败')
   }
 
   if (row && row.id != null) {
@@ -298,7 +397,9 @@ async function getPayload(row) {
         dataScope: data.dataScope ?? '1',
         status: data.status ?? '0',
         remark: data.remark ?? '',
-        menuIds: data.menuIds || []
+        menuIds: data.menuIds || [],
+        assignableRoleIds: data.assignableRoleIds || [],
+        deptIds: data.deptIds || []
       })
     } catch {
       Object.assign(form, {
@@ -309,7 +410,8 @@ async function getPayload(row) {
         dataScope: row.dataScope ?? '1',
         status: row.status ?? '0',
         remark: row.remark ?? '',
-        menuIds: []
+        menuIds: [],
+        deptIds: []
       })
     }
   }
@@ -320,7 +422,22 @@ watch(open, async (val) => {
   if (!val) return
   await nextTick()
   await echoMenuChecked(form.menuIds || [])
+  if (form.dataScope === '2') {
+    await echoDeptChecked(form.deptIds || [])
+  }
 })
+
+watch(
+  () => form.dataScope,
+  async (scope, prev) => {
+    if (prev === '2') {
+      form.deptIds = collectDeptIds()
+    }
+    if (!open.value || scope !== '2') return
+    await nextTick()
+    await echoDeptChecked(form.deptIds || [])
+  }
+)
 
 async function submitRole() {
   const menuIds = collectMenuIds()
@@ -332,7 +449,9 @@ async function submitRole() {
     dataScope: form.dataScope,
     status: form.status,
     remark: form.remark,
-    menuIds
+    menuIds,
+    assignableRoleIds: form.assignableRoleIds || [],
+    deptIds: form.dataScope === '2' ? collectDeptIds() : []
   }
   if (form.id) {
     await updateRole(payload)

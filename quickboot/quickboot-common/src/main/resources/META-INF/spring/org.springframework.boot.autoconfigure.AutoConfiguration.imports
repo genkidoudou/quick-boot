@@ -9,3 +9,4 @@ io.github.genkidoudou.common.idempotency.IdempotencyAutoConfiguration
 io.github.genkidoudou.common.security.firewall.cors.FirewallCorsAutoConfiguration
 io.github.genkidoudou.common.file.FileStorageAutoConfiguration
 io.github.genkidoudou.common.i18n.I18nMessageSourceAutoConfiguration
+io.github.genkidoudou.common.datascope.DataPermissionConfiguration

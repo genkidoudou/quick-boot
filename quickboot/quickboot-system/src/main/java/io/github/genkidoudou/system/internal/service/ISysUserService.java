@@ -89,4 +89,20 @@ public interface ISysUserService {
      */
     void updatePassword(Long userId, UpdatePasswordRequestVo updatePasswordRequestVo);
 
+    /**
+     * 当前登录用户个人资料（含角色名、部门名）。
+     *
+     * @param userId 用户 id
+     * @return 个人资料
+     */
+    SysUserVo getProfile(Long userId);
+
+    /**
+     * 更新当前登录用户个人资料（昵称、邮箱、手机、性别）。
+     *
+     * @param userId 用户 id
+     * @param body   表单
+     */
+    void updateProfile(Long userId, SysUserVo body);
+
 }

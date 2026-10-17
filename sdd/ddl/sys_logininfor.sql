@@ -14,6 +14,6 @@ CREATE TABLE `sys_logininfor` (
   `os` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '操作系统',
   `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录状态(SYS_LOGIN_STATUS)',
   `login_time` datetime NOT NULL COMMENT '登录时间',
-  `trace_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '链路id',
+  `trace_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '链路id',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='登录访问日志表';

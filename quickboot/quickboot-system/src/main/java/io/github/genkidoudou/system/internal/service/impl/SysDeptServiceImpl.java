@@ -10,26 +10,34 @@ import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.system.internal.entity.SysDept;
+import io.github.genkidoudou.system.internal.entity.SysRoleDept;
 import io.github.genkidoudou.system.internal.mapper.SysDeptMapper;
+import io.github.genkidoudou.system.internal.mapper.SysRoleDeptMapper;
 import io.github.genkidoudou.system.internal.service.ISysDeptService;
 import io.github.genkidoudou.system.internal.vo.SysDeptVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 部门服务实现。
  */
+@RequiredArgsConstructor
 @Service
 public class SysDeptServiceImpl extends BaseVoServiceImpl<SysDeptMapper, SysDept, SysDeptVo>
         implements ISysDeptService {
 
+    private final SysRoleDeptMapper sysRoleDeptMapper;
     /**
      * 树根上级部门 ID。
      */
@@ -201,5 +209,53 @@ public class SysDeptServiceImpl extends BaseVoServiceImpl<SysDeptMapper, SysDept
             return new ArrayList<>();
         }
         return super.listVoByIds(deptIds);
+    }
+
+    /**
+     * 本部门及全部下级。部门表没有祖先路径，按 {@code parent_id} 向下收集。
+     *
+     * @param deptId 部门 id
+     * @return 包含自身的部门 id；入参为空时返回空列表
+     */
+    @Override
+    public List<Long> listSelfAndChildIds(Long deptId) {
+        if (deptId == null) {
+            return new ArrayList<>();
+        }
+        List<SysDept> depts = this.baseMapper.selectList(new LambdaQueryWrapper<SysDept>()
+                .select(SysDept::getId, SysDept::getParentId));
+        Map<Long, List<Long>> childrenByParent = new HashMap<>();
+        for (SysDept dept : depts) {
+            if (dept.getId() == null) {
+                continue;
+            }
+            Long parentId = dept.getParentId() == null ? ROOT_PARENT_ID : dept.getParentId();
+            childrenByParent.computeIfAbsent(parentId, key -> new ArrayList<>()).add(dept.getId());
+        }
+        List<Long> result = new ArrayList<>();
+        ArrayDeque<Long> pending = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+        pending.add(deptId);
+        while (!pending.isEmpty()) {
+            Long current = pending.poll();
+            if (!visited.add(current)) {
+                continue;
+            }
+            result.add(current);
+            List<Long> children = childrenByParent.get(current);
+            if (CollectionUtil.isNotEmpty(children)) {
+                pending.addAll(children);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<Long> listByRoleId(List<Long> roleIds) {
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        return sysRoleDeptMapper.selectList(new LambdaQueryWrapper<SysRoleDept>()
+                .in(SysRoleDept::getRoleId, roleIds)).stream().map(SysRoleDept::getDeptId).distinct().collect(Collectors.toList());
     }
 }

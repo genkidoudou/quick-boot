@@ -10,7 +10,7 @@ import io.github.genkidoudou.common.security.vo.LoginUser;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
 import io.github.genkidoudou.system.internal.service.ISysRoleService;
-import io.github.genkidoudou.system.internal.vo.SysRoleVo;
+import io.github.genkidoudou.system.api.vo.SysRoleVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

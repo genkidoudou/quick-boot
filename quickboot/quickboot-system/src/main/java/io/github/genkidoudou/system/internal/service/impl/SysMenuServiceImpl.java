@@ -18,20 +18,16 @@ import io.github.genkidoudou.system.internal.enums.SysMenuEnums;
 import io.github.genkidoudou.system.internal.mapper.SysMenuMapper;
 import io.github.genkidoudou.system.internal.mapper.SysRoleMenuMapper;
 import io.github.genkidoudou.system.internal.service.ISysMenuService;
+import io.github.genkidoudou.system.internal.service.ISysRoleService;
 import io.github.genkidoudou.system.api.vo.SysMenuVo;
 import io.github.genkidoudou.system.internal.support.ControllerMenuParser;
 import io.github.genkidoudou.system.internal.vo.SysMenuBatchRequestVo;
+import io.github.genkidoudou.system.api.vo.SysRoleVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +38,14 @@ import java.util.stream.Collectors;
 public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu, SysMenuVo>
         implements ISysMenuService {
 
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
+
+    private static final String ALL_PERMISSION = "*:*:*";
+
     private final SysRoleMenuMapper sysRoleMenuMapper;
+
+    private final ISysRoleService sysRoleService;
+
 
     /**
      * 顶级菜单id
@@ -155,9 +158,9 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
 
     @Override
     public List<SysMenuVo> listByRoleIds(List<Long> roleIds) {
-//        if (CollectionUtil.isEmpty(roleIds)) {
-//            return new ArrayList<>();
-//        }
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
         return listVo(new LambdaUpdateWrapper<SysMenu>()
                 .eq(SysMenu::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
     }
@@ -324,12 +327,72 @@ public class SysMenuServiceImpl extends BaseVoServiceImpl<SysMenuMapper, SysMenu
     }
 
     @Override
+    public List<String> listRoleCodesByUserId(Long userId) {
+        List<Long> roleIds = sysRoleService.listRoleIdByUserId(userId);
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        return sysRoleService.listByIds(roleIds, CommonEnums.STATUS_ENABLE.getValue())
+                .stream()
+                .map(SysRoleVo::getRoleCode)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> listPermsByUserId(Long userId) {
+        List<String> roleCodes = listRoleCodesByUserId(userId);
+        if (roleCodes.contains(ROLE_ADMIN)) {
+            return List.of(ALL_PERMISSION);
+        }
+        List<Long> roleIds = sysRoleService.listRoleIdByUserId(userId);
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        List<Long> menuIds = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>()
+                        .in(SysRoleMenu::getRoleId, roleIds))
+                .stream()
+                .map(SysRoleMenu::getMenuId)
+                .distinct()
+                .toList();
+        if (CollectionUtil.isEmpty(menuIds)) {
+            return new ArrayList<>();
+        }
+        List<String> collect = list(new LambdaQueryWrapper<SysMenu>()
+                .in(SysMenu::getId, menuIds)
+                .eq(SysMenu::getStatus, CommonEnums.STATUS_ENABLE.getValue()))
+                .stream()
+                .map(SysMenu::getPerms)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .toList();
+        Set<String> perms = new HashSet<>();
+        for (String s : collect) {
+            perms.addAll(Arrays.asList(s.split(",")));
+        }
+        return perms.stream().toList();
+    }
+
+    @Override
     public List<RouterVo> selectMenuTreeByUserId(Long userId) {
+
+        List<Long> roleIds = sysRoleService.listRoleIdByUserId(userId);
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        List<Long> menuIds = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>()
+                .in(SysRoleMenu::getRoleId, roleIds)).stream().map(SysRoleMenu::getMenuId).distinct().toList();
+        if (CollectionUtil.isEmpty(menuIds)) {
+            return new ArrayList<>();
+        }
         // TODO: 按 userId → 角色 → 菜单过滤；当前先返回全部启用目录/菜单
         List<SysMenu> list = super.list(new LambdaQueryWrapper<SysMenu>()
+                .in(SysMenu::getId, menuIds)
                 .in(SysMenu::getMenuType,
                         SysMenuEnums.MENU_TYPE_DIR.getDictValue(),
                         SysMenuEnums.MENU_TYPE_MENU.getDictValue())
+
                 .eq(SysMenu::getStatus, CommonEnums.STATUS_ENABLE.getValue())
                 .orderByAsc(SysMenu::getParentId)
                 .orderByAsc(SysMenu::getOrderNum));

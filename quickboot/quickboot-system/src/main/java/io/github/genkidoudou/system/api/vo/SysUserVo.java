@@ -1,6 +1,8 @@
 package io.github.genkidoudou.system.api.vo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.genkidoudou.common.desensitization.Sensitive;
+import io.github.genkidoudou.common.desensitization.SensitiveType;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
 import io.github.genkidoudou.core.constants.PatternConstants;
@@ -66,11 +68,13 @@ public class SysUserVo extends BaseEntity implements Serializable {
      * 邮箱。
      */
     @Email
+    @Sensitive(type = SensitiveType.EMAIL)
     private String email;
 
     /**
      * 手机号码。
      */
+    @Sensitive(type = SensitiveType.MOBILE)
     @Pattern(regexp = PatternConstants.PHONE, message = "手机号格式不正确")
     private String phonenumber;
 
@@ -117,7 +121,7 @@ public class SysUserVo extends BaseEntity implements Serializable {
      *
      * @since 2026/10/12
      */
-    
+
 
     private String deptName;
 

@@ -26,7 +26,7 @@
 
 
         <!-- MyBatis-Plus 3.5.6 (稳定版本，支持 Spring Boot 3) -->
-        <mybatis-plus.version>3.5.15</mybatis-plus.version>
+        <mybatis-plus.version>3.5.17</mybatis-plus.version>
 
         <!-- Hutool 5.8.27 (稳定版本) -->
         <hutool.version>5.8.27</hutool.version>

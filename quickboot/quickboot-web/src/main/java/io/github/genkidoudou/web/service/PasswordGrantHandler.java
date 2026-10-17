@@ -14,7 +14,7 @@ import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.system.api.api.SysUserApi;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import io.github.genkidoudou.system.api.api.SysMenuApi;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
@@ -22,15 +22,23 @@ import org.springframework.stereotype.Component;
  * 密码登录 Grant。用户查询须通过 {@code system.api}，禁止依赖 {@code system.internal}。
  */
 @Component
-@RequiredArgsConstructor
 public class PasswordGrantHandler extends AbstractLoginGrantHandler {
 
     private final CaptchaProperties captchaProperties;
 
     private final ObjectProvider<ImageCaptchaApplication> imageCaptchaApplicationProvider;
 
-
     private final SysUserApi sysUserApi;
+
+    public PasswordGrantHandler(SysMenuApi sysMenuApi,
+                                CaptchaProperties captchaProperties,
+                                ObjectProvider<ImageCaptchaApplication> imageCaptchaApplicationProvider,
+                                SysUserApi sysUserApi) {
+        super(sysMenuApi, sysUserApi);
+        this.captchaProperties = captchaProperties;
+        this.imageCaptchaApplicationProvider = imageCaptchaApplicationProvider;
+        this.sysUserApi = sysUserApi;
+    }
 
     @Override
     public String grantType() {

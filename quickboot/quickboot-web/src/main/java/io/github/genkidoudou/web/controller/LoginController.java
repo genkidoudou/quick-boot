@@ -53,10 +53,14 @@ import java.util.List;
 @IgnoreLogger
 public class LoginController {
 
-    /** SYS_LOGIN_STATUS：成功 */
+    /**
+     * SYS_LOGIN_STATUS：成功
+     */
     private static final String LOGIN_STATUS_SUCCESS = "0";
 
-    /** SYS_LOGIN_STATUS：失败 */
+    /**
+     * SYS_LOGIN_STATUS：失败
+     */
     private static final String LOGIN_STATUS_FAIL = "1";
 
     private final LoginGrantDispatcher loginGrantDispatcher;
@@ -153,18 +157,17 @@ public class LoginController {
         // 1. 是否为默认密码
         String defaultPassword = sysConfigApi.getConfigValue("default_password", true);
         PasswordCodec passwordCodec = PasswordCodecFactories.get(CommonEnums.PASSWORD_CODEC_ENCODED.getValue());
-        boolean needUpdatePassword = passwordCodec.matches(defaultPassword, sysUserVo.getPassword());
-        if (!needUpdatePassword) {
-            // 再次检查密码是否过期
-            needUpdatePassword = DateUtil.compare(sysUserVo.getPasswordExpireTime(), new Date()) < 0;
-        }
+        boolean isDefaultPassword = passwordCodec.matches(defaultPassword, sysUserVo.getPassword());
         UserInfoVo infoVo = UserInfoVo.builder()
                 .userId(sysUserVo.getId())
                 .deptId(sysUserVo.getDeptId())
                 .permissions(loginUser.getPermissions())
                 .username(sysUserVo.getUserName())
                 .nickName(sysUserVo.getNickName())
-                .needUpdatePassword(needUpdatePassword).build();
+                .defaultPassword(isDefaultPassword)
+                .passwordExpired(sysUserVo.getPasswordExpireTime() != null
+                        && DateUtil.compare(sysUserVo.getPasswordExpireTime(), new Date()) < 0)
+                .build();
         return R.ok(infoVo);
     }
 

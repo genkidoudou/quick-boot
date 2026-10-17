@@ -6,4 +6,4 @@ CREATE TABLE `sys_user_role` (
   `user_id` bigint NOT NULL COMMENT '用户id',
   `role_Id` bigint NOT NULL COMMENT '角色id',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色关联表';
+) ENGINE=InnoDB AUTO_INCREMENT=2111424745802117123 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色关联表';

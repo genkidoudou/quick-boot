@@ -1,4 +1,4 @@
-package io.github.genkidoudou.system.internal.vo;
+package io.github.genkidoudou.system.api.vo;
 
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
@@ -73,4 +73,9 @@ public class SysRoleVo extends BaseEntity implements Serializable {
      */
 
     private List<Long> assignableRoleIds;
+
+    /**
+     * 自定义数据权限关联的部门 id 集合。
+     */
+    private List<Long> deptIds;
 }

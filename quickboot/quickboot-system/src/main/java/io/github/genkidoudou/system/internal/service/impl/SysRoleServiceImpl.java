@@ -7,23 +7,24 @@ import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.core.enums.CommonEnums;
+import io.github.genkidoudou.system.api.enums.UserDataScopeEnums;
 import io.github.genkidoudou.system.internal.entity.SysRole;
-import io.github.genkidoudou.system.internal.entity.SysUser;
 import io.github.genkidoudou.system.internal.entity.SysUserRole;
 import io.github.genkidoudou.system.internal.mapper.SysRoleMapper;
 import io.github.genkidoudou.system.internal.mapper.SysUserRoleMapper;
 import io.github.genkidoudou.system.internal.service.ISysRoleAssignableService;
+import io.github.genkidoudou.system.internal.service.ISysRoleDeptService;
 import io.github.genkidoudou.system.internal.service.ISysRoleMenuService;
 import io.github.genkidoudou.system.internal.service.ISysRoleService;
 import io.github.genkidoudou.system.internal.service.ISysUserRoleService;
-import io.github.genkidoudou.system.internal.vo.SysRoleVo;
+import io.github.genkidoudou.system.api.vo.SysRoleVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 角色服务实现。
@@ -36,6 +37,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
 
 
     private final ISysRoleAssignableService sysRoleAssignableService;
+    private final ISysRoleDeptService sysRoleDeptService;
     private final ISysUserRoleService iSysUserRoleService;
 
     private final SysUserRoleMapper sysUserRoleMapper;
@@ -74,6 +76,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         // 可授权角色
         List<Long> assignableRoleIdsByRoleIds = sysRoleAssignableService.listAssignableRoleIdsByRoleIds(CollectionUtil.newArrayList(id));
         vo.setAssignableRoleIds(assignableRoleIdsByRoleIds);
+        vo.setDeptIds(sysRoleDeptService.listDeptIdsByRoleId(id));
         return vo;
     }
 
@@ -97,6 +100,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
 
         // 可授权的角色id
         sysRoleAssignableService.replaceAssignableRoleIds(sysRole.getId(), vo.getAssignableRoleIds());
+        saveDeptScope(sysRole.getId(), vo);
         return sysRole;
     }
 
@@ -119,6 +123,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
 
         // 可授权的角色id
         sysRoleAssignableService.replaceAssignableRoleIds(vo.getId(), vo.getAssignableRoleIds());
+        saveDeptScope(vo.getId(), vo);
 
         return super.updateVoById(vo);
     }
@@ -146,8 +151,21 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
 
         // 删除授权的角色id
         sysRoleAssignableService.deleteByRoleIds(ids);
+        sysRoleDeptService.deleteByRoleIds(ids);
+    }
 
-
+    /**
+     * 自定义数据权限写入部门关联；其他范围清空已有关联。
+     *
+     * @param roleId 角色主键
+     * @param vo     角色视图
+     */
+    private void saveDeptScope(Long roleId, SysRoleVo vo) {
+        if (UserDataScopeEnums.CUSTOM == UserDataScopeEnums.of(vo.getDataScope())) {
+            sysRoleDeptService.replaceDeptIds(roleId, vo.getDeptIds());
+            return;
+        }
+        sysRoleDeptService.replaceDeptIds(roleId, Collections.emptyList());
     }
 
     @Override
@@ -166,7 +184,7 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
             if (CollectionUtil.isEmpty(assignableRoleIds)) {
                 return new ArrayList<>();
             }
-            return super.listVo(new LambdaQueryWrapper<SysRole>().in(SysRole::getId, roleIds).eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+            return super.listVo(new LambdaQueryWrapper<SysRole>().in(SysRole::getId, assignableRoleIds).eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
         }
     }
 
@@ -213,5 +231,15 @@ public class SysRoleServiceImpl extends BaseVoServiceImpl<SysRoleMapper, SysRole
         return this.listVo(new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getStatus, CommonEnums.STATUS_ENABLE.getValue())
                 .ne(null != roleId, SysRole::getId, roleId));
+    }
+
+    @Override
+    public List<SysRoleVo> listByIds(List<Long> roleIds, String status) {
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        return super.listVo(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getId, roleIds)
+                .eq(StrUtil.isNotBlank(status), SysRole::getStatus, status));
     }
 }

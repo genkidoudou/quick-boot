@@ -2,7 +2,7 @@ package io.github.genkidoudou.system.internal.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import io.github.genkidoudou.system.internal.entity.SysRoleAssignable;
 import io.github.genkidoudou.system.internal.mapper.SysRoleAssignableMapper;
 import io.github.genkidoudou.system.internal.service.ISysRoleAssignableService;
