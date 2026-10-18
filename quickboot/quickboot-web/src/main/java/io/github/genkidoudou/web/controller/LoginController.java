@@ -11,6 +11,8 @@ import io.github.genkidoudou.common.api.TraceIds;
 import io.github.genkidoudou.common.crypto.PasswordCodec;
 import io.github.genkidoudou.common.crypto.PasswordCodecFactories;
 import io.github.genkidoudou.common.exception.WarningException;
+import io.github.genkidoudou.common.file.QcFileProperties;
+import io.github.genkidoudou.common.file.url.FileUrlSupport;
 import io.github.genkidoudou.common.monitor.operlog.IgnoreLogger;
 import io.github.genkidoudou.common.security.utils.LoginUserUtils;
 import io.github.genkidoudou.common.security.vo.LoginUser;
@@ -70,6 +72,8 @@ public class LoginController {
     private final SysUserApi sysUserApi;
 
     private final SysConfigApi sysConfigApi;
+
+    private final QcFileProperties qcFileProperties;
 
     @PostMapping("/login")
     public R login(HttpServletRequest request) {
@@ -164,6 +168,7 @@ public class LoginController {
                 .permissions(loginUser.getPermissions())
                 .username(sysUserVo.getUserName())
                 .nickName(sysUserVo.getNickName())
+                .avatar(FileUrlSupport.resolvePublicUrl(qcFileProperties, sysUserVo.getAvatar()))
                 .defaultPassword(isDefaultPassword)
                 .passwordExpired(sysUserVo.getPasswordExpireTime() != null
                         && DateUtil.compare(sysUserVo.getPasswordExpireTime(), new Date()) < 0)

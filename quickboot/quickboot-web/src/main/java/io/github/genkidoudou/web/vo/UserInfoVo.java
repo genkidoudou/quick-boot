@@ -57,6 +57,11 @@ public class UserInfoVo {
     private String username;
 
     /**
+     * 头像访问地址。空表示未设置。
+     */
+    private String avatar;
+
+    /**
      * 是否为默认密码
      *
      * @since 2026/10/13

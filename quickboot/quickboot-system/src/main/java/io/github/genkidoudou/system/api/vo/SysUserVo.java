@@ -2,6 +2,7 @@ package io.github.genkidoudou.system.api.vo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.genkidoudou.common.desensitization.Sensitive;
+import io.github.genkidoudou.common.file.url.FileUrl;
 import io.github.genkidoudou.common.desensitization.SensitiveType;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
@@ -82,6 +83,12 @@ public class SysUserVo extends BaseEntity implements Serializable {
      * 性别(sex)。
      */
     private String sex;
+
+    /**
+     * 头像。库内为相对路径，接口返回时拼成可访问地址。
+     */
+    @FileUrl
+    private String avatar;
 
     /**
      * 密码。仅写入，接口响应不序列化；登录校验仍可通过 getter 读取。

@@ -14,6 +14,8 @@ import io.github.genkidoudou.common.crypto.PasswordCodecFactories;
 import io.github.genkidoudou.common.datascope.annotation.DataPermission;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
+import io.github.genkidoudou.common.file.FileAccessService;
+import io.github.genkidoudou.common.file.FileUploadResult;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.common.security.utils.LoginUserUtils;
 import io.github.genkidoudou.common.security.vo.LoginUser;
@@ -31,6 +33,7 @@ import io.github.genkidoudou.system.internal.vo.UpdatePasswordRequestVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -53,6 +56,11 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
     private final ISysDeptService sysDeptService;
 
     private final SysConfigApi sysConfigApi;
+
+    private final FileAccessService fileAccessService;
+
+    /** 头像上传使用的文件分类编码。 */
+    private static final String AVATAR_CLASSIFY = "avatar";
 
 
     /**
@@ -317,6 +325,24 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         param.setPhonenumber(body.getPhonenumber());
         param.setSex(body.getSex());
         super.updateById(param);
+    }
+
+    /**
+     * 按头像分类上传图片，并把相对路径写到当前用户。
+     *
+     * @param userId 用户 id
+     * @param file   图片文件
+     * @return 更新后的个人资料
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public SysUserVo updateAvatar(Long userId, MultipartFile file) {
+        FileUploadResult result = fileAccessService.upload(file, AVATAR_CLASSIFY);
+        SysUser param = new SysUser();
+        param.setId(userId);
+        param.setAvatar(result.getRelativePath());
+        super.updateById(param);
+        return getProfile(userId);
     }
 
     /**

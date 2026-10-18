@@ -105,4 +105,13 @@ public interface ISysUserService {
      */
     void updateProfile(Long userId, SysUserVo body);
 
+    /**
+     * 上传并更新当前用户头像。
+     *
+     * @param userId 用户 id
+     * @param file   图片文件
+     * @return 更新后的个人资料
+     */
+    SysUserVo updateAvatar(Long userId, org.springframework.web.multipart.MultipartFile file);
+
 }

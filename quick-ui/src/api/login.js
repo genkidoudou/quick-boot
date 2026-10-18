@@ -138,7 +138,7 @@ export function getInfo() {
                     userId: me.userId,
                     userName: me.username,
                     nickName: me.nickName,
-                    avatar: ''
+                    avatar: me.avatar || ''
                 },
                 roles,
                 permissions,

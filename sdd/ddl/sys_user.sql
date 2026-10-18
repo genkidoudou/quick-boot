@@ -14,6 +14,7 @@ CREATE TABLE `sys_user` (
   `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '邮箱',
   `phonenumber` varchar(11) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '手机号码',
   `sex` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '性别(sex)',
+  `avatar` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '头像',
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码',
   `status` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户状态(user_status)',
   `password_expire_time` datetime DEFAULT NULL COMMENT '密码过期时间',

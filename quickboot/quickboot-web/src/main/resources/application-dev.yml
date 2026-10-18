@@ -12,3 +12,5 @@ spring:
 qc:
   captcha:
     enabled: false
+  file:
+    view-url-base: http://localhost:8800/dev-api/sys/file/view

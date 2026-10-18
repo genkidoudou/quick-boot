@@ -17,6 +17,7 @@ import io.github.genkidoudou.system.internal.vo.UpdatePasswordRequestVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -153,6 +154,19 @@ public class SysUserController {
         LoginUser loginUser = LoginUserUtils.getLoginUser();
         sysUserService.updateProfile(loginUser.getUserId(), body);
         return R.ok();
+    }
+
+    /**
+     * 上传并修改当前用户头像。
+     *
+     * @param file 图片文件
+     * @return 更新后的个人资料
+     */
+    @Idempotent(ttlSeconds = 10, key = "#userId")
+    @PostMapping("avatar")
+    public R<SysUserVo> avatar(@RequestParam("file") MultipartFile file) {
+        LoginUser loginUser = LoginUserUtils.getLoginUser();
+        return R.ok(sysUserService.updateAvatar(loginUser.getUserId(), file));
     }
 
 

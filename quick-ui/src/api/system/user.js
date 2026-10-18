@@ -125,3 +125,17 @@ export function updateUserProfile(data) {
         data
     })
 }
+
+/**
+ * 上传并修改当前用户头像。
+ * @param {File} file
+ */
+export function uploadAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request({
+        url: `${BASE}/avatar`,
+        method: 'post',
+        data: formData
+    })
+}

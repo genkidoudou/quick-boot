@@ -11,6 +11,25 @@ import { getToken, setToken, removeToken } from '@/utils/auth'
 import { clearSessionId } from '@/monitor/sessionContext'
 import defAva from '@/assets/images/profile.jpg'
 
+/**
+ * 头像地址：空用默认图；已是 http(s) 直接用；相对路径拼到文件预览地址。
+ * @param {string|null|undefined} raw
+ * @returns {string}
+ */
+function resolveAvatar(raw) {
+  if (raw == null || String(raw).trim() === '') {
+    return defAva
+  }
+  const value = String(raw).trim()
+  if (/^https?:\/\//i.test(value)) {
+    return value
+  }
+  const base = import.meta.env.VITE_APP_BASE_API || ''
+  const rel = value.replace(/^\//, '')
+  const path = rel.startsWith('sys/file/view/') ? rel : `sys/file/view/${rel}`
+  return `${base}/${path}`
+}
+
 const useUserStore = defineStore(
   'user',
   {
@@ -54,7 +73,7 @@ const useUserStore = defineStore(
         return new Promise((resolve, reject) => {
           getInfo().then(res => {
             const user = res.data.user
-            const avatar = (user.avatar == "" || user.avatar == null) ? defAva : import.meta.env.VITE_APP_BASE_API + user.avatar;
+            const avatar = resolveAvatar(user.avatar)
 
             if (res.data.roles && res.data.roles.length > 0) {
               this.roles = res.data.roles
