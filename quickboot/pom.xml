@@ -12,6 +12,7 @@
         <module>quickboot-common</module>
         <module>quickboot-core</module>
         <module>quickboot-system</module>
+        <module>quickboot-job</module>
         <module>quickboot-web</module>
     </modules>
 

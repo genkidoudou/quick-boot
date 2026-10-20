@@ -27,6 +27,11 @@
             <artifactId>quickboot-system</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.genkidoudou.job</groupId>
+            <artifactId>quickboot-job</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Boot 4：须用 starter 才会自动配置 Flyway；版本化迁移只执行一次 -->
         <dependency>

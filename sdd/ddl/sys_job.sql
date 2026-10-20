@@ -1,0 +1,20 @@
+CREATE TABLE `sys_job` (
+  `id` bigint NOT NULL COMMENT '主键id',
+  `create_by` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除(0:正常,1:删除)',
+  `remark` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+  `digest` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '摘要',
+  `job_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '任务名称',
+  `job_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '任务类型(JOB_TYPE)',
+  `invoke_target` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'bean名称',
+  `job_param` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '任务参数',
+  `script_content` text COLLATE utf8mb4_unicode_ci COMMENT '任务脚本',
+  `python_bin` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'python2 或 python3，仅 Python 任务使用',
+  `cron_expression` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'cron',
+  `concurrent` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '是否允许同一任务重叠执行(COMMON_IS)',
+  `status` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '状态(COMMON_STATUS)',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务';

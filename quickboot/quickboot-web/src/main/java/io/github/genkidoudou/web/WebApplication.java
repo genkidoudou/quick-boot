@@ -13,10 +13,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = {
         "io.github.genkidoudou.core",
         "io.github.genkidoudou.system",
+        "io.github.genkidoudou.job",
         "io.github.genkidoudou.web"
 })
 @MapperScan({
-   "io.github.genkidoudou.system.internal.mapper"
+   "io.github.genkidoudou.system.internal.mapper",
+   "io.github.genkidoudou.job.internal.mapper"
 })
 public class WebApplication {
     public static void main(String[] args) {
