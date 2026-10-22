@@ -19,6 +19,23 @@
         <el-button
           link
           type="primary"
+          :icon="VideoPlay"
+          v-hasPermi="['job:job:edit']"
+          @click="onRun(row)"
+        >
+          执行
+        </el-button>
+        <el-button
+          link
+          type="primary"
+          v-hasPermi="['job:job:edit']"
+          @click="onToggleStatus(row)"
+        >
+          {{ row.status === '0' ? '停用' : '启用' }}
+        </el-button>
+        <el-button
+          link
+          type="primary"
           :icon="Edit"
           v-hasPermi="['job:job:edit']"
           @click="formDialogRef?.open(row)"
@@ -93,9 +110,10 @@
  * 定时任务：列表 / 新增 / 修改 / 删除（对齐后端 SysJob）。
  */
 import {computed, reactive, ref} from 'vue'
-import {Delete, Edit} from '@element-plus/icons-vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Delete, Edit, VideoPlay} from '@element-plus/icons-vue'
 import {useDict} from '@/utils/dict'
-import {addJob, pageJob, removeJob, updateJob} from '@/api/job/job'
+import {addJob, changeJobStatus, pageJob, removeJob, runJob, updateJob} from '@/api/job/job'
 
 defineOptions({name: 'SysJob'})
 
@@ -117,7 +135,7 @@ const tableColumns = computed(() => [
   {prop: 'cronExpression', label: 'Cron', minWidth: 160, showOverflowTooltip: true},
   {prop: 'concurrent', label: '允许重叠', columnType: 'tag', dictList: COMMON_IS.value || [], width: 110},
   {prop: 'status', label: '状态', columnType: 'tag', dictList: COMMON_STATUS.value || [], width: 90},
-  {prop: 'actions', label: '操作', columnType: 'slot', width: 140, fixed: 'right', align: 'center'}
+  {prop: 'actions', label: '操作', columnType: 'slot', width: 240, fixed: 'right', align: 'center'}
 ])
 
 const searchColumns = computed(() => [
@@ -196,5 +214,23 @@ async function submitJob() {
   } else {
     await addJob(payload)
   }
+}
+
+/** @param {Record<string, any>} row */
+async function onRun(row) {
+  await ElMessageBox.confirm(`确认立即执行任务「${row.jobName || row.id}」？`, '提示', {type: 'warning'})
+  await runJob(row.id)
+  ElMessage.success('已触发执行')
+  tableRef.value?.refreshData()
+}
+
+/** @param {Record<string, any>} row */
+async function onToggleStatus(row) {
+  const next = row.status === '0' ? '1' : '0'
+  const tip = next === '1' ? '停用' : '启用'
+  await ElMessageBox.confirm(`确认${tip}任务「${row.jobName || row.id}」？`, '提示', {type: 'warning'})
+  await changeJobStatus({id: row.id, status: next})
+  ElMessage.success(`已${tip}`)
+  tableRef.value?.refreshData()
 }
 </script>

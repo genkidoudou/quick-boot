@@ -23,41 +23,74 @@ public class SysJobLog implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 主键 ID。 */
+    /**
+     * 主键 ID。
+     */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    /** 创建时间。 */
+    /**
+     * 创建时间。
+     */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    /** 备注。 */
+    /**
+     * 备注。
+     */
     private String remark;
 
-    /** 摘要。 */
+    /**
+     * 摘要。
+     */
     private String digest;
 
-    /** 任务 ID。 */
+    /**
+     * 任务 ID。
+     */
     private Long jobId;
 
-    /** 开始时间。 */
+    /**
+     * 开始时间。
+     */
     private LocalDateTime startTime;
 
-    /** 结束时间。 */
+    /**
+     * 结束时间。
+     */
     private LocalDateTime endTime;
 
-    /** 耗时（毫秒）。 */
+    /**
+     * 耗时（毫秒）。
+     */
     private Long costMs;
 
-    /** 状态（JOB_STATUS）。 */
+    /**
+     * 状态（JOB_STATUS）。
+     */
     private String status;
 
-    /** 返回结果。 */
+    /**
+     * 返回结果。
+     */
     private String result;
 
-    /** 错误异常。 */
+    /**
+     * 错误异常。
+     */
     private String errorMsg;
 
-    /** 任务参数。 */
+    /**
+     * 任务参数。
+     */
     private String jobParam;
+
+
+    /**
+     * 触发来源
+     *
+     * @since 2026/10/22
+     */
+
+    private String triggerType;
 }

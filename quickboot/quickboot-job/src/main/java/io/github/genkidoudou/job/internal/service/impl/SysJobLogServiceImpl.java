@@ -6,17 +6,19 @@ import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.job.internal.entity.SysJobLog;
+import io.github.genkidoudou.job.internal.enums.JobLogStatus;
 import io.github.genkidoudou.job.internal.mapper.SysJobLogMapper;
 import io.github.genkidoudou.job.internal.service.ISysJobLogService;
 import io.github.genkidoudou.job.internal.vo.SysJobLogVo;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
- * 定时任务日志服务实现。不提供新增和修改。
+ * 定时任务日志服务实现。
  */
 @Service
 public class SysJobLogServiceImpl extends BaseVoServiceImpl<SysJobLogMapper, SysJobLog, SysJobLogVo>
@@ -42,12 +44,6 @@ public class SysJobLogServiceImpl extends BaseVoServiceImpl<SysJobLogMapper, Sys
         query.orderByDesc(SysJobLog::getStartTime);
     }
 
-    /**
-     * 按主键查详情；不存在时抛出业务异常。
-     *
-     * @param id 主键
-     * @return 详情
-     */
     @Override
     public SysJobLogVo getVoById(Long id) {
         SysJobLogVo vo = super.getVoById(id);
@@ -57,14 +53,54 @@ public class SysJobLogServiceImpl extends BaseVoServiceImpl<SysJobLogMapper, Sys
         return vo;
     }
 
-    /**
-     * 按主键批量删除。表无逻辑删除列，删除为物理删除。
-     *
-     * @param ids 主键列表
-     */
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+    }
+
+    @Override
+    public long countRunning(Long jobId) {
+        return this.baseMapper.selectCount(new LambdaQueryWrapper<SysJobLog>()
+                .eq(SysJobLog::getJobId, jobId)
+                .eq(SysJobLog::getStatus, JobLogStatus.RUNNING.getValue()));
+    }
+
+    @Override
+    public Long saveRunning(Long jobId, String jobParam, String triggerType, LocalDateTime start) {
+        SysJobLog row = new SysJobLog();
+        row.setJobId(jobId);
+        row.setJobParam(jobParam);
+        row.setTriggerType(triggerType);
+        row.setStatus(JobLogStatus.RUNNING.getValue());
+        row.setStartTime(start);
+        this.baseMapper.insert(row);
+        return row.getId();
+    }
+
+    @Override
+    public void saveSkip(Long jobId, String jobParam, String triggerType, LocalDateTime start, String reason) {
+        SysJobLog row = new SysJobLog();
+        row.setJobId(jobId);
+        row.setJobParam(jobParam);
+        row.setTriggerType(triggerType);
+        row.setStatus(JobLogStatus.SKIP.getValue());
+        row.setStartTime(start);
+        row.setEndTime(start);
+        row.setCostMs(0L);
+        row.setResult(reason);
+        this.baseMapper.insert(row);
+    }
+
+    @Override
+    public void finish(Long logId, JobLogStatus status, String result, String errorMsg, long costMs) {
+        SysJobLog row = new SysJobLog();
+        row.setId(logId);
+        row.setStatus(status.getValue());
+        row.setResult(result);
+        row.setErrorMsg(errorMsg);
+        row.setEndTime(LocalDateTime.now());
+        row.setCostMs(costMs);
+        this.baseMapper.updateById(row);
     }
 
     /**

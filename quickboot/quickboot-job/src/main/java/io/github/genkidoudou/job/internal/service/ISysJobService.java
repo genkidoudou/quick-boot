@@ -50,4 +50,29 @@ public interface ISysJobService {
      * @param ids 主键列表
      */
     void removeByIds(List<Long> ids);
+
+
+    /**
+     * 修改状态
+     *
+     * @param jobId  定时任务
+     * @param status 状态
+     * @return
+     * @since 2026/10/22
+     */
+    void changeStatus(Long jobId, String status);
+
+    /**
+     * 立即执行一次（不依赖 Quartz 是否已注册该 Job）。
+     *
+     * @param jobId 任务 id
+     */
+    void run(Long jobId);
+
+    /**
+     * 列出启用中的任务，供启动时装载调度。
+     *
+     * @return 启用任务列表
+     */
+    List<SysJobVo> listEnabled();
 }

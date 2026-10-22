@@ -83,7 +83,18 @@ spring:
     # 全新 data-dir 首次迁移全量执行；baseline 保留兼容旧库场景
     baseline-on-migrate: true
     baseline-version: 1
-
+  ## quzrtz
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: never   # 用 Flyway 建 QRTZ_*，不要每次自动建
+    overwrite-existing-jobs: true
+    properties:
+      org.quartz.scheduler.instanceId: AUTO
+      org.quartz.jobStore.isClustered: true
+      org.quartz.jobStore.clusterCheckinInterval: 15000
+      org.quartz.jobStore.class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
+      org.quartz.threadPool.threadCount: 10
 logging:
   level:
     io.github.genkidoudou: debug

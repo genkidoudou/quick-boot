@@ -91,4 +91,32 @@ public class SysJobController {
         sysJobService.removeByIds(ids);
         return R.ok();
     }
+
+    /**
+     * 修改状态
+     *
+     * @param body
+     * @return
+     * @since 2026/10/22
+     */
+    @SaCheckPermission("job:job:edit")
+    @PostMapping("changeStatus")
+    public R<Void> changeStatus(@RequestBody SysJobVo body) {
+        sysJobService.changeStatus(body.getId(), body.getStatus());
+        return R.ok();
+    }
+
+    /**
+     * 执行一次
+     *
+     * @param id 任务id
+     * @return
+     * @since 2026/10/22
+     */
+    @SaCheckPermission("job:job:edit")
+    @PostMapping("run/{id}")
+    public R<Void> run(@PathVariable Long id) {
+        sysJobService.run(id);
+        return R.ok();
+    }
 }

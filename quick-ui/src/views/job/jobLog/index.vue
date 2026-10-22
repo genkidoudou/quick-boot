@@ -69,6 +69,7 @@ const detail = ref(null)
 
 const tableColumns = computed(() => [
   {prop: 'jobId', label: '任务 ID', minWidth: 180, showOverflowTooltip: true},
+  {prop: 'triggerType', label: '触发来源', width: 100},
   {prop: 'jobParam', label: '任务参数', minWidth: 160, showOverflowTooltip: true},
   {prop: 'status', label: '状态', columnType: 'tag', dictList: JOB_STATUS.value || [], width: 100},
   {prop: 'startTime', label: '开始时间', width: 170},

@@ -4,6 +4,7 @@ CREATE TABLE `sys_job_log` (
   `remark` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `digest` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '摘要',
   `job_id` bigint NOT NULL COMMENT '任务id',
+  `trigger_type` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '触发来源(CRON/MANUAL)',
   `start_time` datetime NOT NULL COMMENT '开始时间',
   `end_time` datetime DEFAULT NULL COMMENT '结束时间',
   `cost_ms` bigint DEFAULT NULL COMMENT '耗时',

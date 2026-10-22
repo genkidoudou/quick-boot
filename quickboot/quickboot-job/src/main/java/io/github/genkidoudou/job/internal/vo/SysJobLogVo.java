@@ -24,6 +24,9 @@ public class SysJobLogVo extends BaseEntity implements Serializable {
     /** 任务 ID。 */
     private Long jobId;
 
+    /** 触发来源（CRON / MANUAL）。 */
+    private String triggerType;
+
     /** 开始时间。 */
     private LocalDateTime startTime;
 

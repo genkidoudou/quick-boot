@@ -5,10 +5,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
+import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.job.internal.entity.SysJob;
+import io.github.genkidoudou.job.internal.enums.JobTriggerType;
 import io.github.genkidoudou.job.internal.mapper.SysJobMapper;
+import io.github.genkidoudou.job.internal.quartz.JobExecutor;
+import io.github.genkidoudou.job.internal.quartz.JobSchedulerEngine;
 import io.github.genkidoudou.job.internal.service.ISysJobService;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +24,8 @@ import java.util.Set;
 /**
  * 定时任务服务实现。
  */
+@RequiredArgsConstructor
+@Slf4j
 @Service
 public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, SysJobVo>
         implements ISysJobService {
@@ -25,12 +33,9 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
     private static final Set<String> JOB_TYPES = Set.of("BEAN", "SHELL", "PYTHON");
     private static final Set<String> PYTHON_BINS = Set.of("python2", "python3");
 
-    /**
-     * 按查询条件组装 Wrapper。
-     *
-     * @param query 查询包装器
-     * @param param 查询参数
-     */
+    private final JobSchedulerEngine jobSchedulerEngine;
+    private final JobExecutor jobExecutor;
+
     @Override
     public void applyQuery(LambdaQueryWrapper<SysJob> query, SysJobVo param) {
         if (param == null) {
@@ -41,12 +46,6 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysJob::getStatus, param.getStatus());
     }
 
-    /**
-     * 按主键查详情；不存在时抛出业务异常。
-     *
-     * @param id 主键
-     * @return 详情
-     */
     @Override
     public SysJobVo getVoById(Long id) {
         SysJobVo vo = super.getVoById(id);
@@ -56,44 +55,70 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
         return vo;
     }
 
-    /**
-     * 新增；带事务。
-     *
-     * @param vo 视图对象
-     * @return 持久化后的实体
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SysJob saveVo(SysJobVo vo) {
         normalize(vo);
-        return super.saveVo(vo);
+        SysJob sysJob = super.saveVo(vo);
+        vo.setId(sysJob.getId());
+        jobSchedulerEngine.addJob(vo);
+        return sysJob;
     }
 
-    /**
-     * 修改；带事务。
-     *
-     * @param vo 视图对象
-     * @return 是否成功
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById(SysJobVo vo) {
         normalize(vo);
-        return super.updateVoById(vo);
+        boolean ok = super.updateVoById(vo);
+        if (ok) {
+            jobSchedulerEngine.updateJob(getVoById(vo.getId()));
+        }
+        return ok;
     }
 
-    /**
-     * 按主键批量删除。
-     *
-     * @param ids 主键列表
-     */
     @Override
     public void removeByIds(List<Long> ids) {
+        for (Long id : ids) {
+            jobSchedulerEngine.deleteJob(getVoById(id));
+        }
         deleteByIds(ids);
     }
 
     /**
-     * 按任务类型收口字段：Bean 只留调用目标，脚本任务只留脚本，Python 再校验解释器。
+     * 只改状态并同步调度：updateJob 会按启停决定是否注册，不再额外 pause/resume。
+     *
+     * @param jobId  任务 id
+     * @param status 目标状态
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changeStatus(Long jobId, String status) {
+        SysJob patch = new SysJob();
+        patch.setId(jobId);
+        patch.setStatus(status);
+        this.updateById(patch);
+        jobSchedulerEngine.updateJob(getVoById(jobId));
+    }
+
+    /**
+     * 立即执行走执行器，不依赖 Quartz 是否已挂载该 Job。
+     *
+     * @param jobId 任务 id
+     */
+    @Override
+    public void run(Long jobId) {
+        getVoById(jobId);
+        jobExecutor.execute(jobId, JobTriggerType.MANUAL.getValue());
+    }
+
+    @Override
+    public List<SysJobVo> listEnabled() {
+        return listVo(new LambdaQueryWrapper<SysJob>()
+                .eq(SysJob::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+    }
+
+    /**
+     * 按任务类型收口字段。
      *
      * @param vo 视图对象
      */

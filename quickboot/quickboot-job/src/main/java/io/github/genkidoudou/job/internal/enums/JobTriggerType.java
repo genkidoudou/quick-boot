@@ -8,32 +8,31 @@ import java.util.Arrays;
 import java.util.Locale;
 
 /**
- * 任务触发来源
- *
- * @author luyanan
- * @since 2026/10/22
+ * 触发来源：决定这次运行为什么跑，写入日志用。
+ * 注意：不是任务类型（{@link JobType}）。
  */
 @AllArgsConstructor
 @Getter
 public enum JobTriggerType {
+    CRON("CRON", "定时触发"),
+    MANUAL("MANUAL", "手动触发");
 
-    BEAN("BEAN", "BEAN"),
-    SHELL("SHELL", "SHELL"),
-    PYTHON("PYTHON", "PYTHON");
+    private final String value;
+    private final String label;
 
-    private String value;
-
-    private String label;
-
-
-    public static JobTriggerType get(String triggerType) {
-        if (StrUtil.isBlank(triggerType)) {
+    /**
+     * 按值解析触发来源。
+     *
+     * @param value CRON / MANUAL
+     * @return 枚举；无法识别时返回 null
+     */
+    public static JobTriggerType from(String value) {
+        if (StrUtil.isBlank(value)) {
             return null;
         }
-        return Arrays
-                .stream(JobTriggerType.values())
-                .filter(a -> a.getValue().toUpperCase(Locale.ROOT)
-                        .equals(triggerType.toUpperCase(Locale.ROOT)))
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        return Arrays.stream(values())
+                .filter(item -> item.value.equals(normalized))
                 .findFirst()
                 .orElse(null);
     }

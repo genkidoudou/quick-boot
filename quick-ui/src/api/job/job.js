@@ -67,3 +67,26 @@ export function removeJob(ids) {
     data: ids
   })
 }
+
+/**
+ * 修改启停状态。
+ * @param {{ id: string|number, status: string }} data
+ */
+export function changeJobStatus(data) {
+  return request({
+    url: `${BASE}/changeStatus`,
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 立即执行一次。
+ * @param {string|number} id
+ */
+export function runJob(id) {
+  return request({
+    url: `${BASE}/run/${id}`,
+    method: 'post'
+  })
+}
