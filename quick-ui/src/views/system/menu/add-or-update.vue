@@ -11,22 +11,22 @@
       :on-success="() => emit('success')"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="108px">
-      <el-form-item prop="parentId">
-        <template #label>
+          <el-form-item prop="parentId">
+            <template #label>
           <C7FormLabel text="上级菜单" :tip="MENU_TIPS.parentId"/>
-        </template>
+            </template>
         <C7TreeSelect
-            v-model="form.parentId"
-            :data-list="treeData"
-            value-key="id"
+                v-model="form.parentId"
+                :data-list="treeData"
+                value-key="id"
             label-key="name"
-            children-key="children"
+                children-key="children"
             check-strictly
-            filterable
-            placeholder="请选择上级菜单"
-            @change="onParentChange"
-        />
-      </el-form-item>
+                filterable
+                placeholder="请选择上级菜单"
+                @change="onParentChange"
+            />
+          </el-form-item>
       <el-collapse v-if="showQuickParse" v-model="quickParseOpen" class="quick-parse">
         <el-collapse-item name="parse" title="从 Controller 快速生成">
           <el-input
@@ -42,17 +42,17 @@
             <el-table-column width="52" align="center">
               <template #default="{ row }">
                 <el-checkbox v-model="row.checked"/>
-              </template>
+            </template>
             </el-table-column>
             <el-table-column label="按钮名称" min-width="140">
               <template #default="{ row }">
                 <el-input v-model="row.menuName"/>
-              </template>
+            </template>
             </el-table-column>
             <el-table-column label="权限字符" min-width="180">
               <template #default="{ row }">
                 <el-input v-model="row.perms"/>
-              </template>
+            </template>
             </el-table-column>
             <el-table-column label="排序" width="100">
               <template #default="{ row }">
@@ -63,11 +63,11 @@
         </el-collapse-item>
       </el-collapse>
       <el-form-item prop="menuType">
-        <template #label>
+            <template #label>
           <C7FormLabel text="菜单类型" :tip="MENU_TIPS.menuType"/>
-        </template>
+            </template>
         <c7-radio v-model="form.menuType" :data-list="menuTypeOptions" :disabled="lockMenuType"/>
-      </el-form-item>
+          </el-form-item>
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item prop="menuName">
@@ -142,15 +142,15 @@
         </el-col>
       </el-row>
       <el-form-item v-if="form.menuType === 'C'" prop="query">
-        <template #label>
+            <template #label>
           <C7FormLabel text="路由参数" :tip="MENU_TIPS.query"/>
-        </template>
+            </template>
         <el-input v-model="form.query" placeholder='如 {"id": 1}'/>
-      </el-form-item>
+          </el-form-item>
       <el-form-item prop="perms">
-        <template #label>
+            <template #label>
           <C7FormLabel text="权限字符" :tip="MENU_TIPS.perms"/>
-        </template>
+            </template>
         <div class="perms-dynamic">
           <div v-for="(_, index) in permsList" :key="index" class="perms-dynamic__row">
             <el-input v-model="permsList[index]" placeholder="如 system:menu:list" clearable/>
@@ -158,7 +158,7 @@
           </div>
           <el-button type="primary" link @click="addPermsRow">添加权限</el-button>
         </div>
-      </el-form-item>
+          </el-form-item>
       <el-row v-if="form.menuType !== 'F'" :gutter="16">
         <el-col :span="12">
           <el-form-item prop="isFrame">
@@ -206,12 +206,12 @@
           </el-form-item>
         </el-col>
       </el-row>
-      <el-form-item prop="remark">
-        <template #label>
+          <el-form-item prop="remark">
+            <template #label>
           <C7FormLabel text="备注" :tip="MENU_TIPS.remark"/>
-        </template>
+            </template>
         <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="100"/>
-      </el-form-item>
+          </el-form-item>
     </el-form>
   </C7FormDialog>
 </template>
@@ -294,20 +294,20 @@ const rules = {
 function emptyForm() {
   return {
     id: undefined,
-    parentId: ROOT,
-    menuName: '',
+  parentId: ROOT,
+  menuName: '',
     menuType: 'C',
-    path: '',
-    routeName: '',
+  path: '',
+  routeName: '',
     component: '',
     perms: '',
     icon: '',
     orderNum: 0,
     query: '',
-    isFrame: '0',
-    isCache: '0',
-    visible: '0',
-    status: '0',
+  isFrame: '0',
+  isCache: '0',
+  visible: '0',
+  status: '0',
     remark: ''
   }
 }
@@ -370,13 +370,13 @@ function findTreeNode(nodes, id) {
 
 function applyParentMenuType(parentMenuType) {
   if (form.id) {
-    return
-  }
+            return
+          }
   if (parentMenuType === 'C') {
     form.menuType = 'F'
     lockMenuType.value = true
-    return
-  }
+            return
+          }
   lockMenuType.value = false
 }
 
@@ -433,8 +433,8 @@ async function getPayload(payload = {}) {
   if (id != null && id !== '') {
     const res = await getMenu(id)
     fillForm(res.data || {})
-    return
-  }
+            return
+          }
   applyParentMenuType(payload.parentMenuType)
 }
 
