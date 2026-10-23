@@ -9,16 +9,23 @@ import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.job.internal.entity.SysJob;
 import io.github.genkidoudou.job.internal.enums.JobTriggerType;
 import io.github.genkidoudou.job.internal.mapper.SysJobMapper;
+import io.github.genkidoudou.job.internal.quartz.ITask;
 import io.github.genkidoudou.job.internal.quartz.JobExecutor;
 import io.github.genkidoudou.job.internal.quartz.JobSchedulerEngine;
 import io.github.genkidoudou.job.internal.service.ISysJobService;
+import io.github.genkidoudou.job.internal.vo.JobTaskBeanVo;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,6 +42,7 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
 
     private final JobSchedulerEngine jobSchedulerEngine;
     private final JobExecutor jobExecutor;
+    private final ApplicationContext applicationContext;
 
     @Override
     public void applyQuery(LambdaQueryWrapper<SysJob> query, SysJobVo param) {
@@ -115,6 +123,21 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
     public List<SysJobVo> listEnabled() {
         return listVo(new LambdaQueryWrapper<SysJob>()
                 .eq(SysJob::getStatus, CommonEnums.STATUS_ENABLE.getValue()));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<JobTaskBeanVo> listTaskBeans() {
+        Map<String, ITask> beans = applicationContext.getBeansOfType(ITask.class);
+        List<JobTaskBeanVo> list = new ArrayList<>(beans.size());
+        for (Map.Entry<String, ITask> entry : beans.entrySet()) {
+            Class<?> targetClass = AopUtils.getTargetClass(entry.getValue());
+            list.add(new JobTaskBeanVo(entry.getKey(), targetClass.getName()));
+        }
+        list.sort(Comparator.comparing(JobTaskBeanVo::getBeanName));
+        return list;
     }
 
     /**

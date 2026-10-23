@@ -3,6 +3,7 @@ package io.github.genkidoudou.job.internal.service;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.job.internal.entity.SysJob;
+import io.github.genkidoudou.job.internal.vo.JobTaskBeanVo;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
 
 import java.util.List;
@@ -75,4 +76,11 @@ public interface ISysJobService {
      * @return 启用任务列表
      */
     List<SysJobVo> listEnabled();
+
+    /**
+     * 列出容器中所有实现 {@code ITask} 的 Bean，供管理端选择 invokeTarget。
+     *
+     * @return Bean 名称与类名列表
+     */
+    List<JobTaskBeanVo> listTaskBeans();
 }

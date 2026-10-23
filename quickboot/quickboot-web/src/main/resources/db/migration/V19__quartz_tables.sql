@@ -1,20 +1,6 @@
-﻿-- 1) 补 sys_job_log.trigger_type（已存在则跳过）
--- 2) Quartz 2.5.x JDBC JobStore（MySQL InnoDB）
-
-SET @qc_job_log_trigger_type := (
-  SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'sys_job_log'
-    AND COLUMN_NAME = 'trigger_type'
-);
-SET @qc_job_log_sql := IF(
-  @qc_job_log_trigger_type = 0,
-  'ALTER TABLE sys_job_log ADD COLUMN trigger_type varchar(16) NULL COMMENT ''触发来源(CRON/MANUAL)'' AFTER job_id',
-  'SELECT 1'
-);
-PREPARE qc_job_log_stmt FROM @qc_job_log_sql;
-EXECUTE qc_job_log_stmt;
-DEALLOCATE PREPARE qc_job_log_stmt;
+﻿-- Quartz 2.5.x JDBC JobStore（MySQL InnoDB）
+-- 说明：sys_job_log.trigger_type 已在既有库中存在；此处不用 PREPARE/EXECUTE，
+-- 避免 Druid WallFilter 拦截动态 SQL。若全新库缺该列，请手工 ALTER 或另开迁移。
 
 CREATE TABLE IF NOT EXISTS QRTZ_JOB_DETAILS (
   SCHED_NAME VARCHAR(120) NOT NULL,

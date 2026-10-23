@@ -8,6 +8,7 @@ import io.github.genkidoudou.common.idempotency.Idempotent;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
 import io.github.genkidoudou.job.internal.service.ISysJobService;
+import io.github.genkidoudou.job.internal.vo.JobTaskBeanVo;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -40,6 +41,17 @@ public class SysJobController {
     @PostMapping("page")
     public R<PageInfo<SysJobVo>> page(@RequestBody PageRequest<SysJobVo> pageRequest) {
         return R.ok(sysJobService.pageVo(pageRequest));
+    }
+
+    /**
+     * 列出所有实现 ITask 的 Spring Bean，供 BEAN 类型任务选择。
+     *
+     * @return Bean 名称列表
+     */
+    @SaCheckPermission("job:job:query")
+    @GetMapping("taskBeans")
+    public R<List<JobTaskBeanVo>> taskBeans() {
+        return R.ok(sysJobService.listTaskBeans());
     }
 
     /**

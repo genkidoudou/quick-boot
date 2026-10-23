@@ -90,3 +90,14 @@ export function runJob(id) {
     method: 'post'
   })
 }
+
+/**
+ * 列出实现 ITask 的 Spring Bean。
+ * @returns {Promise<{ data?: Array<{ beanName: string, className: string }> }>}
+ */
+export function listJobTaskBeans() {
+  return request({
+    url: `${BASE}/taskBeans`,
+    method: 'get'
+  })
+}
