@@ -93,4 +93,15 @@ public class SysJobLog implements Serializable {
      */
 
     private String triggerType;
+
+    /**
+     * 执行本条日志的 JVM 实例 ID。
+     */
+    private String instanceId;
+
+    /**
+     * 租约续约时间（心跳）。
+     * 执行中定期刷新；收尸任务用 now - heartbeat_time > 阈值 判定僵尸。
+     */
+    private LocalDateTime heartbeatTime;
 }

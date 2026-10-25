@@ -2,28 +2,32 @@ package io.github.genkidoudou.job.internal.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.job.internal.entity.SysJob;
-import io.github.genkidoudou.job.internal.enums.JobTriggerType;
 import io.github.genkidoudou.job.internal.mapper.SysJobMapper;
 import io.github.genkidoudou.job.internal.quartz.ITask;
-import io.github.genkidoudou.job.internal.quartz.JobExecutor;
 import io.github.genkidoudou.job.internal.quartz.JobSchedulerEngine;
 import io.github.genkidoudou.job.internal.service.ISysJobService;
 import io.github.genkidoudou.job.internal.vo.JobTaskBeanVo;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.CronExpression;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,8 +44,10 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
     private static final Set<String> JOB_TYPES = Set.of("BEAN", "SHELL", "PYTHON");
     private static final Set<String> PYTHON_BINS = Set.of("python2", "python3");
 
+    /** 详情页展示「接下来几次」预计执行时间的条数。 */
+    private static final int NEXT_FIRE_COUNT = 5;
+
     private final JobSchedulerEngine jobSchedulerEngine;
-    private final JobExecutor jobExecutor;
     private final ApplicationContext applicationContext;
 
     @Override
@@ -54,12 +60,16 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysJob::getStatus, param.getStatus());
     }
 
+    /**
+     * 详情：基础字段 + 根据 Cron 推算接下来若干次执行时间。
+     */
     @Override
     public SysJobVo getVoById(Long id) {
         SysJobVo vo = super.getVoById(id);
         if (vo == null) {
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "定时任务不存在");
         }
+        vo.setNextFireTimes(computeNextFireTimes(vo.getCronExpression(), NEXT_FIRE_COUNT));
         return vo;
     }
 
@@ -73,9 +83,13 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
         return sysJob;
     }
 
+    /**
+     * 仅停用状态允许修改配置；正常（启用）中请先停用。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateVoById(SysJobVo vo) {
+        assertDisabled(vo.getId());
         normalize(vo);
         boolean ok = super.updateVoById(vo);
         if (ok) {
@@ -84,9 +98,13 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
         return ok;
     }
 
+    /**
+     * 仅停用状态允许删除；正常（启用）中请先停用。
+     */
     @Override
     public void removeByIds(List<Long> ids) {
         for (Long id : ids) {
+            assertDisabled(id);
             jobSchedulerEngine.deleteJob(getVoById(id));
         }
         deleteByIds(ids);
@@ -94,6 +112,12 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
 
     /**
      * 只改状态并同步调度：updateJob 会按启停决定是否注册，不再额外 pause/resume。
+     * 启停本身不受「须先停用」限制（否则无法从正常切到停用）。
+     * <p>
+     * 必须用 {@link LambdaUpdateWrapper} 只更新 status：
+     * {@code invokeTarget}/{@code scriptContent}/{@code pythonBin} 配置了
+     * {@code FieldStrategy.ALWAYS}，若用 {@code updateById(仅含 id+status 的实体)}
+     * 会把这些字段写成 null，表现为「停用后 Bean 名变空」。
      *
      * @param jobId  任务 id
      * @param status 目标状态
@@ -101,22 +125,24 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void changeStatus(Long jobId, String status) {
-        SysJob patch = new SysJob();
-        patch.setId(jobId);
-        patch.setStatus(status);
-        this.updateById(patch);
+        boolean ok = this.update(new LambdaUpdateWrapper<SysJob>()
+                .eq(SysJob::getId, jobId)
+                .set(SysJob::getStatus, status));
+        if (!ok) {
+            throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "定时任务不存在");
+        }
         jobSchedulerEngine.updateJob(getVoById(jobId));
     }
 
     /**
-     * 立即执行走执行器，不依赖 Quartz 是否已挂载该 Job。
+     * 执行一次：正常 / 停用均可。
+     * 走 Quartz 同一 JobKey（停用时由引擎挂 durable JobDetail，不挂 Cron）。
      *
      * @param jobId 任务 id
      */
     @Override
     public void run(Long jobId) {
-        getVoById(jobId);
-        jobExecutor.execute(jobId, JobTriggerType.MANUAL.getValue());
+        jobSchedulerEngine.triggerOnce(getVoById(jobId));
     }
 
     @Override
@@ -138,6 +164,54 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
         }
         list.sort(Comparator.comparing(JobTaskBeanVo::getBeanName));
         return list;
+    }
+
+    /**
+     * 正常（启用）状态下禁止修改配置与删除，须先停用。
+     *
+     * @param jobId 任务 id
+     */
+    private void assertDisabled(Long jobId) {
+        // 直接读库状态，避免 getVoById 附带的 nextFireTimes 计算开销；也不依赖入参里的 status
+        SysJob row = this.getById(jobId);
+        if (row == null) {
+            throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "定时任务不存在");
+        }
+        if (CommonEnums.STATUS_ENABLE.getValue().equals(row.getStatus())) {
+            throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM,
+                    "任务处于正常状态，请先停用后再修改或删除");
+        }
+    }
+
+    /**
+     * 按 Cron 从当前时刻起向后推算接下来若干次触发时间。
+     * Cron 非法时返回空列表（不阻断详情查看）。
+     *
+     * @param cronExpression Quartz Cron
+     * @param count          条数
+     * @return 预计执行时间列表
+     */
+    private List<LocalDateTime> computeNextFireTimes(String cronExpression, int count) {
+        List<LocalDateTime> times = new ArrayList<>();
+        if (StrUtil.isBlank(cronExpression) || count <= 0) {
+            return times;
+        }
+        try {
+            CronExpression cron = new CronExpression(cronExpression.trim());
+            Date cursor = new Date();
+            ZoneId zone = ZoneId.systemDefault();
+            for (int i = 0; i < count; i++) {
+                Date next = cron.getNextValidTimeAfter(cursor);
+                if (next == null) {
+                    break;
+                }
+                times.add(LocalDateTime.ofInstant(next.toInstant(), zone));
+                cursor = next;
+            }
+        } catch (ParseException ex) {
+            log.warn("Cron 无法解析，跳过下次执行时间推算: {}", cronExpression, ex);
+        }
+        return times;
     }
 
     /**

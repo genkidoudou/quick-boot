@@ -23,6 +23,7 @@ public interface ISysJobService {
 
     /**
      * 按主键查详情；不存在时抛出业务异常。
+     * 详情中会附带 {@link SysJobVo#getNextFireTimes()}（接下来几次预计执行时间）。
      *
      * @param id 主键
      * @return 详情

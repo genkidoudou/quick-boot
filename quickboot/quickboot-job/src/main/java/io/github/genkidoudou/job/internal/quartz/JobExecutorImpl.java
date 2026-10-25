@@ -11,6 +11,7 @@ import io.github.genkidoudou.job.internal.enums.JobType;
 import io.github.genkidoudou.job.internal.service.ISysJobLogService;
 import io.github.genkidoudou.job.internal.service.ISysJobService;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
@@ -26,50 +27,91 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
- * 默认执行器：按任务类型执行 Bean / Shell / Python，并写入执行日志。
+ * 默认执行器：Bean / Shell / Python + 日志租约。
+ * <p>
+ * 并发：交给 Quartz（本类不再用 RUNNING 条数挡调度）。
+ * 租约：RUNNING 写入 instanceId/heartbeat，执行中续约，结束 CAS 收尾。
  */
 @Component
 @Slf4j
 public class JobExecutorImpl implements JobExecutor {
 
+    /** 续约周期；须明显小于收尸阈值（20s vs 90s） */
+    private static final long HEARTBEAT_PERIOD_SEC = 20;
+
     private static final Set<String> ALLOWED_BIN = Set.of("bash", "python2", "python3");
-    private static final long TIMEOUT_SEC = 60;
+
+    /** 脚本进程超时 */
+    private static final long SCRIPT_TIMEOUT_SEC = 60;
+
+    /**
+     * Bean 任务超时（中优先级修复）。
+     * 与脚本对齐为 60s；长任务请自行在业务里分段/异步，或再调大此常量。
+     */
+    private static final long BEAN_TIMEOUT_SEC = 60;
+
     private static final int MAX_OUTPUT = 64 * 1024;
+
+    /** 心跳池大小：避免单线程时多任务续约互相堵住导致误收尸 */
+    private static final int HB_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors());
 
     private final ISysJobService sysJobService;
     private final ISysJobLogService sysJobLogService;
     private final ApplicationContext applicationContext;
+    private final JobInstanceId jobInstanceId;
 
-    /**
-     * @param sysJobService      任务服务（Lazy，打断与 Service 的循环依赖）
-     * @param sysJobLogService   日志服务
-     * @param applicationContext Spring 上下文
-     */
+    /** 多线程续约池（守护线程，进程退出可不管） */
+    private final ScheduledExecutorService hbPool = new ScheduledThreadPoolExecutor(
+            HB_POOL_SIZE,
+            r -> {
+                Thread t = new Thread(r, "job-log-heartbeat");
+                t.setDaemon(true);
+                return t;
+            });
+
+    /** Bean 超时专用池；与 Quartz 工作线程解耦，才能 Future.get(timeout) */
+    private final ExecutorService beanPool = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "job-bean-exec");
+        t.setDaemon(true);
+        return t;
+    });
+
     public JobExecutorImpl(@Lazy ISysJobService sysJobService,
                            ISysJobLogService sysJobLogService,
-                           ApplicationContext applicationContext) {
+                           ApplicationContext applicationContext,
+                           JobInstanceId jobInstanceId) {
         this.sysJobService = sysJobService;
         this.sysJobLogService = sysJobLogService;
         this.applicationContext = applicationContext;
+        this.jobInstanceId = jobInstanceId;
     }
 
-    /**
-     * 执行指定任务。
-     *
-     * @param jobId       任务 id
-     * @param triggerType 触发来源：CRON / MANUAL
-     */
+    @PreDestroy
+    public void shutdownPools() {
+        hbPool.shutdownNow();
+        beanPool.shutdownNow();
+    }
+
     @Override
     public void execute(Long jobId, String triggerType) {
         LocalDateTime start = LocalDateTime.now();
         long beginMs = System.currentTimeMillis();
 
         SysJobVo job = sysJobService.getVoById(jobId);
-        // 停用任务被触发时直接忽略，避免 Cron 侧反复抛错
         if (CommonEnums.STATUS_DISABLE.getValue().equals(job.getStatus())) {
+            // Cron 侧偶发：停用后触发器未卸干净；静默忽略避免刷错
             return;
         }
 
@@ -83,52 +125,82 @@ public class JobExecutorImpl implements JobExecutor {
             throw WarningException.literal(20002, "不支持的任务类型: " + job.getJobType());
         }
 
-        // COMMON_IS：是=0 允许重叠，否=1 不允许；禁止重叠且仍有 RUNNING 时记 SKIP
-        if ("1".equals(job.getConcurrent()) && sysJobLogService.countRunning(jobId) > 0) {
-            sysJobLogService.saveSkip(jobId, job.getJobParam(), trigger.getValue(), start, "上一次尚未结束");
-            return;
-        }
+        /*
+         * 不要再写：
+         *   if (concurrent=1 && countRunning>0) saveSkip...
+         * 节点崩溃后 RUNNING 永不结束会永久 SKIP。
+         * 禁止重叠请依赖 Quartz Job 类上的 @DisallowConcurrentExecution。
+         */
 
-        Long logId = sysJobLogService.saveRunning(jobId, job.getJobParam(), trigger.getValue(), start);
+        Long logId = sysJobLogService.saveRunning(
+                jobId, job.getJobParam(), trigger.getValue(), start, jobInstanceId.get());
+
+        ScheduledFuture<?> hb = hbPool.scheduleAtFixedRate(
+                () -> {
+                    try {
+                        sysJobLogService.touchHeartbeat(logId);
+                    } catch (Exception e) {
+                        // 续约失败不打断业务；连续失败超过租约会被收尸
+                        log.debug("续约失败 logId={}", logId, e);
+                    }
+                },
+                HEARTBEAT_PERIOD_SEC, HEARTBEAT_PERIOD_SEC, TimeUnit.SECONDS);
+
         try {
+            // 【严重修复】恢复真实执行，禁止再写死 "ok"
             String result = switch (jobType) {
                 case BEAN -> runBean(job);
                 case PYTHON -> runScript(job, job.getPythonBin(), "py");
                 case SHELL -> runScript(job, "bash", "sh");
             };
-            sysJobLogService.finish(logId, JobLogStatus.SUCCESS, result, null, System.currentTimeMillis() - beginMs);
+            boolean ok = sysJobLogService.finishIfRunning(
+                    logId, JobLogStatus.SUCCESS, result, null,
+                    System.currentTimeMillis() - beginMs);
+            if (!ok) {
+                log.warn("任务已成功但日志已被收尸覆盖 logId={}", logId);
+            }
         } catch (Exception ex) {
             log.warn("任务执行失败 jobId={}", jobId, ex);
-            sysJobLogService.finish(logId, JobLogStatus.FAIL, null,
+            sysJobLogService.finishIfRunning(
+                    logId, JobLogStatus.FAIL, null,
                     StrUtil.maxLength(ex.getMessage(), 1000),
                     System.currentTimeMillis() - beginMs);
+        } finally {
+            hb.cancel(false);
         }
     }
 
     /**
-     * 从 Spring 容器按 Bean 名取 {@link ITask} 并执行。
-     *
-     * @param job 任务
-     * @return 执行结果文本
+     * 执行 Spring Bean，并施加超时（中：Bean 无超时修复）。
+     * 超时后 cancel(true) 中断工作线程；ITask 若忽略中断，仍可能继续跑，
+     * 但本方法会向调度返回失败，并由租约在节点崩溃时收尸。
      */
-    private String runBean(SysJobVo job) {
+    private String runBean(SysJobVo job) throws Exception {
+        ITask task;
         try {
-            ITask task = applicationContext.getBean(job.getInvokeTarget(), ITask.class);
-            return task.execute(job.getJobParam());
+            task = applicationContext.getBean(job.getInvokeTarget(), ITask.class);
         } catch (NoSuchBeanDefinitionException ex) {
             throw new WarningException(20004, job.getInvokeTarget());
         }
+
+        Callable<String> call = () -> task.execute(job.getJobParam());
+        Future<String> future = beanPool.submit(call);
+        try {
+            return future.get(BEAN_TIMEOUT_SEC, TimeUnit.SECONDS);
+        } catch (TimeoutException ex) {
+            future.cancel(true);
+            throw new IllegalStateException("Bean 任务超过 " + BEAN_TIMEOUT_SEC + " 秒");
+        } catch (ExecutionException ex) {
+            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+            if (cause instanceof Exception e) {
+                throw e;
+            }
+            throw new IllegalStateException(cause);
+        }
     }
 
-    /**
-     * 执行脚本：写临时文件 → ProcessBuilder 参数数组启动 → 合并 stdout/stderr。
-     *
-     * @param job     任务
-     * @param bin     解释器：bash / python2 / python3
-     * @param fileExt 临时文件后缀
-     * @return 标准输出
-     */
-    private String runScript(SysJobVo job, String bin, String fileExt) throws IOException, InterruptedException {
+    private String runScript(SysJobVo job, String bin, String fileExt)
+            throws IOException, InterruptedException {
         if (!ALLOWED_BIN.contains(bin)) {
             throw new IllegalStateException("解释器不在允许列表: " + bin);
         }
@@ -146,11 +218,11 @@ public class JobExecutorImpl implements JobExecutor {
                     .redirectErrorStream(true)
                     .directory(tmpDir.toFile())
                     .start();
-            boolean finished = process.waitFor(TIMEOUT_SEC, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(SCRIPT_TIMEOUT_SEC, TimeUnit.SECONDS);
             String output = readCapped(process.getInputStream(), MAX_OUTPUT);
             if (!finished) {
                 process.destroyForcibly();
-                throw new IllegalStateException("执行超过 " + TIMEOUT_SEC + " 秒\n" + output);
+                throw new IllegalStateException("执行超过 " + SCRIPT_TIMEOUT_SEC + " 秒\n" + output);
             }
             if (process.exitValue() != 0) {
                 throw new IllegalStateException("退出码 " + process.exitValue() + "\n" + output);

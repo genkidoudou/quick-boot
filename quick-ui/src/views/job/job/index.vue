@@ -7,15 +7,22 @@
       :search-columns="searchColumns"
       row-key="id"
       show-add-button
-      show-edit-button
       :delete-function="removeJob"
+      :before-delete="beforeDeleteJobs"
       :add-button-permi="['job:job:add']"
-      :edit-button-permi="['job:job:edit']"
       :delete-button-permi="['job:job:remove']"
       @add-click="() => formDialogRef?.open()"
-      @edit-click="(row) => formDialogRef?.open(row)"
     >
       <template #actions="{ row }">
+        <el-button
+          link
+          type="primary"
+          :icon="View"
+          v-hasPermi="['job:job:query']"
+          @click="openView(row)"
+        >
+          查看
+        </el-button>
         <el-button
           link
           type="primary"
@@ -23,34 +30,39 @@
           v-hasPermi="['job:job:edit']"
           @click="onRun(row)"
         >
-          执行
+          执行一次
         </el-button>
-        <el-button
-          link
-          type="primary"
-          v-hasPermi="['job:job:edit']"
-          @click="onToggleStatus(row)"
-        >
-          {{ row.status === '0' ? '停用' : '启用' }}
-        </el-button>
-        <el-button
-          link
-          type="primary"
-          :icon="Edit"
-          v-hasPermi="['job:job:edit']"
-          @click="formDialogRef?.open(row)"
-        >
-          修改
-        </el-button>
-        <el-button
-          link
-          type="primary"
-          :icon="Delete"
-          v-hasPermi="['job:job:remove']"
-          @click="tableRef?.removeRows(row, { confirmMessage: `确认删除定时任务「${row.jobName || row.id}」？` })"
-        >
-          删除
-        </el-button>
+        <el-dropdown trigger="click" @command="(cmd) => onMoreCommand(cmd, row)">
+          <el-button link type="primary">
+            更多
+            <el-icon class="el-icon--right"><ArrowDown/></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="log" v-hasPermi="['job:jobLog:list']">
+                <el-icon><Document/></el-icon>日志
+              </el-dropdown-item>
+              <el-dropdown-item command="toggle" v-hasPermi="['job:job:edit']">
+                {{ row.status === '0' ? '停用' : '启用' }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                command="edit"
+                :disabled="row.status === '0'"
+                v-hasPermi="['job:job:edit']"
+              >
+                <el-icon><Edit/></el-icon>修改
+              </el-dropdown-item>
+              <el-dropdown-item
+                command="remove"
+                divided
+                :disabled="row.status === '0'"
+                v-hasPermi="['job:job:remove']"
+              >
+                <el-icon><Delete/></el-icon>删除
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </template>
     </C7JsonTable>
 
@@ -164,6 +176,40 @@
       </el-form>
     </C7FormDialog>
 
+    <!-- 查看详情：基础信息 + 接下来几次执行时间 -->
+    <el-dialog v-model="viewOpen" title="定时任务详情" width="640px" append-to-body destroy-on-close>
+      <el-descriptions v-if="viewDetail" :column="1" border>
+        <el-descriptions-item label="任务名称">{{ viewDetail.jobName || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="任务类型">{{ jobTypeLabel(viewDetail.jobType) }}</el-descriptions-item>
+        <el-descriptions-item v-if="viewDetail.jobType === 'BEAN'" label="Bean 名称">
+          {{ viewDetail.invokeTarget || '—' }}
+        </el-descriptions-item>
+        <el-descriptions-item v-if="viewDetail.jobType === 'PYTHON'" label="解释器">
+          {{ viewDetail.pythonBin || '—' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="任务参数">{{ viewDetail.jobParam || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="Cron">{{ viewDetail.cronExpression || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="允许重叠">{{ concurrentLabel(viewDetail.concurrent) }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ statusLabel(viewDetail.status) }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ viewDetail.remark || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="接下来执行时间">
+          <div v-if="(viewDetail.nextFireTimes || []).length" class="next-fire-list">
+            <div v-for="(t, idx) in viewDetail.nextFireTimes" :key="idx" class="next-fire-list__item">
+              {{ idx + 1 }}. {{ formatDateTime(t) }}
+            </div>
+          </div>
+          <span v-else>—</span>
+        </el-descriptions-item>
+        <el-descriptions-item v-if="isScriptTypeOf(viewDetail)" label="任务脚本">
+          <pre class="script-preview">{{ viewDetail.scriptContent || '—' }}</pre>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="viewOpen = false">关闭</el-button>
+        <el-button type="primary" v-hasPermi="['job:jobLog:list']" @click="goJobLog(viewDetail)">查看日志</el-button>
+      </template>
+    </el-dialog>
+
     <JobCronPicker
       v-model="cronOpen"
       :expression="form.cronExpression"
@@ -201,15 +247,18 @@
 
 <script setup>
 /**
- * 定时任务：列表 / 新增 / 修改 / 删除（对齐后端 SysJob）。
+ * 定时任务：列表 / 查看 / 新增 / 修改 / 删除。
+ * 规则：状态为正常(0)时不可修改、删除，须先停用；查看展示接下来几次执行时间；可跳转关联日志。
  */
 import {computed, reactive, ref, watch} from 'vue'
+import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {Delete, Edit, VideoPlay} from '@element-plus/icons-vue'
+import {ArrowDown, Delete, Document, Edit, VideoPlay, View} from '@element-plus/icons-vue'
 import {useDict} from '@/utils/dict'
 import {
   addJob,
   changeJobStatus,
+  getJob,
   listJobTaskBeans,
   pageJob,
   removeJob,
@@ -220,6 +269,7 @@ import JobCronPicker from '@/components/monitor/JobCronPicker.vue'
 
 defineOptions({name: 'SysJob'})
 
+const router = useRouter()
 const {JOB_TYPE, COMMON_IS, COMMON_STATUS} = useDict('JOB_TYPE', 'COMMON_IS', 'COMMON_STATUS')
 const pythonBins = ['python2', 'python3']
 
@@ -228,7 +278,7 @@ const JOB_TIPS = {
   invokeTarget: '选择容器中实现 ITask 的 Bean 名称；执行时调用 ITask.execute(jobParam)。',
   pythonBin: '仅允许 python2 或 python3，需在运行机器 PATH 中可用。',
   cronExpression: 'Quartz 六段式：秒 分 时 日 月 周。可点「生成」用可视化编辑器。',
-  concurrent: '否：同一任务未结束时再次触发会记为跳过；是：允许重叠执行。'
+  concurrent: '否：同一 Job 未结束前不会并行（Quartz）；是：允许重叠，请保证业务幂等。'
 }
 
 const SHELL_SAMPLE = `#!/bin/bash
@@ -250,6 +300,9 @@ const scriptFullscreen = ref(false)
 const form = reactive(emptyForm())
 const taskBeans = ref([])
 const taskBeansLoading = ref(false)
+
+const viewOpen = ref(false)
+const viewDetail = ref(null)
 
 const title = computed(() => (form.id ? '修改定时任务' : '新增定时任务'))
 const isScriptType = computed(() => form.jobType === 'SHELL' || form.jobType === 'PYTHON')
@@ -311,7 +364,7 @@ const tableColumns = computed(() => [
   {prop: 'cronExpression', label: 'Cron', minWidth: 160, showOverflowTooltip: true},
   {prop: 'concurrent', label: '允许重叠', columnType: 'tag', dictList: COMMON_IS.value || [], width: 110},
   {prop: 'status', label: '状态', columnType: 'tag', dictList: COMMON_STATUS.value || [], width: 90},
-  {prop: 'actions', label: '操作', columnType: 'slot', width: 240, fixed: 'right', align: 'center'}
+  {prop: 'actions', label: '操作', columnType: 'slot', width: 220, fixed: 'right', align: 'center'}
 ])
 
 const searchColumns = computed(() => [
@@ -349,6 +402,11 @@ function emptyForm() {
     status: '0',
     remark: ''
   }
+}
+
+/** 正常（启用）状态不可改删 */
+function isEnabled(row) {
+  return row?.status === '0'
 }
 
 /** @param {Record<string, any>} [row] */
@@ -432,8 +490,90 @@ async function submitJob() {
 }
 
 /** @param {Record<string, any>} row */
+async function openView(row) {
+  const res = await getJob(row.id)
+  viewDetail.value = res?.data ?? null
+  viewOpen.value = true
+}
+
+/** @param {Record<string, any>} row */
+function onEdit(row) {
+  if (isEnabled(row)) {
+    ElMessage.warning('任务处于正常状态，请先停用后再修改')
+    return
+  }
+  formDialogRef.value?.open(row)
+}
+
+/** @param {Record<string, any>} row */
+function onRemove(row) {
+  if (isEnabled(row)) {
+    ElMessage.warning('任务处于正常状态，请先停用后再删除')
+    return
+  }
+  tableRef.value?.removeRows(row, {confirmMessage: `确认删除定时任务「${row.jobName || row.id}」？`})
+}
+
+/**
+ * 删除前校验：任一正常（启用）任务都拒绝（与后端 assertDisabled 对齐）。
+ * @param {Array<string|number>} _ids
+ * @param {Array<Record<string, any>>} rows
+ * @returns {boolean}
+ */
+function beforeDeleteJobs(_ids, rows) {
+  const enabled = (rows || []).filter((r) => isEnabled(r))
+  if (enabled.length) {
+    ElMessage.warning(`有 ${enabled.length} 个任务处于正常状态，请先停用后再删除`)
+    return false
+  }
+  return true
+}
+
+/**
+ * 更多菜单命令分发。
+ * @param {string} cmd
+ * @param {Record<string, any>} row
+ */
+function onMoreCommand(cmd, row) {
+  if (cmd === 'log') {
+    goJobLog(row)
+    return
+  }
+  if (cmd === 'toggle') {
+    onToggleStatus(row)
+    return
+  }
+  if (cmd === 'edit') {
+    onEdit(row)
+    return
+  }
+  if (cmd === 'remove') {
+    onRemove(row)
+  }
+}
+
+/**
+ * 跳转任务日志。按已注册路由匹配，避免写死 /job/jobLog 在嵌套菜单下 404。
+ * @param {Record<string, any>|null} row
+ */
+function goJobLog(row) {
+  if (!row?.id) {
+    return
+  }
+  viewOpen.value = false
+  const hit = router.getRoutes().find((r) => {
+    const p = r.path || ''
+    return p === '/job/jobLog' || p.endsWith('/jobLog')
+  })
+  router.push({
+    path: hit?.path || '/job/jobLog',
+    query: {jobId: String(row.id)}
+  })
+}
+
+/** @param {Record<string, any>} row */
 async function onRun(row) {
-  await ElMessageBox.confirm(`确认立即执行任务「${row.jobName || row.id}」？`, '提示', {type: 'warning'})
+  await ElMessageBox.confirm(`确认执行一次任务「${row.jobName || row.id}」？`, '提示', {type: 'warning'})
   await runJob(row.id)
   ElMessage.success('已触发执行')
   tableRef.value?.refreshData()
@@ -447,6 +587,31 @@ async function onToggleStatus(row) {
   await changeJobStatus({id: row.id, status: next})
   ElMessage.success(`已${tip}`)
   tableRef.value?.refreshData()
+}
+
+function jobTypeLabel(value) {
+  return (JOB_TYPE.value || []).find((d) => d.value === value)?.label || value || '—'
+}
+
+function concurrentLabel(value) {
+  return (COMMON_IS.value || []).find((d) => d.value === value)?.label || value || '—'
+}
+
+function statusLabel(value) {
+  return (COMMON_STATUS.value || []).find((d) => d.value === value)?.label || value || '—'
+}
+
+function isScriptTypeOf(detail) {
+  return detail?.jobType === 'SHELL' || detail?.jobType === 'PYTHON'
+}
+
+/** @param {string|null|undefined} value */
+function formatDateTime(value) {
+  if (!value) {
+    return '—'
+  }
+  // 后端 LocalDateTime 多为 "2026-10-25T23:00:00" 或带空格
+  return String(value).replace('T', ' ')
 }
 </script>
 
@@ -477,5 +642,26 @@ async function onToggleStatus(row) {
 
 .script-editor--fullscreen .script-editor__textarea :deep(textarea) {
   min-height: 480px;
+}
+
+.next-fire-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.next-fire-list__item {
+  font-variant-numeric: tabular-nums;
+}
+
+.script-preview {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

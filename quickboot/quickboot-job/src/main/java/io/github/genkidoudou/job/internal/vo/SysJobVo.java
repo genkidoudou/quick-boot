@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 定时任务视图对象。
@@ -54,4 +56,10 @@ public class SysJobVo extends BaseEntity implements Serializable {
 
     /** 状态（COMMON_STATUS）。 */
     private String status;
+
+    /**
+     * 接下来若干次预计执行时间（仅详情回显，不入库）。
+     * 由 Cron 从「当前时刻」起向后推算。
+     */
+    private List<LocalDateTime> nextFireTimes;
 }

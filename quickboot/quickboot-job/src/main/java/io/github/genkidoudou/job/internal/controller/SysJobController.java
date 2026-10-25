@@ -55,7 +55,7 @@ public class SysJobController {
     }
 
     /**
-     * 按主键查询详情。
+     * 按主键查询详情（含接下来几次预计执行时间）。
      *
      * @param id 主键
      * @return 详情

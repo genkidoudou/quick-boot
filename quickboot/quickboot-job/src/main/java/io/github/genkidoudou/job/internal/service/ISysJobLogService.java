@@ -36,13 +36,6 @@ public interface ISysJobLogService {
      */
     void removeByIds(List<Long> ids);
 
-    /**
-     * 当前任务是否还有执行中的日志。
-     *
-     * @param jobId 任务 id
-     * @return RUNNING 条数
-     */
-    long countRunning(Long jobId);
 
     /**
      * 写入执行中日志，并返回主键。
@@ -51,29 +44,35 @@ public interface ISysJobLogService {
      * @param jobParam    任务参数
      * @param triggerType 触发来源 CRON / MANUAL
      * @param start       开始时间
+     * @param instanceId  实例id
      * @return 日志主键
      */
-    Long saveRunning(Long jobId, String jobParam, String triggerType, LocalDateTime start);
+    Long saveRunning(Long jobId, String jobParam, String triggerType, LocalDateTime start, String instanceId);
+
+
 
     /**
-     * 禁止重叠时写入一条跳过日志。
-     *
-     * @param jobId       任务 id
-     * @param jobParam    任务参数
-     * @param triggerType 触发来源
-     * @param start       开始时间
-     * @param reason      跳过原因
+     * 续约：只更新「仍是 RUNNING」的本条日志心跳。
+     * 若已被收尸改成 FAIL，update 影响行数为 0，调用方可忽略。
      */
-    void saveSkip(Long jobId, String jobParam, String triggerType, LocalDateTime start, String reason);
+    void touchHeartbeat(Long logId);
 
     /**
-     * 收尾：写状态、结果、错误、结束时间、耗时。
+     * CAS 收尾：仅当仍是 RUNNING 才改为 SUCCESS/FAIL。
+     * 防止：收尸已标 FAIL，业务线程稍后又把状态改回 SUCCESS。
      *
-     * @param logId    日志主键
-     * @param status   最终状态
-     * @param result   成功结果
-     * @param errorMsg 失败信息
-     * @param costMs   耗时毫秒
+     * @return true=本次更新成功；false=已被别人收尾/收尸
      */
-    void finish(Long logId, JobLogStatus status, String result, String errorMsg, long costMs);
+    boolean finishIfRunning(Long logId, JobLogStatus status,
+                            String result, String errorMsg, long costMs);
+
+    /**
+     * 收尸：心跳超时仍 RUNNING → FAIL。
+     * <p>
+     * staleBefore = now - leaseTimeout。
+     * 例：leaseTimeout=90s，则 90s 没人续约即视为节点挂了。
+     * <p>
+     * 误判窗口 ≈ 租约时长；比「启动清全部 RUNNING」安全得多。
+     */
+    int reclaimStaleRunning(LocalDateTime staleBefore);
 }

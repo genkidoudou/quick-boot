@@ -5,7 +5,16 @@ import io.github.genkidoudou.core.enums.CommonEnums;
 import io.github.genkidoudou.job.internal.enums.JobTriggerType;
 import io.github.genkidoudou.job.internal.vo.SysJobVo;
 import lombok.RequiredArgsConstructor;
-import org.quartz.*;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
+import org.quartz.TriggerKey;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,21 +40,16 @@ public class JobSchedulerEngineImpl implements JobSchedulerEngine {
             if (scheduler.checkExists(jobKey)) {
                 scheduler.deleteJob(jobKey);
             }
-            // 停用的任务不需要进入调度器
+            // 停用的任务不进入 Cron 调度
             if (sysJobVo.getStatus().equals(CommonEnums.STATUS_DISABLE.getValue())) {
                 return;
             }
-            JobDetail detail = JobBuilder.newJob(DispatchQuartzJob.class)
-                    .withIdentity(jobKey)
-                    // 只带 jobId，脚本每次从库里现读
-                    .usingJobData("jobId", String.valueOf(sysJobVo.getId()))
-                    .storeDurably()
-                    .build();
+            JobDetail detail = buildJobDetail(sysJobVo);
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity(triggerKey(sysJobVo.getId()))
                     .withSchedule(CronScheduleBuilder
                             .cronSchedule(sysJobVo.getCronExpression())
-                            // 错过触发：默认不立刻补跑，由业务 concurrent 控制重叠
+                            // 错过触发不立刻补跑；重叠策略由 Job 类注解决定
                             .withMisfireHandlingInstructionDoNothing())
                     .build();
             scheduler.scheduleJob(detail, trigger);
@@ -90,17 +94,47 @@ public class JobSchedulerEngineImpl implements JobSchedulerEngine {
 
     }
 
+    /**
+     * 执行一次（正常 / 停用均可）。
+     * <p>
+     * 停用任务没有 Cron 注册时，只挂 durable {@link JobDetail}（不挂 Trigger），
+     * 再 {@code triggerJob}，避免重新启用定时调度。
+     */
     @Override
     public void triggerOnce(SysJobVo sysJobVo) {
         try {
-            // 立即触发一次；triggerType 由执行器侧标成 MANUAL
+            JobKey key = jobKey(sysJobVo.getId());
+            if (!scheduler.checkExists(key)) {
+                // 启用任务理应已注册；停用或不存在时补 durable JobDetail
+                scheduler.addJob(buildJobDetail(sysJobVo), true);
+            }
             JobDataMap map = new JobDataMap();
             map.put("jobId", String.valueOf(sysJobVo.getId()));
             map.put("triggerType", JobTriggerType.MANUAL.getValue());
-            scheduler.triggerJob(jobKey(sysJobVo.getId()), map);
+            // 同一 JobKey：禁止重叠类会等当前执行结束；允许重叠类可并行
+            scheduler.triggerJob(key, map);
         } catch (SchedulerException e) {
-            throw WarningException.literal(20008, "立即执行失败");
+            throw WarningException.literal(20008, "立即执行失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 按 concurrent 选择 Job 实现类并构建 JobDetail。
+     *
+     * @param sysJobVo 任务
+     * @return JobDetail
+     */
+    private JobDetail buildJobDetail(SysJobVo sysJobVo) {
+        // concurrent：COMMON_IS —— "0"=允许重叠，"1"=禁止重叠（默认按禁止处理）
+        Class<? extends org.quartz.Job> jobClass =
+                "0".equals(sysJobVo.getConcurrent())
+                        ? DispatchQuartzJobAllowConcurrent.class
+                        : DispatchQuartzJob.class;
+        return JobBuilder.newJob(jobClass)
+                .withIdentity(jobKey(sysJobVo.getId()))
+                .usingJobData("jobId", String.valueOf(sysJobVo.getId()))
+                .storeDurably()
+                .build();
     }
 
     private JobKey jobKey(Long id) {

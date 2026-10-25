@@ -70,4 +70,7 @@ public interface JobSchedulerEngine {
      * @since 2026/10/22
      */
     void triggerOnce(SysJobVo sysJobVo);
+
+
+    
 }
