@@ -31,6 +31,10 @@ public class SysJobVo extends BaseEntity implements Serializable {
     @NotBlank(message = "任务名称不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private String jobName;
 
+    /** 任务分组（JOB_GROUP）。 */
+    @NotBlank(message = "任务分组不能为空", groups = {AddGroup.class, UpdateGroup.class})
+    private String jobGroup;
+
     /** 任务类型（JOB_TYPE）。 */
     @NotBlank(message = "任务类型不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private String jobType;

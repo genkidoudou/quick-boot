@@ -81,6 +81,14 @@
         <el-form-item label="任务名称" prop="jobName">
           <el-input v-model="form.jobName" placeholder="请输入任务名称" maxlength="255"/>
         </el-form-item>
+        <el-form-item prop="jobGroup">
+          <template #label>
+            <C7FormLabel text="任务分组" :tip="JOB_TIPS.jobGroup"/>
+          </template>
+          <el-select v-model="form.jobGroup" placeholder="请选择分组" style="width: 100%">
+            <el-option v-for="item in JOB_GROUP" :key="item.value" :label="item.label" :value="item.value"/>
+          </el-select>
+        </el-form-item>
         <el-form-item prop="jobType">
           <template #label>
             <C7FormLabel text="任务类型" :tip="JOB_TIPS.jobType"/>
@@ -180,6 +188,7 @@
     <el-dialog v-model="viewOpen" title="定时任务详情" width="640px" append-to-body destroy-on-close>
       <el-descriptions v-if="viewDetail" :column="1" border>
         <el-descriptions-item label="任务名称">{{ viewDetail.jobName || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="任务分组">{{ jobGroupLabel(viewDetail.jobGroup) }}</el-descriptions-item>
         <el-descriptions-item label="任务类型">{{ jobTypeLabel(viewDetail.jobType) }}</el-descriptions-item>
         <el-descriptions-item v-if="viewDetail.jobType === 'BEAN'" label="Bean 名称">
           {{ viewDetail.invokeTarget || '—' }}
@@ -270,10 +279,16 @@ import JobCronPicker from '@/components/monitor/JobCronPicker.vue'
 defineOptions({name: 'SysJob'})
 
 const router = useRouter()
-const {JOB_TYPE, COMMON_IS, COMMON_STATUS} = useDict('JOB_TYPE', 'COMMON_IS', 'COMMON_STATUS')
+const {JOB_TYPE, JOB_GROUP, COMMON_IS, COMMON_STATUS} = useDict(
+  'JOB_TYPE',
+  'JOB_GROUP',
+  'COMMON_IS',
+  'COMMON_STATUS'
+)
 const pythonBins = ['python2', 'python3']
 
 const JOB_TIPS = {
+  jobGroup: '业务分组，字典 JOB_GROUP 维护；与 Quartz 调度分组无关，便于列表筛选与归类。',
   jobType: 'BEAN 调用 Spring 中实现 ITask 的 Bean；SHELL / PYTHON 将脚本写入临时文件后由解释器执行。',
   invokeTarget: '选择容器中实现 ITask 的 Bean 名称；执行时调用 ITask.execute(jobParam)。',
   pythonBin: '仅允许 python2 或 python3，需在运行机器 PATH 中可用。',
@@ -359,6 +374,7 @@ const scriptToolbarHint = computed(() => {
 
 const tableColumns = computed(() => [
   {prop: 'jobName', label: '任务名称', minWidth: 160, showOverflowTooltip: true},
+  {prop: 'jobGroup', label: '分组', columnType: 'tag', dictList: JOB_GROUP.value || [], width: 100},
   {prop: 'jobType', label: '任务类型', columnType: 'tag', dictList: JOB_TYPE.value || [], width: 110},
   {prop: 'invokeTarget', label: 'Bean 名称', minWidth: 140, showOverflowTooltip: true},
   {prop: 'cronExpression', label: 'Cron', minWidth: 160, showOverflowTooltip: true},
@@ -369,12 +385,14 @@ const tableColumns = computed(() => [
 
 const searchColumns = computed(() => [
   {prop: 'jobName', label: '任务名称', type: 'input'},
+  {prop: 'jobGroup', label: '任务分组', type: 'select', dataList: JOB_GROUP.value || []},
   {prop: 'jobType', label: '任务类型', type: 'select', dataList: JOB_TYPE.value || []},
   {prop: 'status', label: '状态', type: 'select', dataList: COMMON_STATUS.value || []}
 ])
 
 const rules = computed(() => ({
   jobName: [{required: true, message: '任务名称不能为空', trigger: 'blur'}],
+  jobGroup: [{required: true, message: '任务分组不能为空', trigger: 'change'}],
   jobType: [{required: true, message: '任务类型不能为空', trigger: 'change'}],
   cronExpression: [{required: true, message: 'Cron 不能为空', trigger: 'blur'}],
   invokeTarget: form.jobType === 'BEAN'
@@ -392,6 +410,7 @@ function emptyForm() {
   return {
     id: undefined,
     jobName: '',
+    jobGroup: 'DEFAULT',
     jobType: 'BEAN',
     invokeTarget: '',
     jobParam: '',
@@ -417,6 +436,7 @@ function getPayload(row) {
     Object.assign(form, {
       id: row.id,
       jobName: row.jobName ?? '',
+      jobGroup: row.jobGroup || 'DEFAULT',
       jobType: row.jobType ?? 'BEAN',
       invokeTarget: row.invokeTarget ?? '',
       jobParam: row.jobParam ?? '',
@@ -472,6 +492,7 @@ async function submitJob() {
   const payload = {
     id: form.id,
     jobName: form.jobName,
+    jobGroup: form.jobGroup || 'DEFAULT',
     jobType: form.jobType,
     jobParam: form.jobParam,
     cronExpression: form.cronExpression,
@@ -587,6 +608,10 @@ async function onToggleStatus(row) {
   await changeJobStatus({id: row.id, status: next})
   ElMessage.success(`已${tip}`)
   tableRef.value?.refreshData()
+}
+
+function jobGroupLabel(value) {
+  return (JOB_GROUP.value || []).find((d) => d.value === value)?.label || value || '—'
 }
 
 function jobTypeLabel(value) {

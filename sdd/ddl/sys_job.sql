@@ -8,6 +8,7 @@ CREATE TABLE `sys_job` (
   `remark` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `digest` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '摘要',
   `job_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '任务名称',
+  `job_group` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DEFAULT' COMMENT '任务分组(JOB_GROUP)',
   `job_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '任务类型(JOB_TYPE)',
   `invoke_target` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'bean名称',
   `job_param` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '任务参数',

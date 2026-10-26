@@ -3,6 +3,7 @@ package io.github.genkidoudou.job.internal.service;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.job.internal.enums.JobLogStatus;
+import io.github.genkidoudou.job.internal.quartz.JobLogCatResult;
 import io.github.genkidoudou.job.internal.vo.SysJobLogVo;
 
 import java.time.LocalDateTime;
@@ -50,7 +51,6 @@ public interface ISysJobLogService {
     Long saveRunning(Long jobId, String jobParam, String triggerType, LocalDateTime start, String instanceId);
 
 
-
     /**
      * 续约：只更新「仍是 RUNNING」的本条日志心跳。
      * 若已被收尸改成 FAIL，update 影响行数为 0，调用方可忽略。
@@ -75,4 +75,14 @@ public interface ISysJobLogService {
      * 误判窗口 ≈ 租约时长；比「启动清全部 RUNNING」安全得多。
      */
     int reclaimStaleRunning(LocalDateTime staleBefore);
+
+    /**
+     * 增量拉取日志
+     *
+     * @param id       日志id
+     * @param fromLine 开始行
+     * @return
+     * @since 2026/10/26
+     */
+    JobLogCatResult cat(Long id, int fromLine);
 }

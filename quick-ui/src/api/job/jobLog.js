@@ -1,5 +1,5 @@
 /**
- * 定时任务日志 API，对齐后端 `/job/jobLog`。只查询和删除。
+ * 定时任务日志 API，对齐后端 `/job/jobLog`。
  */
 import request from '@/utils/request'
 
@@ -33,6 +33,19 @@ export function getJobLog(id) {
   return request({
     url: `${BASE}/${id}`,
     method: 'get'
+  })
+}
+
+/**
+ * 增量拉取过程日志（文件过程日志）。
+ * @param {string|number} id 日志 id
+ * @param {number} [fromLine=1] 起始行（1-based）；之后传上次 toLine + 1
+ */
+export function catJobLog(id, fromLine = 1) {
+  return request({
+    url: `${BASE}/${id}/cat`,
+    method: 'get',
+    params: {fromLine: Number(fromLine) || 1}
   })
 }
 

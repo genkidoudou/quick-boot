@@ -18,8 +18,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,44 +28,32 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * 默认执行器：Bean / Shell / Python + 日志租约。
  * <p>
  * 并发：交给 Quartz（本类不再用 RUNNING 条数挡调度）。
  * 租约：RUNNING 写入 instanceId/heartbeat，执行中续约，结束 CAS 收尾。
+ * 执行时长：不设超时，由业务自行结束；节点失联靠租约收尸。
  */
 @Component
 @Slf4j
 public class JobExecutorImpl implements JobExecutor {
 
-    /** 续约周期；须明显小于收尸阈值（20s vs 90s） */
+    /**
+     * 续约周期；须明显小于收尸阈值（20s vs 90s）
+     */
     private static final long HEARTBEAT_PERIOD_SEC = 20;
 
     private static final Set<String> ALLOWED_BIN = Set.of("bash", "python2", "python3");
 
-    /** 脚本进程超时 */
-    private static final long SCRIPT_TIMEOUT_SEC = 60;
-
     /**
-     * Bean 任务超时（中优先级修复）。
-     * 与脚本对齐为 60s；长任务请自行在业务里分段/异步，或再调大此常量。
+     * 心跳池大小：避免单线程时多任务续约互相堵住导致误收尸
      */
-    private static final long BEAN_TIMEOUT_SEC = 60;
-
-    private static final int MAX_OUTPUT = 64 * 1024;
-
-    /** 心跳池大小：避免单线程时多任务续约互相堵住导致误收尸 */
     private static final int HB_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors());
 
     private final ISysJobService sysJobService;
@@ -72,7 +61,11 @@ public class JobExecutorImpl implements JobExecutor {
     private final ApplicationContext applicationContext;
     private final JobInstanceId jobInstanceId;
 
-    /** 多线程续约池（守护线程，进程退出可不管） */
+    private final JobLogProperties jobLogProperties;
+
+    /**
+     * 多线程续约池（守护线程，进程退出可不管）
+     */
     private final ScheduledExecutorService hbPool = new ScheduledThreadPoolExecutor(
             HB_POOL_SIZE,
             r -> {
@@ -81,27 +74,22 @@ public class JobExecutorImpl implements JobExecutor {
                 return t;
             });
 
-    /** Bean 超时专用池；与 Quartz 工作线程解耦，才能 Future.get(timeout) */
-    private final ExecutorService beanPool = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "job-bean-exec");
-        t.setDaemon(true);
-        return t;
-    });
-
     public JobExecutorImpl(@Lazy ISysJobService sysJobService,
                            ISysJobLogService sysJobLogService,
                            ApplicationContext applicationContext,
-                           JobInstanceId jobInstanceId) {
+                           JobInstanceId jobInstanceId,
+                           JobLogProperties jobLogProperties) {
         this.sysJobService = sysJobService;
         this.sysJobLogService = sysJobLogService;
         this.applicationContext = applicationContext;
         this.jobInstanceId = jobInstanceId;
+        this.jobLogProperties = jobLogProperties;
+
     }
 
     @PreDestroy
     public void shutdownPools() {
         hbPool.shutdownNow();
-        beanPool.shutdownNow();
     }
 
     @Override
@@ -125,15 +113,15 @@ public class JobExecutorImpl implements JobExecutor {
             throw WarningException.literal(20002, "不支持的任务类型: " + job.getJobType());
         }
 
-        /*
-         * 不要再写：
-         *   if (concurrent=1 && countRunning>0) saveSkip...
-         * 节点崩溃后 RUNNING 永不结束会永久 SKIP。
-         * 禁止重叠请依赖 Quartz Job 类上的 @DisallowConcurrentExecution。
-         */
 
         Long logId = sysJobLogService.saveRunning(
                 jobId, job.getJobParam(), trigger.getValue(), start, jobInstanceId.get());
+
+        // 生成当日文件, 并绑定到当前线程
+        String logFileName = JobFileAppender.makeLogFileName(jobLogProperties.getLogPath(), logId);
+        JobLogContext.set(logId,logFileName);
+        JobLogHelper.info("----------- job start ----------- jobId={} trigger={} type={}",
+                jobId, trigger.getValue(), jobType);
 
         ScheduledFuture<?> hb = hbPool.scheduleAtFixedRate(
                 () -> {
@@ -147,12 +135,12 @@ public class JobExecutorImpl implements JobExecutor {
                 HEARTBEAT_PERIOD_SEC, HEARTBEAT_PERIOD_SEC, TimeUnit.SECONDS);
 
         try {
-            // 【严重修复】恢复真实执行，禁止再写死 "ok"
             String result = switch (jobType) {
                 case BEAN -> runBean(job);
                 case PYTHON -> runScript(job, job.getPythonBin(), "py");
                 case SHELL -> runScript(job, "bash", "sh");
             };
+            JobLogHelper.info("----------- job success ----------- jobId={}", jobId);
             boolean ok = sysJobLogService.finishIfRunning(
                     logId, JobLogStatus.SUCCESS, result, null,
                     System.currentTimeMillis() - beginMs);
@@ -167,38 +155,22 @@ public class JobExecutorImpl implements JobExecutor {
                     System.currentTimeMillis() - beginMs);
         } finally {
             hb.cancel(false);
+            JobLogContext.clear(); // 必须清，避免线程池脏上下文
         }
     }
 
-    /**
-     * 执行 Spring Bean，并施加超时（中：Bean 无超时修复）。
-     * 超时后 cancel(true) 中断工作线程；ITask 若忽略中断，仍可能继续跑，
-     * 但本方法会向调度返回失败，并由租约在节点崩溃时收尸。
-     */
-    private String runBean(SysJobVo job) throws Exception {
+    /** 同步执行 Spring Bean，不限制时长。 */
+    private String runBean(SysJobVo job) {
         ITask task;
         try {
             task = applicationContext.getBean(job.getInvokeTarget(), ITask.class);
         } catch (NoSuchBeanDefinitionException ex) {
             throw new WarningException(20004, job.getInvokeTarget());
         }
-
-        Callable<String> call = () -> task.execute(job.getJobParam());
-        Future<String> future = beanPool.submit(call);
-        try {
-            return future.get(BEAN_TIMEOUT_SEC, TimeUnit.SECONDS);
-        } catch (TimeoutException ex) {
-            future.cancel(true);
-            throw new IllegalStateException("Bean 任务超过 " + BEAN_TIMEOUT_SEC + " 秒");
-        } catch (ExecutionException ex) {
-            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-            if (cause instanceof Exception e) {
-                throw e;
-            }
-            throw new IllegalStateException(cause);
-        }
+        return task.execute(job.getJobParam());
     }
 
+    /** 启动脚本并等到进程结束，不限制时长。 */
     private String runScript(SysJobVo job, String bin, String fileExt)
             throws IOException, InterruptedException {
         if (!ALLOWED_BIN.contains(bin)) {
@@ -218,24 +190,25 @@ public class JobExecutorImpl implements JobExecutor {
                     .redirectErrorStream(true)
                     .directory(tmpDir.toFile())
                     .start();
-            boolean finished = process.waitFor(SCRIPT_TIMEOUT_SEC, TimeUnit.SECONDS);
-            String output = readCapped(process.getInputStream(), MAX_OUTPUT);
-            if (!finished) {
-                process.destroyForcibly();
-                throw new IllegalStateException("执行超过 " + SCRIPT_TIMEOUT_SEC + " 秒\n" + output);
+            // 边读边 append；同时拼一份截断摘要给 DB
+            StringBuilder summary = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    JobLogHelper.info("[script] {}", line);
+                    if (summary.length() < 64 * 1024) {
+                        summary.append(line).append('\n');
+                    }
+                }
             }
-            if (process.exitValue() != 0) {
-                throw new IllegalStateException("退出码 " + process.exitValue() + "\n" + output);
+            int exit = process.waitFor();
+            if (exit != 0) {
+                throw new IllegalStateException("退出码 " + exit);
             }
-            return output;
+            return summary.toString();
         } finally {
             FileUtil.del(tmpDir.toFile());
         }
-    }
-
-    private String readCapped(InputStream in, int max) throws IOException {
-        byte[] buf = in.readNBytes(max + 1);
-        String text = new String(buf, 0, Math.min(buf.length, max), StandardCharsets.UTF_8);
-        return buf.length > max ? text + "\n...(truncated)" : text;
     }
 }

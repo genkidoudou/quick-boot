@@ -56,6 +56,7 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
             return;
         }
         query.like(StrUtil.isNotBlank(param.getJobName()), SysJob::getJobName, param.getJobName())
+                .eq(StrUtil.isNotBlank(param.getJobGroup()), SysJob::getJobGroup, param.getJobGroup())
                 .eq(StrUtil.isNotBlank(param.getJobType()), SysJob::getJobType, param.getJobType())
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysJob::getStatus, param.getStatus());
     }
@@ -222,6 +223,10 @@ public class SysJobServiceImpl extends BaseVoServiceImpl<SysJobMapper, SysJob, S
     private void normalize(SysJobVo vo) {
         if (vo == null || !JOB_TYPES.contains(vo.getJobType())) {
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "任务类型不正确");
+        }
+        // 分组存字典 JOB_GROUP 的 value；未传时落默认组（与表 DEFAULT 一致）
+        if (StrUtil.isBlank(vo.getJobGroup())) {
+            vo.setJobGroup("DEFAULT");
         }
         if ("BEAN".equals(vo.getJobType())) {
             if (StrUtil.isBlank(vo.getInvokeTarget())) {

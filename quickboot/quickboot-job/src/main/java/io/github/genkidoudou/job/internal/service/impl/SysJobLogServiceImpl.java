@@ -9,9 +9,15 @@ import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
 import io.github.genkidoudou.job.internal.entity.SysJobLog;
 import io.github.genkidoudou.job.internal.enums.JobLogStatus;
 import io.github.genkidoudou.job.internal.mapper.SysJobLogMapper;
+import io.github.genkidoudou.job.internal.quartz.JobFileAppender;
+import io.github.genkidoudou.job.internal.quartz.JobLogCatResult;
+import io.github.genkidoudou.job.internal.quartz.JobLogProperties;
 import io.github.genkidoudou.job.internal.service.ISysJobLogService;
 import io.github.genkidoudou.job.internal.vo.SysJobLogVo;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,9 +27,13 @@ import java.util.List;
 /**
  * 定时任务日志服务实现。
  */
+@RequiredArgsConstructor
+@Slf4j
 @Service
 public class SysJobLogServiceImpl extends BaseVoServiceImpl<SysJobLogMapper, SysJobLog, SysJobLogVo>
         implements ISysJobLogService {
+
+    private final JobLogProperties jobLogProperties;
 
     /**
      * 按查询条件组装 Wrapper。开始日期按当天范围过滤。
@@ -74,8 +84,6 @@ public class SysJobLogServiceImpl extends BaseVoServiceImpl<SysJobLogMapper, Sys
         this.baseMapper.insert(row);
         return row.getId();
     }
-
-
 
 
     /**
@@ -142,6 +150,25 @@ public class SysJobLogServiceImpl extends BaseVoServiceImpl<SysJobLogMapper, Sys
                 .set(SysJobLog::getEndTime, LocalDateTime.now())
                 // 近似耗时：从开始到收尸时刻（毫秒）
                 .setSql("cost_ms = TIMESTAMPDIFF(MICROSECOND, start_time, {0}) DIV 1000", now));
+    }
+
+    @Override
+    public JobLogCatResult cat(Long id, int fromLine) {
+
+        SysJobLogVo jobLogVo = getVoById(id);
+
+        LocalDate day = jobLogVo.getStartTime() != null ? jobLogVo.getStartTime().toLocalDate()
+                : LocalDate.now();
+
+        String fileName = JobFileAppender.resolveFile(jobLogProperties.getLogPath(), day, id);
+
+        JobLogCatResult jobLogCatResult = JobFileAppender.readLog(fileName, fromLine, 1000);
+        // 任务已结束且读到文件末尾 → 前端可停止轮询
+        boolean finished = JobLogStatus.SUCCESS.getValue().equals(jobLogVo.getStatus())
+                || JobLogStatus.FAIL.getValue().equals(jobLogVo.getStatus());
+        jobLogCatResult.setEnd(jobLogCatResult.isEnd() && finished);
+        return jobLogCatResult;
+
     }
 
 }

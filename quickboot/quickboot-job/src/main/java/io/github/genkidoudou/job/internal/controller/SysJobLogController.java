@@ -4,15 +4,11 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.github.genkidoudou.common.api.PageInfo;
 import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.api.R;
+import io.github.genkidoudou.job.internal.quartz.JobLogCatResult;
 import io.github.genkidoudou.job.internal.service.ISysJobLogService;
 import io.github.genkidoudou.job.internal.vo.SysJobLogVo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -60,5 +56,19 @@ public class SysJobLogController {
     public R<Void> remove(@RequestBody List<Long> ids) {
         sysJobLogService.removeByIds(ids);
         return R.ok();
+    }
+
+    /**
+     * 增量拉取过程日志。
+     *
+     * @param id       日志 id
+     * @param fromLine 首次传 1；之后传上次返回的 toLine + 1
+     * @return 增量内容与行号
+     */
+    @SaCheckPermission("job:jobLog:cat")
+    @GetMapping("{id}/cat")
+    public R<JobLogCatResult> cat(@PathVariable Long id,
+                                  @RequestParam(defaultValue = "1") int fromLine) {
+        return R.ok(sysJobLogService.cat(id, fromLine));
     }
 }

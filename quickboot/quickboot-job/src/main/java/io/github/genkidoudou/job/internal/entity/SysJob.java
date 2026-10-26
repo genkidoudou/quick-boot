@@ -33,6 +33,9 @@ public class SysJob extends BaseEntity implements Serializable {
     /** 任务名称。 */
     private String jobName;
 
+    /** 任务分组（JOB_GROUP）。 */
+    private String jobGroup;
+
     /** 任务类型（JOB_TYPE）。 */
     private String jobType;
 
