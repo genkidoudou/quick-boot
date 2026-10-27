@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>消息发送原型</title>
+  <style>
+    :root {
+      --primary: #409eff;
+      --primary-dark: #337ecc;
+      --success: #67c23a;
+      --warning: #e6a23c;
+      --danger: #f56c6c;
+      --info: #909399;
+      --sidebar: #304156;
+      --sidebar-sub: #1f2d3d;
+      --text: #303133;
+      --text-regular: #606266;
+      --text-secondary: #909399;
+      --border: #ebeef5;
+      --line: #dcdfe6;
+      --page: #f0f2f5;
+      --sidebar-w: 210px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: var(--page);
+      font-size: 14px;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .app { display: flex; min-height: 100%; min-width: 1180px; }
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar);
+      color: #bfcbd9;
+      flex: none;
+      display: flex;
+      flex-direction: column;
+    }
+    .logo {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      color: #fff;
+      font-weight: 600;
+      background: #2b3a4b;
+    }
+    .logo i {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--primary);
+      display: grid;
+      place-items: center;
+      font-style: normal;
+      font-size: 14px;
+    }
+    .menu { padding: 8px 0 24px; }
+    .menu-group { padding: 14px 20px 6px; font-size: 12px; color: #7d8da1; }
+    .menu button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      color: #bfcbd9;
+      padding: 12px 20px 12px 28px;
+      border-left: 3px solid transparent;
+    }
+    .menu button:hover { background: var(--sidebar-sub); }
+    .menu button.active {
+      color: var(--primary);
+      background: var(--sidebar-sub);
+      border-left-color: var(--primary);
+    }
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .navbar {
+      height: 50px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+    .crumb { color: var(--text-secondary); }
+    .crumb b { color: var(--text); font-weight: 600; }
+    .user { color: var(--text-regular); }
+    .content { padding: 16px; }
+    .card { background: #fff; border-radius: 4px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04); }
+    .card-hd {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 16px 0;
+    }
+    .card-hd h1 { margin: 0; font-size: 16px; font-weight: 600; }
+    .hint { margin: 6px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+    .card-bd { padding: 16px; }
+    .btn {
+      height: 32px;
+      padding: 0 14px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text-regular);
+    }
+    .btn:hover { color: var(--primary); border-color: #c6e2ff; background: #ecf5ff; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.primary:hover { background: var(--primary-dark); color: #fff; }
+    .btn.link { height: auto; padding: 0 6px; border: 0; background: transparent; color: var(--primary); }
+    .btn.link.danger { color: var(--danger); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { background: #f5f7fa; color: var(--text-regular); font-weight: 600; }
+    tr:hover td { background: #fafafa; }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+    code { background: #f4f4f5; padding: 2px 6px; border-radius: 3px; word-break: break-all; }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      background: #f5f7fa;
+      border-radius: 4px;
+      padding: 10px 12px;
+      line-height: 1.6;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .tag.blue { color: var(--primary); background: #ecf5ff; border-color: #d9ecff; }
+    .tag.green { color: #529b2e; background: #f0f9eb; border-color: #e1f3d8; }
+    .tag.orange { color: #b88230; background: #fdf6ec; border-color: #faecd8; }
+    .tag.red { color: #c45656; background: #fef0f0; border-color: #fde2e2; }
+    .tag.gray { color: var(--info); background: #f4f4f5; border-color: #e9e9eb; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+      z-index: 20;
+    }
+    .mask.show { display: flex; }
+    .dialog, .drawer {
+      background: #fff;
+      border-radius: 4px;
+      width: min(760px, 100%);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .drawer { width: min(860px, 100%); }
+    .dlg-hd, .dlg-ft {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dlg-ft { border-bottom: 0; border-top: 1px solid var(--border); justify-content: flex-end; gap: 8px; }
+    .dlg-hd h2 { margin: 0; font-size: 16px; }
+    .dlg-bd { padding: 16px; max-height: calc(100vh - 180px); overflow: auto; }
+    .icon-btn { border: 0; background: transparent; font-size: 18px; color: var(--text-secondary); }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { color: var(--text-regular); }
+    .req::before { content: "*"; color: var(--danger); margin-right: 4px; }
+    input[type="text"], select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 6px 10px;
+      outline: none;
+      background: #fff;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .checks { display: flex; flex-direction: column; gap: 8px; }
+    .checks label { display: flex; gap: 8px; align-items: center; color: var(--text); }
+    .muted { color: var(--text-secondary); }
+    .kv { display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; margin-bottom: 16px; }
+    .kv span { color: var(--text-secondary); }
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #faecd8;
+      color: #b88230;
+      padding: 10px 16px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      display: none;
+      z-index: 40;
+    }
+    .toast.show { display: block; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo"><i>Q</i> quick-boot</div>
+      <nav class="menu" id="menu">
+        <div class="menu-group">消息发送</div>
+        <button type="button" data-view="channels" class="active">渠道</button>
+        <button type="button" data-view="groups">群组</button>
+        <button type="button" data-view="records">发送记录</button>
+        <button type="button" data-view="inbox">我的收件箱</button>
+      </nav>
+    </aside>
+    <section class="main">
+      <header class="navbar">
+        <div class="crumb">消息发送 / <b id="crumb">渠道</b></div>
+        <div class="user">静态原型 · 当前用户 张伟</div>
+      </header>
+      <div class="content">
+        <section class="view active" id="view-channels"></section>
+        <section class="view" id="view-groups"></section>
+        <section class="view" id="view-records"></section>
+        <section class="view" id="view-inbox"></section>
+      </div>
+    </section>
+  </div>
+
+  <div class="mask" id="channelMask">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <div class="dlg-hd">
+        <h2 id="channelTitle">渠道</h2>
+        <button class="icon-btn" type="button" data-close="channelMask" aria-label="关闭">×</button>
+      </div>
+      <div class="dlg-bd" id="channelForm"></div>
+      <div class="dlg-ft">
+        <button class="btn" type="button" data-close="channelMask">取消</button>
+        <button class="btn primary" type="button" id="saveChannel">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mask" id="groupMask">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <div class="dlg-hd">
+        <h2 id="groupTitle">群组</h2>
+        <button class="icon-btn" type="button" data-close="groupMask" aria-label="关闭">×</button>
+      </div>
+      <div class="dlg-bd" id="groupForm"></div>
+      <div class="dlg-ft">
+        <button class="btn" type="button" data-close="groupMask">取消</button>
+        <button class="btn primary" type="button" id="saveGroup">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mask" id="sendMask">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <div class="dlg-hd">
+        <h2>发送消息</h2>
+        <button class="icon-btn" type="button" data-close="sendMask" aria-label="关闭">×</button>
+      </div>
+      <div class="dlg-bd" id="sendForm"></div>
+      <div class="dlg-ft">
+        <button class="btn" type="button" data-close="sendMask">取消</button>
+        <button class="btn primary" type="button" id="doSend">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mask" id="detailMask">
+    <div class="drawer dialog" role="dialog" aria-modal="true">
+      <div class="dlg-hd">
+        <h2 id="detailTitle">发送明细</h2>
+        <button class="icon-btn" type="button" data-close="detailMask" aria-label="关闭">×</button>
+      </div>
+      <div class="dlg-bd" id="detailBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const TYPE_LABEL = { IN_APP: "站内", WEBHOOK: "Webhook", BEAN: "Bean" };
+    const CONTENT_LABEL = { TEXT: "文本", HTML: "HTML", JSON: "JSON", MARKDOWN: "Markdown" };
+    const STATUS_LABEL = { SUCCESS: "全部成功", PARTIAL: "部分成功", FAILED: "全部失败" };
+    const CRUMB = { channels: "渠道", groups: "群组", records: "发送记录", inbox: "我的收件箱" };
+    const ME = 1;
+
+    const users = [
+      { id: 1, name: "张伟", deptId: 11, status: "0" },
+      { id: 2, name: "李敏", deptId: 12, status: "0" },
+      { id: 3, name: "王强", deptId: 13, status: "0" },
+      { id: 4, name: "赵停", deptId: 11, status: "1" },
+      { id: 5, name: "陈晨", deptId: 14, status: "0" }
+    ];
+    const depts = [
+      { id: 10, name: "总公司", parentId: null },
+      { id: 11, name: "研发部", parentId: 10 },
+      { id: 12, name: "研发一组", parentId: 11 },
+      { id: 13, name: "研发二组", parentId: 11 },
+      { id: 14, name: "运维", parentId: 10 }
+    ];
+
+    let seq = 4;
+    const channels = [
+      {
+        id: 1, name: "站内公告", type: "IN_APP", contentType: "MARKDOWN", status: "0",
+        template: "## {{titleLine}}\n\n{{body}}",
+        token: "a11ce001", webhookUrl: "", beanName: ""
+      },
+      {
+        id: 2, name: "运维 Webhook", type: "WEBHOOK", contentType: "JSON", status: "0",
+        template: "{\"event\":\"{{event}}\",\"body\":\"{{body}}\"}",
+        token: "b22ce002", webhookUrl: "https://ops.example/hook", beanName: ""
+      },
+      {
+        id: 3, name: "通知 Bean", type: "BEAN", contentType: "TEXT", status: "0",
+        template: "{{body}}",
+        token: "c33ce003", webhookUrl: "", beanName: "noticeSender"
+      },
+      {
+        id: 4, name: "停用站内", type: "IN_APP", contentType: "TEXT", status: "1",
+        template: "{{body}}",
+        token: "d44ce004", webhookUrl: "", beanName: ""
+      }
+    ];
+    const groups = [
+      { id: 1, name: "研发全员", userIds: [], depts: [{ deptId: 11, includeChildren: true }] },
+      { id: 2, name: "值班", userIds: [5, 1], depts: [] }
+    ];
+    const messages = [];
+    const inbox = [];
+
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+      }[ch]));
+    }
+    function userName(id) {
+      const user = users.find((item) => item.id === id);
+      return user ? user.name : "用户#" + id;
+    }
+    function deptName(id) {
+      const dept = depts.find((item) => item.id === id);
+      return dept ? dept.name : "已删除部门";
+    }
+    function statusTag(status) {
+      const kind = status === "SUCCESS" ? "green" : status === "PARTIAL" ? "orange" : status === "FAILED" ? "red" : "gray";
+      const text = STATUS_LABEL[status] || (status === "0" ? "启用" : "停用");
+      return `<span class="tag ${kind}">${text}</span>`;
+    }
+    function deliveryTag(status) {
+      return status === "SUCCESS"
+        ? `<span class="tag green">成功</span>`
+        : `<span class="tag red">失败</span>`;
+    }
+    function toast(text) {
+      const el = document.getElementById("toast");
+      el.textContent = text;
+      el.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove("show"), 2200);
+    }
+    function openMask(id) { document.getElementById(id).classList.add("show"); }
+    function closeMask(id) { document.getElementById(id).classList.remove("show"); }
+
+    function deptTree(rootId) {
+      const seen = new Set();
+      const result = [];
+      const walk = (id) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        result.push(id);
+        depts.filter((dept) => dept.parentId === id).forEach((dept) => walk(dept.id));
+      };
+      if (depts.some((dept) => dept.id === rootId)) walk(rootId);
+      return result;
+    }
+    function activeUsersIn(deptIds) {
+      return users.filter((user) => user.status === "0" && deptIds.includes(user.deptId)).map((user) => user.id);
+    }
+    function resolveRecipients(userIds, groupIds) {
+      const ids = new Set();
+      userIds.forEach((id) => {
+        const user = users.find((item) => item.id === id);
+        if (user && user.status === "0") ids.add(id);
+      });
+      groupIds.forEach((groupId) => {
+        const group = groups.find((item) => item.id === groupId);
+        group.userIds.forEach((id) => {
+          const user = users.find((item) => item.id === id);
+          if (user && user.status === "0") ids.add(id);
+        });
+        group.depts.forEach((row) => {
+          const deptIds = row.includeChildren ? deptTree(row.deptId) : [row.deptId];
+          activeUsersIn(deptIds).forEach((id) => ids.add(id));
+        });
+      });
+      return [...ids];
+    }
+    function renderTemplate(template, variables) {
+      let missing = null;
+      const content = template.replace(/\{\{([A-Za-z0-9_]+)\}\}/g, (all, name) => {
+        if (!Object.prototype.hasOwnProperty.call(variables, name) || variables[name] === null) {
+          missing = name;
+          return all;
+        }
+        const value = variables[name];
+        if (typeof value === "string") return value;
+        if (typeof value === "number" || typeof value === "boolean") return String(value);
+        return JSON.stringify(value);
+      });
+      if (missing) return { ok: false, error: "缺少变量 " + missing };
+      return { ok: true, content };
+    }
+    function valueText(value) {
+      if (typeof value === "string") return value;
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      return JSON.stringify(value);
+    }
+
+    function seed() {
+      deliver({
+        title: "版本发布通知",
+        variables: { titleLine: "今晚发布", body: "22:00 发布 1.8.0", event: "release" },
+        userIds: [5],
+        groupIds: [1],
+        channelIds: [1, 2],
+        source: "ADMIN",
+        webhookFail: true
+      });
+      deliver({
+        title: "空通知",
+        variables: {},
+        userIds: [4],
+        groupIds: [],
+        channelIds: [1],
+        source: "ADMIN"
+      });
+      deliver({
+        title: "值班提醒",
+        variables: { body: "请查看今日告警。" },
+        userIds: [],
+        groupIds: [2],
+        channelIds: [3],
+        source: "API"
+      });
+      const release = messages.find((item) => item.title === "版本发布通知");
+      inbox.filter((row) => row.messageId === release.id && row.userId === ME).forEach((row) => { row.readAt = null; });
+    }
+
+    function deliver(input) {
+      const missingGroup = input.groupIds.find((id) => !groups.find((group) => group.id === id));
+      const message = {
+        id: seq++,
+        title: input.title,
+        variables: input.variables,
+        source: input.source,
+        userIds: input.userIds.slice(),
+        groupIds: input.groupIds.slice(),
+        status: "FAILED",
+        failReason: "",
+        time: "2026-10-27 22:30",
+        recipients: [],
+        channels: []
+      };
+      if (missingGroup) {
+        message.failReason = "群组不存在：" + missingGroup;
+        messages.unshift(message);
+        return message;
+      }
+      const recipients = resolveRecipients(input.userIds, input.groupIds);
+      if (recipients.length === 0) {
+        message.failReason = "没有收件人";
+        messages.unshift(message);
+        return message;
+      }
+      message.recipients = recipients;
+      let success = 0;
+      input.channelIds.forEach((channelId) => {
+        const channel = channels.find((item) => item.id === channelId);
+        if (!channel) {
+          message.channels.push({
+            channelId, name: "渠道#" + channelId, type: "", contentType: "",
+            template: "", rendered: "", webhookUrl: "", beanName: "",
+            status: "FAILED", error: "渠道不存在"
+          });
+          return;
+        }
+        const snap = {
+          channelId: channel.id,
+          name: channel.name,
+          type: channel.type,
+          contentType: channel.contentType,
+          template: channel.template,
+          rendered: "",
+          webhookUrl: channel.webhookUrl,
+          beanName: channel.beanName,
+          status: "FAILED",
+          error: ""
+        };
+        if (channel.status !== "0") {
+          snap.error = "渠道已停用";
+          message.channels.push(snap);
+          return;
+        }
+        const rendered = renderTemplate(channel.template, input.variables);
+        if (!rendered.ok) {
+          snap.error = rendered.error;
+          message.channels.push(snap);
+          return;
+        }
+        snap.rendered = rendered.content;
+        if (channel.type === "WEBHOOK" && input.webhookFail) {
+          snap.error = "连接超时";
+          message.channels.push(snap);
+          return;
+        }
+        snap.status = "SUCCESS";
+        message.channels.push(snap);
+        success += 1;
+        if (channel.type === "IN_APP") {
+          recipients.forEach((userId) => {
+            inbox.push({
+              id: inbox.length + 1,
+              messageId: message.id,
+              userId,
+              readAt: "2026-10-27 22:40"
+            });
+          });
+        }
+      });
+      const failed = message.channels.length - success;
+      message.status = success === message.channels.length ? "SUCCESS" : success === 0 ? "FAILED" : "PARTIAL";
+      if (failed === message.channels.length) message.failReason = "";
+      messages.unshift(message);
+      return message;
+    }
+
+    function renderChannels() {
+      const rows = channels.map((channel) => `
+        <tr>
+          <td>${esc(channel.name)}</td>
+          <td><span class="tag blue">${TYPE_LABEL[channel.type]}</span></td>
+          <td>${CONTENT_LABEL[channel.contentType]}</td>
+          <td>${channel.status === "0" ? statusTag("0") : '<span class="tag gray">停用</span>'}</td>
+          <td><code>${esc(channel.token)}</code></td>
+          <td>${esc(channel.type === "WEBHOOK" ? channel.webhookUrl : channel.type === "BEAN" ? channel.beanName : "—")}</td>
+          <td><button class="btn link" type="button" data-edit-channel="${channel.id}">编辑</button></td>
+        </tr>`).join("");
+      document.getElementById("view-channels").innerHTML = `
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <h1>渠道</h1>
+              <p class="hint">模板正文写在渠道上。站内不填地址和 Bean。创建时生成入站 token，可在编辑里重置。</p>
+            </div>
+            <button class="btn primary" type="button" id="addChannel">新增</button>
+          </div>
+          <div class="card-bd">
+            <table>
+              <thead><tr><th>名称</th><th>类型</th><th>内容类型</th><th>状态</th><th>入站 token</th><th>地址 / Bean</th><th></th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+    function renderGroups() {
+      const rows = groups.map((group) => {
+        const people = group.userIds.map(userName).join("、") || "—";
+        const deptText = group.depts.map((row) => deptName(row.deptId) + (row.includeChildren ? "（含下级）" : "")).join("、") || "—";
+        return `<tr>
+          <td>${esc(group.name)}</td>
+          <td>${esc(people)}</td>
+          <td>${esc(deptText)}</td>
+          <td><button class="btn link" type="button" data-edit-group="${group.id}">编辑</button></td>
+        </tr>`;
+      }).join("");
+      document.getElementById("view-groups").innerHTML = `
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <h1>群组</h1>
+              <p class="hint">部门只出现在群组里。每个部门单独决定是否包含下级。停用用户在发送时排除。示例里赵停是停用用户。</p>
+            </div>
+            <button class="btn primary" type="button" id="addGroup">新增</button>
+          </div>
+          <div class="card-bd">
+            <table>
+              <thead><tr><th>名称</th><th>用户</th><th>部门</th><th></th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+    function renderRecords() {
+      const rows = messages.map((message) => `
+        <tr>
+          <td>${esc(message.title)}</td>
+          <td>${message.source === "ADMIN" ? "管理端" : "外部调用"}</td>
+          <td>${statusTag(message.status)}</td>
+          <td>${esc(message.failReason || "—")}</td>
+          <td>${message.recipients.length ? message.recipients.map(userName).join("、") : "—"}</td>
+          <td><button class="btn link" type="button" data-record="${message.id}">明细</button></td>
+        </tr>`).join("");
+      document.getElementById("view-records").innerHTML = `
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <h1>发送记录</h1>
+              <p class="hint">点发送即发送，没有草稿。一条消息最多一个站内渠道。一个渠道失败不影响其他渠道。样例里「版本发布通知」是部分成功：站内成功，Webhook 超时。</p>
+            </div>
+            <button class="btn primary" type="button" id="openSend">发送</button>
+          </div>
+          <div class="card-bd">
+            <table>
+              <thead><tr><th>标题</th><th>来源</th><th>状态</th><th>失败原因</th><th>冻结收件人</th><th></th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+    function renderInbox() {
+      const rows = inbox
+        .filter((row) => row.userId === ME)
+        .slice()
+        .sort((a, b) => b.messageId - a.messageId);
+      const body = rows.map((row) => {
+        const message = messages.find((item) => item.id === row.messageId);
+        return `<tr>
+          <td>${row.readAt ? "" : '<i class="dot"></i>'}${esc(message.title)}</td>
+          <td>${row.readAt ? "已读" : "未读"}</td>
+          <td><button class="btn link" type="button" data-inbox="${row.id}">打开</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="3" class="muted">没有站内消息</td></tr>`;
+      document.getElementById("view-inbox").innerHTML = `
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <h1>我的收件箱</h1>
+              <p class="hint">只显示当前用户张伟、且站内渠道投递成功的消息。打开详情才标已读。没选站内，或站内失败，不会出现在这里。</p>
+            </div>
+          </div>
+          <div class="card-bd">
+            <table>
+              <thead><tr><th>标题</th><th>状态</th><th></th></tr></thead>
+              <tbody>${body}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+    function renderAll() {
+      renderChannels();
+      renderGroups();
+      renderRecords();
+      renderInbox();
+    }
+
+    function channelFields(channel) {
+      const type = channel.type;
+      return `
+        <div class="grid-2">
+          <div class="field"><label class="req">名称</label><input id="chName" type="text" value="${esc(channel.name)}" /></div>
+          <div class="field"><label class="req">类型</label>
+            <select id="chType">
+              ${["IN_APP", "WEBHOOK", "BEAN"].map((item) => `<option value="${item}" ${item === type ? "selected" : ""}>${TYPE_LABEL[item]}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field"><label class="req">内容类型</label>
+            <select id="chContent">
+              ${["TEXT", "HTML", "JSON", "MARKDOWN"].map((item) => `<option value="${item}" ${item === channel.contentType ? "selected" : ""}>${CONTENT_LABEL[item]}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field"><label>状态</label>
+            <select id="chStatus">
+              <option value="0" ${channel.status === "0" ? "selected" : ""}>启用</option>
+              <option value="1" ${channel.status !== "0" ? "selected" : ""}>停用</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label class="req">模板正文</label><textarea id="chTemplate">${esc(channel.template)}</textarea></div>
+        <div class="field" id="urlField" ${type === "WEBHOOK" ? "" : "hidden"}><label class="req">Webhook 地址</label><input id="chUrl" type="text" value="${esc(channel.webhookUrl)}" /></div>
+        <div class="field" id="beanField" ${type === "BEAN" ? "" : "hidden"}><label class="req">Bean 名称</label><input id="chBean" type="text" value="${esc(channel.beanName)}" /></div>
+        <div class="field"><label>入站 token</label><div><code id="chToken">${esc(channel.token || "保存后生成")}</code> ${channel.id ? '<button class="btn link" type="button" id="resetToken">重置</button>' : ""}</div></div>`;
+    }
+    function openChannel(channel) {
+      document.getElementById("channelTitle").textContent = channel.id ? "编辑渠道" : "新增渠道";
+      document.getElementById("channelForm").innerHTML = channelFields(channel);
+      document.getElementById("channelForm").dataset.id = channel.id || "";
+      openMask("channelMask");
+    }
+    function openGroup(group) {
+      document.getElementById("groupTitle").textContent = group.id ? "编辑群组" : "新增群组";
+      const userChecks = users.map((user) => `
+        <label><input type="checkbox" name="gUser" value="${user.id}" ${group.userIds.includes(user.id) ? "checked" : ""} />
+          ${esc(user.name)}${user.status === "1" ? "（停用）" : ""} · ${esc(deptName(user.deptId))}</label>`).join("");
+      const deptChecks = depts.map((dept) => {
+        const row = group.depts.find((item) => item.deptId === dept.id);
+        return `<label><input type="checkbox" name="gDept" value="${dept.id}" ${row ? "checked" : ""} /> ${esc(dept.name)}
+          <input type="checkbox" name="gChild" value="${dept.id}" ${row && row.includeChildren ? "checked" : ""} /> 包含下级</label>`;
+      }).join("");
+      document.getElementById("groupForm").innerHTML = `
+        <div class="field"><label class="req">名称</label><input id="gName" type="text" value="${esc(group.name)}" /></div>
+        <div class="grid-2">
+          <div class="field"><label>用户</label><div class="checks">${userChecks}</div></div>
+          <div class="field"><label>部门</label><div class="checks">${deptChecks}</div></div>
+        </div>`;
+      document.getElementById("groupForm").dataset.id = group.id || "";
+      openMask("groupMask");
+    }
+    function openSend() {
+      const userChecks = users.map((user) => `<label><input type="checkbox" name="sUser" value="${user.id}" /> ${esc(user.name)}${user.status === "1" ? "（停用，发送时忽略）" : ""}</label>`).join("");
+      const groupChecks = groups.map((group) => `<label><input type="checkbox" name="sGroup" value="${group.id}" /> ${esc(group.name)}</label>`).join("");
+      const channelChecks = channels.map((channel) => `<label><input type="checkbox" name="sChannel" value="${channel.id}" data-type="${channel.type}" /> ${esc(channel.name)} · ${TYPE_LABEL[channel.type]}${channel.status === "0" ? "" : "（停用）"}</label>`).join("");
+      document.getElementById("sendForm").innerHTML = `
+        <div class="field"><label class="req">标题</label><input id="sTitle" type="text" value="巡检完成" /></div>
+        <div class="field"><label>变量 JSON</label><textarea id="sVars">{ "body": "今日巡检完成", "titleLine": "巡检", "event": "inspect" }</textarea></div>
+        <div class="grid-2">
+          <div class="field"><label>直接用户</label><div class="checks">${userChecks}</div></div>
+          <div class="field"><label>群组</label><div class="checks">${groupChecks}</div></div>
+        </div>
+        <div class="field"><label class="req">渠道</label><div class="checks">${channelChecks}</div><p class="hint">站内最多选一个。只选停用用户、或不选人和群组，会留下一条「没有收件人」的失败消息。</p></div>`;
+      openMask("sendMask");
+    }
+    function showRecord(id) {
+      const message = messages.find((item) => item.id === Number(id));
+      const people = message.recipients.length ? message.recipients.map(userName).join("、") : "未展开";
+      const requestedUsers = message.userIds.map(userName).join("、") || "—";
+      const requestedGroups = message.groupIds.map((groupId) => groups.find((group) => group.id === groupId)?.name || ("群组#" + groupId)).join("、") || "—";
+      const vars = Object.entries(message.variables).map(([key, value]) => `${key}=${valueText(value)}`).join("\n") || "{}";
+      const channelRows = message.channels.map((snap) => `
+        <tr>
+          <td>${esc(snap.name)} <span class="tag blue">${TYPE_LABEL[snap.type] || "—"}</span></td>
+          <td>${deliveryTag(snap.status)}</td>
+          <td>${esc(snap.error || "—")}</td>
+          <td>${snap.rendered ? `<pre>${esc(snap.rendered)}</pre>` : "—"}</td>
+        </tr>`).join("") || `<tr><td colspan="4" class="muted">没有渠道快照</td></tr>`;
+      document.getElementById("detailTitle").textContent = message.title;
+      document.getElementById("detailBody").innerHTML = `
+        <div class="kv">
+          <span>状态</span><div>${statusTag(message.status)}</div>
+          <span>来源</span><div>${message.source === "ADMIN" ? "管理端" : "外部调用"}</div>
+          <span>失败原因</span><div>${esc(message.failReason || "—")}</div>
+          <span>直接用户</span><div>${esc(requestedUsers)}</div>
+          <span>群组</span><div>${esc(requestedGroups)}</div>
+          <span>冻结收件人</span><div>${esc(people)}</div>
+          <span>变量</span><div><pre>${esc(vars)}</pre></div>
+        </div>
+        <table>
+          <thead><tr><th>渠道快照</th><th>投递</th><th>错误</th><th>渲染正文</th></tr></thead>
+          <tbody>${channelRows}</tbody>
+        </table>`;
+      openMask("detailMask");
+    }
+    function showInbox(id) {
+      const row = inbox.find((item) => item.id === Number(id) && item.userId === ME);
+      if (!row) return;
+      row.readAt = row.readAt || "刚刚";
+      const message = messages.find((item) => item.id === row.messageId);
+      const snap = message.channels.find((item) => item.type === "IN_APP" && item.status === "SUCCESS");
+      document.getElementById("detailTitle").textContent = message.title;
+      document.getElementById("detailBody").innerHTML = `
+        <div class="kv">
+          <span>内容类型</span><div>${CONTENT_LABEL[snap.contentType]}</div>
+          <span>已读</span><div>${esc(row.readAt)}</div>
+        </div>
+        <pre>${esc(snap.rendered)}</pre>`;
+      renderInbox();
+      openMask("detailMask");
+    }
+
+    document.body.addEventListener("click", (event) => {
+      const viewBtn = event.target.closest("[data-view]");
+      if (viewBtn) {
+        document.querySelectorAll("[data-view]").forEach((btn) => btn.classList.remove("active"));
+        viewBtn.classList.add("active");
+        document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+        document.getElementById("view-" + viewBtn.dataset.view).classList.add("active");
+        document.getElementById("crumb").textContent = CRUMB[viewBtn.dataset.view];
+        return;
+      }
+      const closer = event.target.closest("[data-close]");
+      if (closer) closeMask(closer.dataset.close);
+      if (event.target.id === "addChannel") {
+        openChannel({ id: 0, name: "", type: "IN_APP", contentType: "TEXT", status: "0", template: "{{body}}", token: "", webhookUrl: "", beanName: "" });
+      }
+      const editChannel = event.target.closest("[data-edit-channel]");
+      if (editChannel) openChannel(channels.find((item) => item.id === Number(editChannel.dataset.editChannel)));
+      if (event.target.id === "resetToken") {
+        event.target.previousElementSibling.textContent = Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
+        toast("旧 token 立即失效");
+      }
+      if (event.target.id === "addGroup") openGroup({ id: 0, name: "", userIds: [], depts: [] });
+      const editGroup = event.target.closest("[data-edit-group]");
+      if (editGroup) openGroup(groups.find((item) => item.id === Number(editGroup.dataset.editGroup)));
+      if (event.target.id === "openSend") openSend();
+      const recordBtn = event.target.closest("[data-record]");
+      if (recordBtn) showRecord(recordBtn.dataset.record);
+      const inboxBtn = event.target.closest("[data-inbox]");
+      if (inboxBtn) showInbox(inboxBtn.dataset.inbox);
+    });
+
+    document.body.addEventListener("change", (event) => {
+      if (event.target.id === "chType") {
+        document.getElementById("urlField").hidden = event.target.value !== "WEBHOOK";
+        document.getElementById("beanField").hidden = event.target.value !== "BEAN";
+      }
+      if (event.target.name === "sChannel" && event.target.dataset.type === "IN_APP" && event.target.checked) {
+        document.querySelectorAll("[name=sChannel][data-type=IN_APP]").forEach((box) => {
+          if (box !== event.target) box.checked = false;
+        });
+      }
+    });
+
+    document.getElementById("saveChannel").addEventListener("click", () => {
+      const id = Number(document.getElementById("channelForm").dataset.id);
+      const type = document.getElementById("chType").value;
+      const name = document.getElementById("chName").value.trim();
+      const template = document.getElementById("chTemplate").value.trim();
+      const webhookUrl = document.getElementById("chUrl") ? document.getElementById("chUrl").value.trim() : "";
+      const beanName = document.getElementById("chBean") ? document.getElementById("chBean").value.trim() : "";
+      if (!name || !template) return toast("名称和模板正文必填");
+      if (type === "WEBHOOK" && !webhookUrl) return toast("Webhook 要填地址");
+      if (type === "BEAN" && !beanName) return toast("Bean 要填名称");
+      const token = document.getElementById("chToken").textContent.trim();
+      const data = {
+        name,
+        type,
+        contentType: document.getElementById("chContent").value,
+        status: document.getElementById("chStatus").value,
+        template,
+        webhookUrl: type === "WEBHOOK" ? webhookUrl : "",
+        beanName: type === "BEAN" ? beanName : "",
+        token: token === "保存后生成" ? Math.random().toString(16).slice(2, 10) : token
+      };
+      if (id) Object.assign(channels.find((item) => item.id === id), data);
+      else channels.push({ id: seq++, ...data });
+      closeMask("channelMask");
+      renderChannels();
+    });
+
+    document.getElementById("saveGroup").addEventListener("click", () => {
+      const id = Number(document.getElementById("groupForm").dataset.id);
+      const name = document.getElementById("gName").value.trim();
+      if (!name) return toast("群组名称必填");
+      const userIds = [...document.querySelectorAll("[name=gUser]:checked")].map((box) => Number(box.value));
+      const deptsPicked = [...document.querySelectorAll("[name=gDept]:checked")].map((box) => ({
+        deptId: Number(box.value),
+        includeChildren: !!document.querySelector(`[name=gChild][value="${box.value}"]`)?.checked
+      }));
+      const data = { name, userIds: [...new Set(userIds)], depts: deptsPicked };
+      if (id) Object.assign(groups.find((item) => item.id === id), data);
+      else groups.push({ id: seq++, ...data });
+      closeMask("groupMask");
+      renderGroups();
+    });
+
+    document.getElementById("doSend").addEventListener("click", () => {
+      const title = document.getElementById("sTitle").value.trim();
+      if (!title) return toast("标题不能为空白");
+      let variables = {};
+      const raw = document.getElementById("sVars").value.trim();
+      if (raw) {
+        try { variables = JSON.parse(raw); }
+        catch { return toast("变量需要是 JSON 对象"); }
+      }
+      if (variables === null || Array.isArray(variables) || typeof variables !== "object") return toast("变量需要是 JSON 对象");
+      const channelIds = [...document.querySelectorAll("[name=sChannel]:checked")].map((box) => Number(box.value));
+      if (channelIds.length === 0) return toast("未选渠道，不产生消息");
+      const inAppCount = channelIds.filter((id) => channels.find((item) => item.id === id)?.type === "IN_APP").length;
+      if (inAppCount > 1) return toast("站内渠道最多一个");
+      const userIds = [...document.querySelectorAll("[name=sUser]:checked")].map((box) => Number(box.value));
+      const groupIds = [...document.querySelectorAll("[name=sGroup]:checked")].map((box) => Number(box.value));
+      const message = deliver({ title, variables, userIds, groupIds, channelIds, source: "ADMIN" });
+      closeMask("sendMask");
+      renderRecords();
+      renderInbox();
+      document.querySelector("[data-view=records]").click();
+      toast(STATUS_LABEL[message.status]);
+    });
+
+    seed();
+    renderAll();
+  </script>
+</body>
+</html>
