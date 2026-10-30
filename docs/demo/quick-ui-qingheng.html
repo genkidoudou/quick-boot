@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick · 青衡</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #e8eaed;
+      color: #1f2329;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+    svg.ico { width: 16px; height: 16px; display: block; flex: none; }
+
+    .shell {
+      --ink: #1f2329;
+      --mute: #646a73;
+      --line: #dee0e3;
+      --page: #f5f6f8;
+      --sheet: #ffffff;
+      --brand: #0f766e;
+      --brand-soft: #e6f4f1;
+      --ok: #2ea121;
+      --bad: #d83931;
+      width: min(1120px, 100%);
+      min-height: 720px;
+      margin: 24px auto;
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      background: var(--page);
+      color: var(--ink);
+      border: 1px solid #d0d3d8;
+      box-shadow: 0 8px 28px rgba(31, 35, 41, 0.08);
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      background: var(--sheet);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      background: none;
+      padding: 0;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .mark {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--brand);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .search {
+      width: min(280px, 36vw);
+      height: 32px;
+      margin-left: 8px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--page);
+    }
+    .who {
+      margin-left: auto;
+      height: 32px;
+      padding: 0 4px 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .who i {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--brand-soft);
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      font-style: normal;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .body { display: grid; grid-template-columns: 196px 1fr; min-height: 0; }
+    .side {
+      background: var(--sheet);
+      border-right: 1px solid var(--line);
+      padding: 10px 8px;
+    }
+    .side button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      height: 36px;
+      margin: 2px 0;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      text-align: left;
+      color: var(--ink);
+    }
+    .side button.on {
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: 600;
+    }
+    .side .group {
+      margin: 14px 10px 4px;
+      color: var(--mute);
+      font-size: 12px;
+    }
+
+    .main { padding: 16px; min-width: 0; }
+    .hello h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .hello p { margin: 4px 0 0; color: var(--mute); }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+    .btn, .btn-line {
+      height: 32px;
+      padding: 0 14px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .btn {
+      border: 1px solid var(--brand);
+      background: var(--brand);
+      color: #fff;
+    }
+    .btn-line {
+      border: 1px solid var(--line);
+      background: var(--sheet);
+      color: var(--ink);
+    }
+    .link {
+      border: 0;
+      background: none;
+      padding: 0;
+      color: var(--brand);
+    }
+
+    .panel {
+      margin-top: 12px;
+      background: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .panel-h {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f1f2;
+    }
+    .panel-h b { font-weight: 600; }
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f1f2;
+    }
+    .tools input, .tools select {
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .tools input { width: 220px; margin-left: auto; }
+
+    .msg {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 2px 10px;
+      align-items: center;
+      width: 100%;
+      padding: 12px 16px;
+      border: 0;
+      background: transparent;
+      text-align: left;
+    }
+    .msg + .msg { border-top: 1px solid #f2f3f5; }
+    .msg.unread { background: #fafcfb; }
+    .av {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      grid-row: 1 / span 2;
+    }
+    .av.g { background: #0ea5a0; }
+    .av.f { background: #64748b; }
+    .msg b { font-weight: 600; }
+    .msg.unread b::after {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-left: 8px;
+      border-radius: 50%;
+      background: var(--brand);
+      vertical-align: 2px;
+    }
+    .msg p { margin: 2px 0 0; color: var(--mute); font-size: 13px; }
+    .msg time { color: var(--mute); font-size: 12px; align-self: start; }
+
+    .tile {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .tile button {
+      text-align: left;
+      min-height: 76px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--sheet);
+    }
+    .tile b { display: block; font-weight: 600; }
+    .tile span { display: block; margin-top: 4px; color: var(--mute); font-size: 12px; }
+
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      font-weight: 400;
+      border-bottom: 1px solid #f0f1f2;
+    }
+    th {
+      background: #fafbfc;
+      color: var(--mute);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    td .ops { display: flex; gap: 12px; }
+    .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--ok);
+      vertical-align: 1px;
+    }
+    .dot.off { background: #c2c2c2; }
+    .stop { color: var(--bad); }
+    .pager {
+      margin: 0;
+      padding: 10px 16px;
+      text-align: right;
+      color: var(--mute);
+      font-size: 12px;
+    }
+
+    .letter { padding: 20px 20px 24px; }
+    .letter h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .letter .meta { margin: 6px 0 0; color: var(--mute); }
+    .letter .body {
+      margin: 18px 0 0;
+      max-width: 42em;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .letter .foot {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 22px;
+    }
+
+    .note {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 8px;
+    }
+    .note h1 { margin: 0; font-size: 22px; font-weight: 600; }
+    .note p { margin: 6px 0 0; color: #3a3a3c; max-width: 68ch; }
+
+    @media (max-width: 860px) {
+      .shell { margin: 0; border: 0; box-shadow: none; min-height: 100vh; }
+      .body { grid-template-columns: 1fr; }
+      .side {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .side .group { display: none; }
+      .side button { width: auto; }
+      .tile { grid-template-columns: 1fr; }
+      .tools input { width: 100%; margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" hidden>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M5 6h14v9H8l-3 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3.5V8h4" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6 19c1.1-2.6 3.2-4 6-4s4.9 1.4 6 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.5V12l2.5 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <div class="note">
+    <h1>青衡</h1>
+    <p>汇总阿里云、飞书、腾讯云、微信后的一套：飞书式问候与消息、云控制台式表格与 32px 控件、微信式未读点，主色换成青绿 #0F766E。</p>
+  </div>
+
+  <div class="shell" id="app">
+    <header class="top">
+      <button class="brand" type="button" data-go="home"><span class="mark">Q</span>Quick</button>
+      <input class="search" type="search" aria-label="搜索" placeholder="搜索消息、文件、用户">
+      <button class="who" type="button" data-go="home"><span>林晓</span><i>林</i></button>
+    </header>
+
+    <div class="body">
+      <aside class="side" aria-label="主导航">
+        <button type="button" data-go="home" class="on"><svg class="ico"><use href="#i-home"/></svg>首页</button>
+        <button type="button" data-go="msg"><svg class="ico"><use href="#i-msg"/></svg>消息</button>
+        <button type="button" data-go="file"><svg class="ico"><use href="#i-file"/></svg>文件</button>
+        <p class="group">管理</p>
+        <button type="button" data-go="user"><svg class="ico"><use href="#i-user"/></svg>用户</button>
+        <button type="button" data-go="job"><svg class="ico"><use href="#i-clock"/></svg>定时任务</button>
+      </aside>
+
+      <div class="main">
+        <section data-view="home">
+          <div class="hello">
+            <h1>林晓，2 条消息还没看</h1>
+            <p>最近一条来自人事通知。</p>
+          </div>
+          <div class="actions">
+            <button class="btn" type="button" data-go="msg">看消息</button>
+            <button class="btn-line" type="button" data-go="user">打开用户</button>
+          </div>
+
+          <section class="panel">
+            <div class="panel-h"><b>消息</b><button class="link" type="button" data-go="msg">全部</button></div>
+            <button class="msg unread" type="button" data-go="detail">
+              <i class="av">人</i>
+              <b>本周五前提交考勤</b>
+              <time>09:12</time>
+              <p>请在周五 18:00 前确认本月考勤。</p>
+            </button>
+            <button class="msg unread" type="button" data-go="detail">
+              <i class="av g">安</i>
+              <b>密码将在 7 天后过期</b>
+              <time>08:02</time>
+              <p>过期后需要重新设置密码。</p>
+            </button>
+            <button class="msg" type="button" data-go="file">
+              <i class="av f">文</i>
+              <b>合同扫描件已上传</b>
+              <time>昨天</time>
+              <p>1.2 MB，文档</p>
+            </button>
+          </section>
+
+          <div class="tile">
+            <button type="button" data-go="file"><b>合同扫描件</b><span>昨天上传，打开文件</span></button>
+            <button type="button" data-go="job"><b>清理过期日志</b><span>今晚 2:00 运行</span></button>
+            <button type="button" data-go="user"><b>用户</b><span>4 个账号，1 个停用</span></button>
+          </div>
+        </section>
+
+        <section data-view="msg" hidden>
+          <div class="hello">
+            <h1>消息</h1>
+            <p>2 条未读。点开一条可以看全文。</p>
+          </div>
+          <section class="panel" style="margin-top:14px">
+            <div class="panel-h"><b>收件箱</b></div>
+            <button class="msg unread" type="button" data-go="detail">
+              <i class="av">人</i>
+              <b>本周五前提交考勤</b>
+              <time>今天 09:12</time>
+              <p>人事通知</p>
+            </button>
+            <button class="msg unread" type="button" data-go="detail">
+              <i class="av g">安</i>
+              <b>密码将在 7 天后过期</b>
+              <time>今天 08:02</time>
+              <p>账号安全</p>
+            </button>
+            <button class="msg" type="button">
+              <i class="av f">文</i>
+              <b>合同扫描件已上传</b>
+              <time>昨天</time>
+              <p>文件助手</p>
+            </button>
+          </section>
+        </section>
+
+        <section data-view="detail" hidden>
+          <div class="panel">
+            <div class="letter">
+              <button class="link" type="button" data-go="msg">返回消息</button>
+              <h2 style="margin-top:12px">本周五前提交考勤</h2>
+              <p class="meta">人事通知 · 今天 09:12 · 站内</p>
+              <p class="body">请在周五 18:00 前确认本月考勤。有缺勤的话，在回复里写明日期和原因。确认后这条消息会标成已读。</p>
+              <div class="foot">
+                <button class="btn" type="button">标为已读</button>
+                <button class="btn-line" type="button" data-go="msg">返回列表</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section data-view="file" hidden>
+          <div class="hello">
+            <h1>文件</h1>
+            <p>最近上传的文件。</p>
+          </div>
+          <section class="panel" style="margin-top:14px">
+            <div class="panel-h"><b>最近</b><button class="btn" type="button">上传</button></div>
+            <table>
+              <thead>
+                <tr><th>名称</th><th>分类</th><th>大小</th><th>上传人</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>合同扫描件.pdf</td><td>文档</td><td>1.2 MB</td><td>林晓</td>
+                  <td><div class="ops"><button class="link" type="button">打开</button><button class="link" type="button">下载</button></div></td>
+                </tr>
+                <tr>
+                  <td>考勤说明.docx</td><td>文档</td><td>86 KB</td><td>人事通知</td>
+                  <td><div class="ops"><button class="link" type="button">打开</button><button class="link" type="button">下载</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <section data-view="user" hidden>
+          <div class="hello">
+            <h1>用户</h1>
+            <p>查看账号、部门和状态。停用的账号不能登录。</p>
+          </div>
+          <section class="panel" style="margin-top:14px">
+            <div class="tools">
+              <button class="btn" type="button">新建用户</button>
+              <button class="btn-line" type="button">刷新</button>
+              <select aria-label="状态">
+                <option>全部状态</option>
+                <option>正常</option>
+                <option>停用</option>
+              </select>
+              <input type="search" aria-label="搜索用户" placeholder="用户名或手机号">
+            </div>
+            <table>
+              <thead>
+                <tr><th>用户名</th><th>昵称</th><th>部门</th><th>手机号码</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>linxiao</td><td>林晓</td><td>产品部</td><td>13800002618</td>
+                  <td><i class="dot"></i>正常</td>
+                  <td><div class="ops"><button class="link" type="button">修改</button><button class="link" type="button">删除</button></div></td>
+                </tr>
+                <tr>
+                  <td>zhouqi</td><td>周启</td><td>研发部</td><td>13900001120</td>
+                  <td><i class="dot off"></i><span class="stop">停用</span></td>
+                  <td><div class="ops"><button class="link" type="button">修改</button><button class="link" type="button">删除</button></div></td>
+                </tr>
+                <tr>
+                  <td>chenke</td><td>陈可</td><td>设计部</td><td>13700008821</td>
+                  <td><i class="dot"></i>正常</td>
+                  <td><div class="ops"><button class="link" type="button">修改</button><button class="link" type="button">删除</button></div></td>
+                </tr>
+                <tr>
+                  <td>wudi</td><td>吴迪</td><td>运营部</td><td>13600004567</td>
+                  <td><i class="dot"></i>正常</td>
+                  <td><div class="ops"><button class="link" type="button">修改</button><button class="link" type="button">删除</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="pager">共 4 条</p>
+          </section>
+        </section>
+
+        <section data-view="job" hidden>
+          <div class="hello">
+            <h1>定时任务</h1>
+            <p>查看任务名称、Cron 和状态。</p>
+          </div>
+          <section class="panel" style="margin-top:14px">
+            <div class="tools">
+              <button class="btn" type="button">新建任务</button>
+              <input type="search" aria-label="搜索任务" placeholder="任务名称">
+            </div>
+            <table>
+              <thead>
+                <tr><th>任务名称</th><th>分组</th><th>Cron</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>清理过期日志</td><td>默认</td><td>0 0 2 * * ?</td>
+                  <td><i class="dot"></i>正常</td>
+                  <td><div class="ops"><button class="link" type="button">执行</button><button class="link" type="button">修改</button></div></td>
+                </tr>
+                <tr>
+                  <td>同步字典</td><td>系统</td><td>0 0/30 * * * ?</td>
+                  <td><i class="dot off"></i><span class="stop">暂停</span></td>
+                  <td><div class="ops"><button class="link" type="button">执行</button><button class="link" type="button">修改</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var app = document.getElementById('app')
+      var views = app.querySelectorAll('[data-view]')
+      var navs = app.querySelectorAll('.side [data-go]')
+
+      function show(name) {
+        var map = { home: 'home', msg: 'msg', detail: 'detail', file: 'file', user: 'user', job: 'job' }
+        var view = map[name] || 'home'
+        views.forEach(function (el) {
+          el.hidden = el.getAttribute('data-view') !== view
+        })
+        navs.forEach(function (btn) {
+          var key = btn.getAttribute('data-go')
+          var on = (view === 'detail' && key === 'msg') || key === view
+          btn.classList.toggle('on', on)
+        })
+      }
+
+      app.addEventListener('click', function (e) {
+        var t = e.target.closest('[data-go]')
+        if (!t || !app.contains(t)) return
+        show(t.getAttribute('data-go'))
+      })
+    })()
+  </script>
+</body>
+</html>

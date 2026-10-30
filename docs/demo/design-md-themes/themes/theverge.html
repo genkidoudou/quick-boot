@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Verge · DESIGN.md → Quick UI</title>
+  <style>
+    :root {
+      --primary: #2d2d2d;
+      --on-primary: #ffffff;
+      --canvas: #131313;
+      --surface: #131313;
+      --ink: #000000;
+      --mute: #e9e9e9;
+      --hairline: #ffffff;
+      --soft: #1a1a1a;
+      --font: Inter, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    a { color: var(--primary); }
+    .topbar {
+      display: flex; align-items: center; gap: 16px;
+      height: 56px; padding: 0 20px;
+      border-bottom: 1px solid var(--hairline);
+      background: var(--surface);
+    }
+    .brand { font-weight: 600; letter-spacing: -0.02em; }
+    .brand i {
+      display: inline-grid; place-items: center;
+      width: 22px; height: 22px; margin-right: 8px;
+      border-radius: 6px; background: var(--primary); color: var(--on-primary);
+      font-style: normal; font-size: 12px; vertical-align: -3px;
+    }
+    .nav { display: flex; gap: 4px; margin-left: 12px; }
+    .nav a {
+      padding: 6px 10px; border-radius: 8px; text-decoration: none; color: var(--mute);
+    }
+    .nav a.on { background: var(--soft); color: var(--primary); }
+    .back { margin-left: auto; color: var(--mute); text-decoration: none; font-size: 13px; }
+    .shell {
+      display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 56px);
+    }
+    .side {
+      padding: 16px 10px; border-right: 1px solid var(--hairline); background: var(--surface);
+    }
+    .side button {
+      display: block; width: 100%; text-align: left;
+      height: 36px; padding: 0 12px; margin: 2px 0;
+      border: 0; border-radius: 8px; background: transparent; color: var(--ink);
+    }
+    .side button.on { background: var(--soft); color: var(--primary); font-weight: 600; }
+    .main { padding: 28px 32px 48px; }
+    .kicker { color: var(--mute); font-size: 13px; margin: 0 0 8px; }
+    h1 {
+      margin: 0; font-size: 40px; font-weight: 600;
+      letter-spacing: -0.03em; line-height: 1.1; max-width: 18em;
+    }
+    .lead { margin: 12px 0 0; color: var(--mute); max-width: 48em; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .btn {
+      height: 40px; padding: 0 18px; border: 0; border-radius: 999px;
+      background: var(--primary); color: var(--on-primary); font-weight: 600;
+    }
+    .btn-line {
+      height: 40px; padding: 0 18px; border: 1px solid var(--hairline); border-radius: 999px;
+      background: transparent; color: var(--ink);
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--hairline);
+      border-radius: 14px; padding: 16px;
+    }
+    .card b { display: block; font-weight: 600; }
+    .card span { display: block; margin-top: 6px; color: var(--mute); font-size: 13px; }
+    .panel {
+      margin-top: 24px; background: var(--surface); border: 1px solid var(--hairline);
+      border-radius: 14px; overflow: hidden;
+    }
+    .panel-h {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; border-bottom: 1px solid var(--hairline);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--hairline); font-weight: 400; }
+    th { color: var(--mute); font-size: 13px; }
+    .link { border: 0; background: none; padding: 0; color: var(--primary); }
+    .swatches {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px; margin-top: 28px;
+    }
+    .sw {
+      border: 1px solid var(--hairline); border-radius: 10px; overflow: hidden; background: var(--surface);
+    }
+    .sw i { display: block; height: 44px; }
+    .sw span { display: block; padding: 8px 10px; font-size: 11px; color: var(--mute); line-height: 1.35; }
+    .src { margin-top: 28px; color: var(--mute); font-size: 12px; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { display: flex; flex-wrap: wrap; gap: 4px; border-right: 0; border-bottom: 1px solid var(--hairline); }
+      .side button { width: auto; }
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><i>Q</i>The Verge</div>
+    <nav class="nav" aria-label="预览导航">
+      <a class="on" href="#">首页</a>
+      <a href="#users">用户</a>
+      <a href="#tokens">色板</a>
+    </nav>
+    <a class="back" href="../index.html">全部主题</a>
+  </header>
+  <div class="shell">
+    <aside class="side" aria-label="侧栏">
+      <button class="on" type="button">首页</button>
+      <button type="button">消息</button>
+      <button type="button">文件</button>
+      <button type="button">用户</button>
+      <button type="button">定时任务</button>
+    </aside>
+    <main class="main">
+      <p class="kicker">DESIGN.md · theverge</p>
+      <h1>林晓，2 条消息还没看</h1>
+      <p class="lead">The Verge&#x27;s 2024 redesign feels like somebody wired a Condé Nast magazine to a chiptune soundboard. The canvas is almost-black (`#131313`), the headlines are built from a brutally heavy display face (Manuka) that runs...</p>
+      <div class="actions">
+        <button class="btn" type="button">看消息</button>
+        <button class="btn-line" type="button">新建用户</button>
+      </div>
+      <div class="grid">
+        <div class="card"><b>本周五前提交考勤</b><span>人事通知 · 今天 09:12</span></div>
+        <div class="card"><b>密码将在 7 天后过期</b><span>账号安全 · 今天 08:02</span></div>
+        <div class="card"><b>合同扫描件</b><span>文件 · 1.2 MB</span></div>
+      </div>
+      <section class="panel" id="users">
+        <div class="panel-h"><b>用户</b><button class="btn" type="button" style="height:32px;padding:0 12px;font-size:13px">新建用户</button></div>
+        <table>
+          <thead><tr><th>用户名</th><th>昵称</th><th>部门</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td>linxiao</td><td>林晓</td><td>产品部</td><td>正常</td><td><button class="link" type="button">修改</button></td></tr>
+            <tr><td>zhouqi</td><td>周启</td><td>研发部</td><td>停用</td><td><button class="link" type="button">修改</button></td></tr>
+            <tr><td>chenke</td><td>陈可</td><td>设计部</td><td>正常</td><td><button class="link" type="button">修改</button></td></tr>
+          </tbody>
+        </table>
+      </section>
+      <h2 id="tokens" style="margin:32px 0 0;font-size:16px;font-weight:600">DESIGN 色板</h2>
+      <div class="swatches"><div class="sw"><i style="background:#ffffff"></i><span>hairline-1px-borders<br>#ffffff</span></div><div class="sw"><i style="background:#3cffd0"></i><span>jelly-mint<br>#3cffd0</span></div><div class="sw"><i style="background:#5200ff"></i><span>verge-ultraviolet<br>#5200ff</span></div><div class="sw"><i style="background:#309875"></i><span>console-mint-border<br>#309875</span></div><div class="sw"><i style="background:#3860be"></i><span>deep-link-blue<br>#3860be</span></div><div class="sw"><i style="background:#1eaedb"></i><span>focus-cyan<br>#1eaedb</span></div><div class="sw"><i style="background:#3d00bf"></i><span>purple-rule<br>#3d00bf</span></div><div class="sw"><i style="background:#131313"></i><span>canvas-black<br>#131313</span></div><div class="sw"><i style="background:#2d2d2d"></i><span>surface-slate<br>#2d2d2d</span></div><div class="sw"><i style="background:#313131"></i><span>image-frame<br>#313131</span></div><div class="sw"><i style="background:#ffffff"></i><span>hazard-white<br>#ffffff</span></div><div class="sw"><i style="background:#000000"></i><span>absolute-black<br>#000000</span></div></div>
+      <p class="src">Token 来自 docs/awesome-design-md/design-md/theverge/DESIGN.md。主色 #2d2d2d · 画布 #131313 · 墨色 #000000</p>
+    </main>
+  </div>
+</body>
+</html>

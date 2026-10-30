@@ -81,6 +81,11 @@
       color: $base-menu-color-active !important;
     }
 
+    & .theme-light .el-menu-item.is-active,
+    & .theme-light .is-active > .el-sub-menu__title {
+      background-color: var(--qb-menu-active-bg, transparent) !important;
+    }
+
     & .nest-menu .el-sub-menu > .el-sub-menu__title,
     & .el-sub-menu .el-menu-item {
       min-width: $base-sidebar-width !important;

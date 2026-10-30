@@ -22,6 +22,26 @@
     </div>
 
     <div class="setting-drawer-title">
+      <h3 class="drawer-title">主题预设</h3>
+    </div>
+    <div class="pack-wrap">
+      <button
+        v-for="pack in themePackages"
+        :key="pack.id"
+        type="button"
+        class="pack-card"
+        :class="{ active: themePack === pack.id }"
+        @click="handleThemePack(pack.id)"
+      >
+        <span class="pack-swatch" :style="{ background: pack.theme }" />
+        <span class="pack-meta">
+          <b>{{ pack.name }}</b>
+          <i>{{ pack.sideTheme === 'theme-dark' ? '深色侧栏' : '浅色侧栏' }}</i>
+        </span>
+      </button>
+    </div>
+
+    <div class="setting-drawer-title">
       <h3 class="drawer-title">主题风格设置</h3>
     </div>
     <div class="setting-drawer-block-checbox">
@@ -99,6 +119,7 @@ import { ElLoading, ElMessage } from 'element-plus'
 import useAppStore from '@/store/modules/app'
 import useSettingsStore from '@/store/modules/settings'
 import usePermissionStore from '@/store/modules/permission'
+import { themePackages } from '@/theme/packages'
 import { handleThemeStyle } from '@/utils/theme'
 import { applyNavLayout, normalizeNavType } from '@/utils/navLayout'
 import { useRoute } from 'vue-router'
@@ -111,8 +132,28 @@ const showSettings = ref(false)
 const navType = ref(normalizeNavType(settingsStore.navType))
 const theme = ref(settingsStore.theme)
 const sideTheme = ref(settingsStore.sideTheme)
+const themePack = ref(settingsStore.themePack || 'default')
 const storeSettings = computed(() => settingsStore)
-const predefineColors = ref(['#409EFF', '#ff4500', '#ff8c00', '#ffd700', '#90ee90', '#00ced1', '#1e90ff', '#c71585'])
+const predefineColors = ref([
+  '#409EFF',
+  '#0F766E',
+  '#3ECF8E',
+  '#5E6AD2',
+  '#533AFD',
+  '#5645D4',
+  '#0071E3',
+  '#ff4500',
+  '#ff8c00',
+  '#ffd700'
+])
+
+/** 一键切换主题包：主色、侧栏、token 一并生效 */
+function handleThemePack(packId) {
+  settingsStore.applyThemePack(packId)
+  themePack.value = settingsStore.themePack
+  theme.value = settingsStore.theme
+  sideTheme.value = settingsStore.sideTheme
+}
 
 /** 切换主题色并应用到 CSS 变量 */
 function themeChange(val) {
@@ -148,7 +189,8 @@ function saveSetting() {
     sidebarLogo: storeSettings.value.sidebarLogo,
     dynamicTitle: storeSettings.value.dynamicTitle,
     sideTheme: storeSettings.value.sideTheme,
-    theme: storeSettings.value.theme
+    theme: storeSettings.value.theme,
+    themePack: storeSettings.value.themePack || 'default'
   }
   localStorage.setItem('layout-setting', JSON.stringify(layoutSetting))
   setTimeout(() => loadingInstance.close(), 800)
@@ -166,6 +208,9 @@ function resetSetting() {
 
 function openSetting() {
   navType.value = normalizeNavType(settingsStore.navType)
+  theme.value = settingsStore.theme
+  sideTheme.value = settingsStore.sideTheme
+  themePack.value = settingsStore.themePack || 'default'
   showSettings.value = true
 }
 
@@ -182,6 +227,57 @@ defineExpose({ openSetting })
     font-size: 14px;
   }
 }
+.pack-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 20px;
+}
+
+.pack-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+}
+
+.pack-card.active {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+.pack-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex: none;
+}
+
+.pack-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pack-meta b {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.pack-meta i {
+  font-style: normal;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
 .setting-drawer-block-checbox {
   display: flex;
   justify-content: flex-start;

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick UI · DESIGN.md 主题预览（84）</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #f3f3f3; color: #111;
+      font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-size: 15px; line-height: 1.5;
+    }
+    .wrap { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 64px; }
+    h1 { margin: 0; font-size: 28px; letter-spacing: -0.03em; }
+    .lead { margin: 8px 0 0; color: #555; max-width: 60ch; }
+    .find {
+      width: min(420px, 100%); height: 40px; margin-top: 18px; padding: 0 12px;
+      border: 1px solid #ddd; border-radius: 8px; background: #fff;
+    }
+    section { margin-top: 28px; }
+    h2 { margin: 0 0 12px; font-size: 16px; }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
+    }
+    .card {
+      display: grid; grid-template-columns: 16px 1fr; gap: 2px 10px; align-items: center;
+      padding: 12px; border-radius: 10px; background: #fff; border: 1px solid #e6e6e6;
+      text-decoration: none; color: inherit;
+    }
+    .card:hover { border-color: #111; }
+    .dot { width: 16px; height: 16px; border-radius: 4px; grid-row: 1 / span 2; }
+    .card b { font-size: 14px; }
+    .card span { color: #777; font-size: 12px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>DESIGN.md → Quick UI 主题</h1>
+    <p class="lead">共 84 套。每套一页，色板与字体尽量取自对应 DESIGN.md。点卡片打开预览。</p>
+    <input class="find" id="q" type="search" placeholder="搜索品牌，如 stripe、linear、vercel">
+    <section><h2>AI &amp; LLM Platforms</h2><div class='grid'><a class="card" href="themes/claude.html">
+  <span class="dot" style="background:#cc785c"></span>
+  <b>Claude</b>
+  <span>claude</span>
+</a><a class="card" href="themes/cohere.html">
+  <span class="dot" style="background:#17171c"></span>
+  <b>Cohere</b>
+  <span>cohere</span>
+</a><a class="card" href="themes/elevenlabs.html">
+  <span class="dot" style="background:#292524"></span>
+  <b>Elevenlabs</b>
+  <span>elevenlabs</span>
+</a><a class="card" href="themes/jobright.html">
+  <span class="dot" style="background:#00f0a0"></span>
+  <b>Jobright</b>
+  <span>jobright</span>
+</a><a class="card" href="themes/minimax.html">
+  <span class="dot" style="background:#0a0a0a"></span>
+  <b>Minimax</b>
+  <span>minimax</span>
+</a><a class="card" href="themes/mistral.ai.html">
+  <span class="dot" style="background:#fa520f"></span>
+  <b>Mistral AI</b>
+  <span>mistral.ai</span>
+</a><a class="card" href="themes/ollama.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Ollama</b>
+  <span>ollama</span>
+</a><a class="card" href="themes/opencode.ai.html">
+  <span class="dot" style="background:#201d1d"></span>
+  <b>OpenCode AI</b>
+  <span>opencode.ai</span>
+</a><a class="card" href="themes/replicate.html">
+  <span class="dot" style="background:#ea2804"></span>
+  <b>Replicate</b>
+  <span>replicate</span>
+</a><a class="card" href="themes/runwayml.html">
+  <span class="dot" style="background:#404040"></span>
+  <b>Runway</b>
+  <span>runwayml</span>
+</a><a class="card" href="themes/together.ai.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Together AI</b>
+  <span>together.ai</span>
+</a><a class="card" href="themes/voltagent.html">
+  <span class="dot" style="background:#00d992"></span>
+  <b>Voltagent</b>
+  <span>voltagent</span>
+</a><a class="card" href="themes/x.ai.html">
+  <span class="dot" style="background:#ffffff"></span>
+  <b>xAI</b>
+  <span>x.ai</span>
+</a></div></section><section><h2>Developer Tools &amp; IDEs</h2><div class='grid'><a class="card" href="themes/cursor.html">
+  <span class="dot" style="background:#f54e00"></span>
+  <b>Cursor</b>
+  <span>cursor</span>
+</a><a class="card" href="themes/expo.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Expo</b>
+  <span>expo</span>
+</a><a class="card" href="themes/lovable.html">
+  <span class="dot" style="background:#1c1c1c"></span>
+  <b>Lovable</b>
+  <span>lovable</span>
+</a><a class="card" href="themes/raycast.html">
+  <span class="dot" style="background:#ffffff"></span>
+  <b>Raycast</b>
+  <span>raycast</span>
+</a><a class="card" href="themes/superhuman.html">
+  <span class="dot" style="background:#1b1938"></span>
+  <b>Superhuman</b>
+  <span>superhuman</span>
+</a><a class="card" href="themes/vercel.html">
+  <span class="dot" style="background:#171717"></span>
+  <b>Vercel</b>
+  <span>vercel</span>
+</a><a class="card" href="themes/warp.html">
+  <span class="dot" style="background:#f7f5f0"></span>
+  <b>Warp</b>
+  <span>warp</span>
+</a></div></section><section><h2>Backend, Database &amp; DevOps</h2><div class='grid'><a class="card" href="themes/clickhouse.html">
+  <span class="dot" style="background:#faff69"></span>
+  <b>Clickhouse</b>
+  <span>clickhouse</span>
+</a><a class="card" href="themes/composio.html">
+  <span class="dot" style="background:#0007cd"></span>
+  <b>Composio</b>
+  <span>composio</span>
+</a><a class="card" href="themes/hashicorp.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Hashicorp</b>
+  <span>hashicorp</span>
+</a><a class="card" href="themes/mongodb.html">
+  <span class="dot" style="background:#00ed64"></span>
+  <b>Mongodb</b>
+  <span>mongodb</span>
+</a><a class="card" href="themes/oracle.html">
+  <span class="dot" style="background:#312d2a"></span>
+  <b>Oracle</b>
+  <span>oracle</span>
+</a><a class="card" href="themes/posthog.html">
+  <span class="dot" style="background:#f7a501"></span>
+  <b>Posthog</b>
+  <span>posthog</span>
+</a><a class="card" href="themes/sanity.html">
+  <span class="dot" style="background:#0052ef"></span>
+  <b>Sanity</b>
+  <span>sanity</span>
+</a><a class="card" href="themes/sentry.html">
+  <span class="dot" style="background:#150f23"></span>
+  <b>Sentry</b>
+  <span>sentry</span>
+</a><a class="card" href="themes/supabase.html">
+  <span class="dot" style="background:#3ecf8e"></span>
+  <b>Supabase</b>
+  <span>supabase</span>
+</a></div></section><section><h2>Productivity &amp; SaaS</h2><div class='grid'><a class="card" href="themes/cal.html">
+  <span class="dot" style="background:#111111"></span>
+  <b>Cal.com</b>
+  <span>cal</span>
+</a><a class="card" href="themes/intercom.html">
+  <span class="dot" style="background:#111111"></span>
+  <b>Intercom</b>
+  <span>intercom</span>
+</a><a class="card" href="themes/linear.app.html">
+  <span class="dot" style="background:#5e6ad2"></span>
+  <b>Linear</b>
+  <span>linear.app</span>
+</a><a class="card" href="themes/mintlify.html">
+  <span class="dot" style="background:#0a0a0a"></span>
+  <b>Mintlify</b>
+  <span>mintlify</span>
+</a><a class="card" href="themes/notion.html">
+  <span class="dot" style="background:#5645d4"></span>
+  <b>Notion</b>
+  <span>notion</span>
+</a><a class="card" href="themes/resend.html">
+  <span class="dot" style="background:#fcfdff"></span>
+  <b>Resend</b>
+  <span>resend</span>
+</a><a class="card" href="themes/sap.html">
+  <span class="dot" style="background:#0057d2"></span>
+  <b>Sap</b>
+  <span>sap</span>
+</a><a class="card" href="themes/zapier.html">
+  <span class="dot" style="background:#ff4f00"></span>
+  <b>Zapier</b>
+  <span>zapier</span>
+</a></div></section><section><h2>Design &amp; Creative Tools</h2><div class='grid'><a class="card" href="themes/airtable.html">
+  <span class="dot" style="background:#181d26"></span>
+  <b>Airtable</b>
+  <span>airtable</span>
+</a><a class="card" href="themes/clay.html">
+  <span class="dot" style="background:#0a0a0a"></span>
+  <b>Clay</b>
+  <span>clay</span>
+</a><a class="card" href="themes/figma.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Figma</b>
+  <span>figma</span>
+</a><a class="card" href="themes/framer.html">
+  <span class="dot" style="background:#ffffff"></span>
+  <b>Framer</b>
+  <span>framer</span>
+</a><a class="card" href="themes/miro.html">
+  <span class="dot" style="background:#1c1c1e"></span>
+  <b>Miro</b>
+  <span>miro</span>
+</a><a class="card" href="themes/webflow.html">
+  <span class="dot" style="background:#080808"></span>
+  <b>Webflow</b>
+  <span>webflow</span>
+</a></div></section><section><h2>Fintech &amp; Crypto</h2><div class='grid'><a class="card" href="themes/binance.html">
+  <span class="dot" style="background:#fcd535"></span>
+  <b>Binance</b>
+  <span>binance</span>
+</a><a class="card" href="themes/coinbase.html">
+  <span class="dot" style="background:#0052ff"></span>
+  <b>Coinbase</b>
+  <span>coinbase</span>
+</a><a class="card" href="themes/kraken.html">
+  <span class="dot" style="background:#5741d8"></span>
+  <b>Kraken</b>
+  <span>kraken</span>
+</a><a class="card" href="themes/mastercard.html">
+  <span class="dot" style="background:#141413"></span>
+  <b>Mastercard</b>
+  <span>mastercard</span>
+</a><a class="card" href="themes/mercury.html">
+  <span class="dot" style="background:#5266eb"></span>
+  <b>Mercury</b>
+  <span>mercury</span>
+</a><a class="card" href="themes/nerdwallet.html">
+  <span class="dot" style="background:#008254"></span>
+  <b>Nerdwallet</b>
+  <span>nerdwallet</span>
+</a><a class="card" href="themes/revolut.html">
+  <span class="dot" style="background:#494fdf"></span>
+  <b>Revolut</b>
+  <span>revolut</span>
+</a><a class="card" href="themes/stripe.html">
+  <span class="dot" style="background:#533afd"></span>
+  <b>Stripe</b>
+  <span>stripe</span>
+</a><a class="card" href="themes/wise.html">
+  <span class="dot" style="background:#9fe870"></span>
+  <b>Wise</b>
+  <span>wise</span>
+</a></div></section><section><h2>E-commerce &amp; Retail</h2><div class='grid'><a class="card" href="themes/airbnb.html">
+  <span class="dot" style="background:#ff385c"></span>
+  <b>Airbnb</b>
+  <span>airbnb</span>
+</a><a class="card" href="themes/meta.html">
+  <span class="dot" style="background:#0064e0"></span>
+  <b>Meta</b>
+  <span>meta</span>
+</a><a class="card" href="themes/mydealz.html">
+  <span class="dot" style="background:#30a83c"></span>
+  <b>Mydealz</b>
+  <span>mydealz</span>
+</a><a class="card" href="themes/nike.html">
+  <span class="dot" style="background:#111111"></span>
+  <b>Nike</b>
+  <span>nike</span>
+</a><a class="card" href="themes/shopify.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Shopify</b>
+  <span>shopify</span>
+</a><a class="card" href="themes/starbucks.html">
+  <span class="dot" style="background:#00754A"></span>
+  <b>Starbucks</b>
+  <span>starbucks</span>
+</a></div></section><section><h2>Media &amp; Consumer Tech</h2><div class='grid'><a class="card" href="themes/1win.html">
+  <span class="dot" style="background:#00b24b"></span>
+  <b>1win</b>
+  <span>1win</span>
+</a><a class="card" href="themes/aljazeera.html">
+  <span class="dot" style="background:#fa9000"></span>
+  <b>Al Jazeera</b>
+  <span>aljazeera</span>
+</a><a class="card" href="themes/apple.html">
+  <span class="dot" style="background:#0066cc"></span>
+  <b>Apple</b>
+  <span>apple</span>
+</a><a class="card" href="themes/dji.html">
+  <span class="dot" style="background:#0070d5"></span>
+  <b>Dji</b>
+  <span>dji</span>
+</a><a class="card" href="themes/hp.html">
+  <span class="dot" style="background:#024ad8"></span>
+  <b>Hp</b>
+  <span>hp</span>
+</a><a class="card" href="themes/ibm.html">
+  <span class="dot" style="background:#0f62fe"></span>
+  <b>Ibm</b>
+  <span>ibm</span>
+</a><a class="card" href="themes/nvidia.html">
+  <span class="dot" style="background:#76b900"></span>
+  <b>Nvidia</b>
+  <span>nvidia</span>
+</a><a class="card" href="themes/oura.html">
+  <span class="dot" style="background:#2a72de"></span>
+  <b>Oura</b>
+  <span>oura</span>
+</a><a class="card" href="themes/pinterest.html">
+  <span class="dot" style="background:#e60023"></span>
+  <b>Pinterest</b>
+  <span>pinterest</span>
+</a><a class="card" href="themes/playstation.html">
+  <span class="dot" style="background:#0070d1"></span>
+  <b>Playstation</b>
+  <span>playstation</span>
+</a><a class="card" href="themes/spacex.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Spacex</b>
+  <span>spacex</span>
+</a><a class="card" href="themes/spotify.html">
+  <span class="dot" style="background:#1ed760"></span>
+  <b>Spotify</b>
+  <span>spotify</span>
+</a><a class="card" href="themes/theverge.html">
+  <span class="dot" style="background:#2d2d2d"></span>
+  <b>The Verge</b>
+  <span>theverge</span>
+</a><a class="card" href="themes/uber.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Uber</b>
+  <span>uber</span>
+</a><a class="card" href="themes/vodafone.html">
+  <span class="dot" style="background:#e60000"></span>
+  <b>Vodafone</b>
+  <span>vodafone</span>
+</a><a class="card" href="themes/wired.html">
+  <span class="dot" style="background:#000000"></span>
+  <b>Wired</b>
+  <span>wired</span>
+</a></div></section><section><h2>Automotive</h2><div class='grid'><a class="card" href="themes/bmw.html">
+  <span class="dot" style="background:#1c69d4"></span>
+  <b>Bmw</b>
+  <span>bmw</span>
+</a><a class="card" href="themes/bmw-m.html">
+  <span class="dot" style="background:#ffffff"></span>
+  <b>BMW M</b>
+  <span>bmw-m</span>
+</a><a class="card" href="themes/bugatti.html">
+  <span class="dot" style="background:#ffffff"></span>
+  <b>Bugatti</b>
+  <span>bugatti</span>
+</a><a class="card" href="themes/ferrari.html">
+  <span class="dot" style="background:#da291c"></span>
+  <b>Ferrari</b>
+  <span>ferrari</span>
+</a><a class="card" href="themes/lamborghini.html">
+  <span class="dot" style="background:#1EAEDB"></span>
+  <b>Lamborghini</b>
+  <span>lamborghini</span>
+</a><a class="card" href="themes/renault.html">
+  <span class="dot" style="background:#ffed00"></span>
+  <b>Renault</b>
+  <span>renault</span>
+</a><a class="card" href="themes/tesla.html">
+  <span class="dot" style="background:#3E6AE1"></span>
+  <b>Tesla</b>
+  <span>tesla</span>
+</a></div></section><section><h2>Retro Web</h2><div class='grid'><a class="card" href="themes/dell-1996.html">
+  <span class="dot" style="background:#e91d2a"></span>
+  <b>Dell (1996)</b>
+  <span>dell-1996</span>
+</a><a class="card" href="themes/nintendo-2001.html">
+  <span class="dot" style="background:#e60012"></span>
+  <b>Nintendo (2001)</b>
+  <span>nintendo-2001</span>
+</a></div></section><section><h2>Other</h2><div class='grid'><a class="card" href="themes/slack.html">
+  <span class="dot" style="background:#4a154b"></span>
+  <b>Slack</b>
+  <span>slack</span>
+</a></div></section>
+  </div>
+  <script>
+    const q = document.getElementById('q')
+    q.addEventListener('input', () => {
+      const v = q.value.trim().toLowerCase()
+      document.querySelectorAll('.card').forEach((el) => {
+        const t = el.textContent.toLowerCase()
+        el.classList.toggle('hidden', v && !t.includes(v))
+      })
+      document.querySelectorAll('section').forEach((sec) => {
+        const any = [...sec.querySelectorAll('.card')].some((c) => !c.classList.contains('hidden'))
+        sec.classList.toggle('hidden', !any)
+      })
+    })
+  </script>
+</body>
+</html>

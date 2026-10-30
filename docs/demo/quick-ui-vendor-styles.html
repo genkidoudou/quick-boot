@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick 五套大厂风格</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #ececef;
+      color: #1d1d1f;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid #0071e3; outline-offset: 2px; }
+    table { border-collapse: collapse; width: 100%; }
+    .doc { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 4px; }
+    .doc h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+    .doc p { margin: 8px 0 0; max-width: 68ch; }
+    .jumps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0 0; padding: 0; list-style: none; }
+    .jumps a { color: #1d1d1f; }
+    .cap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 10px; }
+    .cap h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .cap p { margin: 4px 0 0; color: #3a3a3c; font-size: 14px; }
+    .frame { overflow-x: auto; background: #dedee3; }
+    svg.ico { width: 16px; height: 16px; display: block; flex: none; }
+
+    /* ---------- 苹果 ---------- */
+    .apple {
+      width: 1120px; min-height: 680px; margin: 0 auto;
+      display: grid; grid-template-columns: 232px 1fr;
+      background: #f5f5f7; color: #1d1d1f;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+    }
+    .apple .side { padding: 22px 10px; border-right: 1px solid #e4e4e8; }
+    .apple .brand { margin: 0 8px 14px; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+    .apple .navb {
+      display: flex; align-items: center; gap: 8px; width: 100%; height: 32px;
+      padding: 0 10px; border: 0; border-radius: 8px; background: transparent; text-align: left;
+    }
+    .apple .navb.on { background: #0071e3; color: #fff; }
+    .apple .main { padding: 36px 48px 40px; }
+    .apple h3 { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.022em; line-height: 1.1; }
+    .apple .sub { margin: 6px 0 0; color: #86868b; font-size: 15px; }
+    .apple .pill {
+      margin-top: 16px; height: 36px; padding: 0 16px; border: 0; border-radius: 980px;
+      background: #0071e3; color: #fff; font-size: 14px; font-weight: 500;
+    }
+    .apple .glabel { margin: 26px 12px 6px; color: #86868b; font-size: 12px; }
+    .apple .group { background: #fff; border-radius: 12px; overflow: hidden; }
+    .apple .row {
+      display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px;
+      padding: 8px 14px 8px 16px; border: 0; background: #fff; text-align: left;
+    }
+    .apple .row + .row {
+      background-image: linear-gradient(#e5e5ea, #e5e5ea);
+      background-repeat: no-repeat; background-size: calc(100% - 16px) 1px; background-position: 16px 0;
+    }
+    .apple .row b { display: block; font-size: 14px; font-weight: 600; color: #1d1d1f; }
+    .apple .row .grow { flex: 1; min-width: 0; color: #1d1d1f; }
+    .apple .row .grow > span { display: block; margin-top: 1px; color: #86868b; font-size: 12px; }
+    .apple .chev {
+      width: 7px; height: 7px; border-right: 1.6px solid #c7c7cc; border-bottom: 1.6px solid #c7c7cc;
+      transform: rotate(-45deg); margin-right: 4px;
+    }
+    .apple .stop { color: #ff3b30; }
+
+    /* ---------- 阿里云 ---------- */
+    .ali {
+      width: 1120px; min-height: 680px; margin: 0 auto;
+      display: grid; grid-template-rows: 48px 1fr; background: #f2f3f5; color: #333;
+      font-size: 14px;
+    }
+    .ali .top {
+      display: flex; align-items: center; gap: 16px; padding: 0 16px;
+      background: #fff; border-bottom: 1px solid #e6e6e6;
+    }
+    .ali .mark { width: 18px; height: 18px; border-radius: 3px; background: #ff6a00; }
+    .ali .brand { font-weight: 600; }
+    .ali .search {
+      width: 240px; height: 32px; margin-left: 12px; padding: 0 12px;
+      border: 0; border-radius: 4px; background: #f5f5f5;
+    }
+    .ali .who { margin-left: auto; border: 0; background: none; padding: 0; }
+    .ali .body { display: grid; grid-template-columns: 188px 1fr; min-height: 0; }
+    .ali .side { background: #fff; border-right: 1px solid #eee; padding: 8px; }
+    .ali .side button {
+      display: flex; align-items: center; gap: 8px; width: 100%; height: 36px;
+      padding: 0 10px; border: 0; border-radius: 4px; background: transparent; text-align: left; color: #333;
+    }
+    .ali .side button.on { background: #fff3e8; color: #ff6a00; font-weight: 600; }
+    .ali .main { padding: 16px; }
+    .ali .panel { background: #fff; border-radius: 4px; padding: 16px 16px 12px; min-height: calc(100% - 0px); }
+    .ali .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .ali h3 { margin: 0; font-size: 16px; font-weight: 600; color: #1a1a1a; }
+    .ali .sub { margin: 4px 0 0; color: #888; font-size: 12px; }
+    .ali .tools { display: flex; gap: 8px; align-items: center; margin: 14px 0; }
+    .ali .primary, .ali .ghost {
+      height: 32px; padding: 0 16px; border-radius: 4px; font-size: 14px;
+    }
+    .ali .primary { border: 1px solid #ff6a00; background: #ff6a00; color: #fff; }
+    .ali .ghost { border: 1px solid #d9d9d9; background: #fff; color: #333; }
+    .ali .tools input, .ali .tools select {
+      height: 32px; padding: 0 10px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fff;
+    }
+    .ali .tools input { width: 220px; margin-left: auto; }
+    .ali th, .ali td { padding: 11px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-weight: 400; }
+    .ali th { background: #fafafa; color: #666; font-size: 13px; }
+    .ali td a { color: #ff6a00; text-decoration: none; }
+    .ali .dot { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #00b42a; vertical-align: 1px; }
+    .ali .dot.off { background: #c2c2c2; }
+    .ali .pager { margin: 12px 0 4px; text-align: right; color: #888; font-size: 12px; }
+
+    /* ---------- 飞书 ---------- */
+    .fei {
+      width: 1120px; min-height: 700px; margin: 0 auto;
+      display: grid; grid-template-columns: 220px 1fr;
+      background: #f5f6f7; color: #1f2329; font-size: 14px;
+    }
+    .fei .side { background: #fff; border-right: 1px solid #dee0e3; padding: 16px 8px; }
+    .fei .brand { display: flex; align-items: center; gap: 8px; margin: 0 8px 16px; font-weight: 600; }
+    .fei .logo {
+      width: 22px; height: 22px; border-radius: 6px; background: #3370ff; color: #fff;
+      display: grid; place-items: center; font-size: 13px; font-weight: 600;
+    }
+    .fei .navb {
+      display: flex; align-items: center; gap: 8px; width: 100%; height: 36px;
+      margin: 2px 0; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; text-align: left; color: #1f2329;
+    }
+    .fei .navb.on { background: #e8eeff; color: #3370ff; font-weight: 600; }
+    .fei .main { padding: 16px; }
+    .fei .hello { margin: 4px 4px 12px; }
+    .fei h3 { margin: 0; font-size: 20px; font-weight: 600; }
+    .fei .sub { margin: 4px 0 0; color: #646a73; }
+    .fei .card { background: #fff; border: 1px solid #dee0e3; border-radius: 8px; margin-top: 12px; }
+    .fei .card-h {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid #eff0f1;
+    }
+    .fei .card-h b { font-weight: 600; }
+    .fei .link { border: 0; background: none; padding: 0; color: #3370ff; }
+    .fei .msg { display: flex; gap: 10px; align-items: center; padding: 12px 16px; }
+    .fei .msg + .msg { border-top: 1px solid #f2f3f5; }
+    .fei .av {
+      width: 36px; height: 36px; border-radius: 50%; background: #3370ff; color: #fff;
+      display: grid; place-items: center; font-weight: 600; flex: none;
+    }
+    .fei .av.g { background: #14c0ff; }
+    .fei .msg .grow { flex: 1; min-width: 0; }
+    .fei .msg b { font-weight: 600; }
+    .fei .msg p { margin: 2px 0 0; color: #8f959e; font-size: 13px; }
+    .fei .msg time { color: #8f959e; font-size: 12px; }
+    .fei .btn {
+      height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: #3370ff; color: #fff; font-weight: 500;
+    }
+    .fei th, .fei td { padding: 12px 16px; text-align: left; font-weight: 400; }
+    .fei th { color: #646a73; font-size: 13px; background: #fafbfc; }
+    .fei td { border-top: 1px solid #f2f3f5; }
+    .fei .ok { color: #2ea121; }
+    .fei .stop { color: #d83931; }
+
+    /* ---------- 腾讯云 ---------- */
+    .tx {
+      width: 1120px; min-height: 700px; margin: 0 auto;
+      display: grid; grid-template-rows: 48px 1fr; background: #f3f3f3; color: rgba(0, 0, 0, 0.9);
+      font-size: 14px;
+    }
+    .tx .top {
+      display: flex; align-items: center; gap: 20px; padding: 0 16px; background: #1a1a1a; color: #fff;
+    }
+    .tx .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .tx .mark { width: 16px; height: 16px; background: #0052d9; }
+    .tx .top nav { display: flex; gap: 4px; }
+    .tx .top button { height: 48px; padding: 0 12px; border: 0; background: transparent; color: rgba(255,255,255,.75); }
+    .tx .top button.on { color: #fff; box-shadow: inset 0 -2px 0 #0052d9; }
+    .tx .who { margin-left: auto; border: 0; background: none; color: #fff; }
+    .tx .body { display: grid; grid-template-columns: 184px 1fr; }
+    .tx .side { background: #fff; padding: 8px; }
+    .tx .side button {
+      display: block; width: 100%; height: 36px; padding: 0 12px; border: 0; border-radius: 3px;
+      background: transparent; text-align: left; color: rgba(0,0,0,.9);
+    }
+    .tx .side button.on { background: #f2f3ff; color: #0052d9; }
+    .tx .main { padding: 16px; }
+    .tx .panel { background: #fff; border-radius: 3px; padding: 8px 16px 16px; }
+    .tx .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e7e7e7; }
+    .tx .tabs button {
+      height: 44px; padding: 0 16px; border: 0; background: none; color: rgba(0,0,0,.6);
+    }
+    .tx .tabs button.on { color: #0052d9; box-shadow: inset 0 -2px 0 #0052d9; }
+    .tx .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 16px 0; }
+    .tx label { display: grid; gap: 6px; color: rgba(0,0,0,.6); font-size: 12px; }
+    .tx input, .tx select {
+      height: 32px; width: 180px; padding: 0 8px; border: 1px solid #dcdcdc; border-radius: 3px; background: #fff;
+    }
+    .tx .primary, .tx .ghost { height: 32px; padding: 0 16px; border-radius: 3px; }
+    .tx .primary { border: 0; background: #0052d9; color: #fff; }
+    .tx .ghost { border: 1px solid #dcdcdc; background: #fff; }
+    .tx .filters .push { margin-left: auto; display: flex; gap: 8px; }
+    .tx th, .tx td { padding: 12px 16px; text-align: left; font-weight: 400; border-bottom: 1px solid #e7e7e7; }
+    .tx th { background: #f3f3f3; color: rgba(0,0,0,.4); font-size: 14px; }
+    .tx .tag {
+      display: inline-block; height: 24px; padding: 0 8px; border-radius: 3px;
+      background: #e3f9e9; color: #2ba471; line-height: 24px; font-size: 12px;
+    }
+    .tx .tag.off { background: #f3f3f3; color: rgba(0,0,0,.6); }
+    .tx .ops { color: #0052d9; }
+    .tx .ops button { border: 0; background: none; padding: 0 10px 0 0; color: #0052d9; }
+    .tx .pager { margin-top: 12px; text-align: right; color: rgba(0,0,0,.6); font-size: 12px; }
+
+    /* ---------- 微信 ---------- */
+    .wx {
+      width: 1120px; height: 640px; margin: 0 auto;
+      display: grid; grid-template-columns: 58px 260px 1fr;
+      background: #f5f5f5; color: #111; font-size: 14px; overflow: hidden;
+    }
+    .wx .rail { background: #2e2e2e; display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 18px; }
+    .wx .me {
+      width: 36px; height: 36px; border-radius: 4px; background: #07c160; color: #fff;
+      display: grid; place-items: center; font-weight: 600;
+    }
+    .wx .rail button { width: 28px; height: 28px; border: 0; background: transparent; color: #c8c8c8; }
+    .wx .rail button.on { color: #07c160; }
+    .wx .list { background: #f7f7f7; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column; }
+    .wx .find { margin: 12px; height: 32px; padding: 0 10px; border: 0; border-radius: 4px; background: #e9e9e9; }
+    .wx .chat-item {
+      display: grid; grid-template-columns: 40px 1fr auto; gap: 2px 10px; align-items: center;
+      width: 100%; padding: 12px; border: 0; background: transparent; text-align: left;
+    }
+    .wx .chat-item.on { background: #e6e6e6; }
+    .wx .sq {
+      width: 40px; height: 40px; border-radius: 4px; background: #fa9d3b; color: #fff;
+      display: grid; place-items: center; grid-row: 1 / span 2; font-weight: 600;
+    }
+    .wx .sq.b { background: #1485ee; }
+    .wx .sq.c { background: #07c160; }
+    .wx .chat-item b { font-weight: 500; font-size: 14px; }
+    .wx .chat-item span { color: #999; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wx .chat-item time { color: #b2b2b2; font-size: 12px; }
+    .wx .badge {
+      min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #fa5151; color: #fff;
+      font-size: 11px; line-height: 16px; text-align: center; justify-self: end;
+    }
+    .wx .talk { display: grid; grid-template-rows: 56px 1fr 132px; background: #f5f5f5; min-width: 0; }
+    .wx .talk header { display: flex; align-items: center; padding: 0 18px; background: #f5f5f5; border-bottom: 1px solid #e7e7e7; font-size: 16px; font-weight: 600; }
+    .wx .stream { padding: 18px 22px; overflow: auto; }
+    .wx .time { text-align: center; color: #b2b2b2; font-size: 12px; margin-bottom: 14px; }
+    .wx .bubble { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
+    .wx .bubble.me { flex-direction: row-reverse; }
+    .wx .bubble p {
+      margin: 0; max-width: 360px; padding: 8px 12px; border-radius: 4px; background: #fff; line-height: 1.5;
+    }
+    .wx .bubble.me p { background: #95ec69; }
+    .wx .composer { background: #f5f5f5; border-top: 1px solid #e7e7e7; padding: 8px 16px 12px; display: flex; flex-direction: column; }
+    .wx textarea { flex: 1; border: 0; resize: none; background: transparent; outline: none; }
+    .wx .send { align-self: flex-end; height: 30px; padding: 0 14px; border: 0; border-radius: 4px; background: #07c160; color: #fff; }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" hidden>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M5 6h14v9H8l-3 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3.5V8h4" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6 19c1.1-2.6 3.2-4 6-4s4.9 1.4 6 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.5V12l2.5 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 6h14v8H9l-4 3Z" fill="currentColor"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M7 5h11v14H8.2A2.2 2.2 0 0 1 6 16.8V7.2A2.2 2.2 0 0 1 8.2 5H7Z" fill="currentColor"/></symbol>
+  </svg>
+
+  <header class="doc">
+    <h1>五套大厂风格</h1>
+    <p>同一批人和消息，按五家产品自己的界面来排。苹果是系统设置，阿里云和腾讯云是控制台，飞书是工作台，微信是电脑版会话。</p>
+    <ul class="jumps">
+      <li><a href="#apple">苹果</a></li>
+      <li><a href="#ali">阿里云</a></li>
+      <li><a href="#fei">飞书</a></li>
+      <li><a href="#tx">腾讯云</a></li>
+      <li><a href="#wx">微信</a></li>
+    </ul>
+  </header>
+
+  <section id="apple">
+    <div class="cap">
+      <h2>苹果</h2>
+      <p>灰底、白分组、选中项是蓝色胶囊，主按钮是药丸。分隔线不顶到最左边。</p>
+    </div>
+    <div class="frame">
+      <div class="apple">
+        <aside class="side">
+          <p class="brand">Quick</p>
+          <button class="navb on" type="button"><svg class="ico"><use href="#i-home"/></svg>首页</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-msg"/></svg>消息</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-file"/></svg>文件</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-user"/></svg>用户</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-clock"/></svg>定时任务</button>
+        </aside>
+        <div class="main">
+          <h3>林晓</h3>
+          <p class="sub">2 条消息还没看</p>
+          <button class="pill" type="button">看消息</button>
+          <p class="glabel">消息</p>
+          <div class="group">
+            <button class="row" type="button">
+              <span class="grow"><b>本周五前提交考勤</b><span>人事通知，今天 09:12</span></span>
+              <i class="chev"></i>
+            </button>
+            <button class="row" type="button">
+              <span class="grow"><b>密码将在 7 天后过期</b><span>账号安全，今天 08:02</span></span>
+              <i class="chev"></i>
+            </button>
+          </div>
+          <p class="glabel">用户</p>
+          <div class="group">
+            <button class="row" type="button">
+              <span class="grow"><b>林晓</b><span>产品部，普通角色，正常</span></span>
+              <i class="chev"></i>
+            </button>
+            <button class="row" type="button">
+              <span class="grow"><b>周启</b><span>研发部，管理员，<i class="stop">停用</i></span></span>
+              <i class="chev"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ali">
+    <div class="cap">
+      <h2>阿里云</h2>
+      <p>白顶栏、浅色菜单、橙色只用于主按钮、当前菜单和文字链。表格密，控件高 32 像素。</p>
+    </div>
+    <div class="frame">
+      <div class="ali">
+        <header class="top">
+          <i class="mark" aria-hidden="true"></i>
+          <span class="brand">Quick 控制台</span>
+          <input class="search" type="search" aria-label="搜索" placeholder="搜索用户、文件、任务">
+          <button class="who" type="button">林晓</button>
+        </header>
+        <div class="body">
+          <aside class="side">
+            <button type="button"><svg class="ico"><use href="#i-home"/></svg>概览</button>
+            <button type="button"><svg class="ico"><use href="#i-msg"/></svg>消息</button>
+            <button type="button"><svg class="ico"><use href="#i-file"/></svg>文件</button>
+            <button class="on" type="button"><svg class="ico"><use href="#i-user"/></svg>用户</button>
+            <button type="button"><svg class="ico"><use href="#i-clock"/></svg>定时任务</button>
+          </aside>
+          <div class="main">
+            <div class="panel">
+              <div class="head">
+                <div>
+                  <h3>用户</h3>
+                  <p class="sub">查看账号、部门和状态。停用的账号不能登录。</p>
+                </div>
+              </div>
+              <div class="tools">
+                <button class="primary" type="button">新建用户</button>
+                <button class="ghost" type="button">刷新</button>
+                <input type="search" aria-label="搜索用户" placeholder="用户名或手机号">
+              </div>
+              <table>
+                <thead>
+                  <tr><th>用户名</th><th>昵称</th><th>部门</th><th>手机号码</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>linxiao</td><td>林晓</td><td>产品部</td><td>13800002618</td>
+                    <td><i class="dot"></i>正常</td>
+                    <td><a href="#ali">修改</a></td>
+                  </tr>
+                  <tr>
+                    <td>zhouqi</td><td>周启</td><td>研发部</td><td>13900001120</td>
+                    <td><i class="dot off"></i>停用</td>
+                    <td><a href="#ali">修改</a></td>
+                  </tr>
+                  <tr>
+                    <td>chenke</td><td>陈可</td><td>设计部</td><td>13700008821</td>
+                    <td><i class="dot"></i>正常</td>
+                    <td><a href="#ali">修改</a></td>
+                  </tr>
+                  <tr>
+                    <td>wudi</td><td>吴迪</td><td>运营部</td><td>13600004567</td>
+                    <td><i class="dot"></i>正常</td>
+                    <td><a href="#ali">修改</a></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="pager">共 4 条</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="fei">
+    <div class="cap">
+      <h2>飞书</h2>
+      <p>白侧栏、选中项是浅蓝底，工作区是浅灰。消息用圆头像，列表放在白卡片里。</p>
+    </div>
+    <div class="frame">
+      <div class="fei">
+        <aside class="side">
+          <p class="brand"><span class="logo">Q</span>Quick</p>
+          <button class="navb on" type="button"><svg class="ico"><use href="#i-home"/></svg>工作台</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-msg"/></svg>消息</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-file"/></svg>文件</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-user"/></svg>用户</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-clock"/></svg>定时任务</button>
+        </aside>
+        <div class="main">
+          <div class="hello">
+            <h3>林晓，2 条消息还没看</h3>
+            <p class="sub">最近的一条来自人事通知。</p>
+          </div>
+          <section class="card">
+            <div class="card-h"><b>消息</b><button class="link" type="button">全部</button></div>
+            <div class="msg">
+              <div class="av">人</div>
+              <div class="grow"><b>本周五前提交考勤</b><p>请在周五 18:00 前确认本月考勤。</p></div>
+              <time>09:12</time>
+            </div>
+            <div class="msg">
+              <div class="av g">安</div>
+              <div class="grow"><b>密码将在 7 天后过期</b><p>过期后需要重新设置密码。</p></div>
+              <time>08:02</time>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-h"><b>用户</b><button class="btn" type="button">新建用户</button></div>
+            <table>
+              <thead>
+                <tr><th>昵称</th><th>部门</th><th>手机号码</th><th>状态</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>林晓</td><td>产品部</td><td>13800002618</td><td class="ok">正常</td></tr>
+                <tr><td>周启</td><td>研发部</td><td>13900001120</td><td class="stop">停用</td></tr>
+                <tr><td>陈可</td><td>设计部</td><td>13700008821</td><td class="ok">正常</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tx">
+    <div class="cap">
+      <h2>腾讯云</h2>
+      <p>深色顶栏、品牌蓝 #0052D9、3 像素圆角。表头字更浅，筛选和查询放在表格上面。</p>
+    </div>
+    <div class="frame">
+      <div class="tx">
+        <header class="top">
+          <div class="brand"><i class="mark" aria-hidden="true"></i>Quick</div>
+          <nav aria-label="腾讯云顶部">
+            <button class="on" type="button">控制台</button>
+            <button type="button">消息</button>
+            <button type="button">文件</button>
+            <button type="button">费用</button>
+          </nav>
+          <button class="who" type="button">林晓</button>
+        </header>
+        <div class="body">
+          <aside class="side">
+            <button type="button">概览</button>
+            <button class="on" type="button">用户</button>
+            <button type="button">角色</button>
+            <button type="button">部门</button>
+            <button type="button">定时任务</button>
+            <button type="button">日志</button>
+          </aside>
+          <div class="main">
+            <div class="panel">
+              <div class="tabs" role="tablist">
+                <button class="on" type="button">用户</button>
+                <button type="button">角色</button>
+                <button type="button">部门</button>
+              </div>
+              <form class="filters">
+                <label>昵称<input aria-label="昵称" placeholder="林晓"></label>
+                <label>状态
+                  <select aria-label="状态"><option>全部</option><option>正常</option><option>停用</option></select>
+                </label>
+                <div class="push">
+                  <button class="primary" type="button">查询</button>
+                  <button class="ghost" type="button">重置</button>
+                  <button class="primary" type="button">新建用户</button>
+                </div>
+              </form>
+              <table>
+                <thead>
+                  <tr><th>用户名</th><th>昵称</th><th>部门</th><th>手机号码</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>linxiao</td><td>林晓</td><td>产品部</td><td>13800002618</td>
+                    <td><span class="tag">正常</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                  <tr>
+                    <td>zhouqi</td><td>周启</td><td>研发部</td><td>13900001120</td>
+                    <td><span class="tag off">停用</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                  <tr>
+                    <td>chenke</td><td>陈可</td><td>设计部</td><td>13700008821</td>
+                    <td><span class="tag">正常</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                  <tr>
+                    <td>wudi</td><td>吴迪</td><td>运营部</td><td>13600004567</td>
+                    <td><span class="tag">正常</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="pager">共 4 条</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="wx">
+    <div class="cap">
+      <h2>微信</h2>
+      <p>左边深色图标条，中间会话列表，右边聊天。自己的气泡是绿色，头像是圆角方块。</p>
+    </div>
+    <div class="frame">
+      <div class="wx">
+        <aside class="rail">
+          <div class="me">林</div>
+          <button class="on" type="button" aria-label="消息"><svg class="ico"><use href="#i-chat"/></svg></button>
+          <button type="button" aria-label="通讯录"><svg class="ico"><use href="#i-book"/></svg></button>
+          <button type="button" aria-label="文件"><svg class="ico"><use href="#i-file"/></svg></button>
+        </aside>
+        <div class="list">
+          <input class="find" type="search" aria-label="搜索" placeholder="搜索">
+          <button class="chat-item on" type="button">
+            <i class="sq">人</i>
+            <b>人事通知</b>
+            <time>09:12</time>
+            <span>请在周五 18:00 前确认本月考勤。</span>
+            <i class="badge">1</i>
+          </button>
+          <button class="chat-item" type="button">
+            <i class="sq b">安</i>
+            <b>账号安全</b>
+            <time>08:02</time>
+            <span>密码将在 7 天后过期。</span>
+            <i class="badge">1</i>
+          </button>
+          <button class="chat-item" type="button">
+            <i class="sq c">文</i>
+            <b>文件助手</b>
+            <time>昨天</time>
+            <span>合同扫描件已上传，1.2 MB。</span>
+          </button>
+        </div>
+        <section class="talk" aria-label="与人事通知的会话">
+          <header>人事通知</header>
+          <div class="stream">
+            <p class="time">今天 09:12</p>
+            <div class="bubble">
+              <i class="sq">人</i>
+              <p>请在周五 18:00 前确认本月考勤。有缺勤的话，直接在这里说明日期。</p>
+            </div>
+            <div class="bubble me">
+              <i class="sq c">林</i>
+              <p>好，我今天下班前确认。</p>
+            </div>
+          </div>
+          <form class="composer">
+            <textarea aria-label="输入消息" placeholder="发消息"></textarea>
+            <button class="send" type="button">发送</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

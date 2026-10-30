@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>方案 A · 经典后台（完整）</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --side: #134e4a; --side2: #0f3d3a; --accent: #0f766e;
+      --bg: #f0f3f2; --line: #dde4e1; --ink: #14201e; --mute: #667873;
+      --danger: #b42318; --ok: #067647;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Noto Sans SC", sans-serif; color: var(--ink); background: #c5d0cc; }
+    .frame {
+      width: min(1240px, 100%); margin: 16px auto; height: min(820px, calc(100vh - 32px));
+      display: grid; grid-template-columns: 200px 1fr; background: #fff;
+      border-radius: 12px; overflow: hidden; box-shadow: 0 18px 50px rgba(20,40,36,.18);
+    }
+    aside { background: var(--side); color: #dff5f1; padding: 18px 0; display: flex; flex-direction: column; }
+    .brand { padding: 0 18px 18px; font-weight: 700; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .brand small { display: block; font-weight: 400; opacity: .65; font-size: 11px; margin-top: 4px; }
+    nav { padding: 12px 10px; flex: 1; overflow: auto; }
+    nav button {
+      width: 100%; text-align: left; border: 0; background: transparent; color: #b8e0d8;
+      padding: 10px 12px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; margin-bottom: 2px;
+    }
+    nav button:hover { background: rgba(255,255,255,.06); }
+    nav button.on { background: var(--side2); color: #fff; font-weight: 600; }
+    .back { margin: 10px; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15);
+      color: #b8e0d8; text-decoration: none; font-size: 12px; text-align: center; }
+    main { background: var(--bg); display: flex; flex-direction: column; min-width: 0; }
+    .top {
+      height: 52px; background: #fff; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 18px; gap: 8px;
+    }
+    .top h1 { margin: 0; font-size: 16px; font-weight: 600; }
+    .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      border: 0; border-radius: 6px; padding: 7px 12px; font: inherit; font-size: 13px;
+      cursor: pointer; background: var(--accent); color: #fff;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .btn.danger { background: var(--danger); }
+    .content { padding: 16px; overflow: auto; flex: 1; }
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+    .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    input, select, textarea {
+      border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px;
+      font: inherit; font-size: 13px; background: #fff;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--mute); font-weight: 500; background: #f7faf9; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #e6f4f1; color: var(--accent); }
+    .tag.off { background: #f2f4f3; color: var(--mute); }
+    .tag.ok { background: #e8f8ef; color: var(--ok); }
+    .tag.bad { background: #fdeceb; color: var(--danger); }
+    .link { color: var(--accent); cursor: pointer; border: 0; background: 0; font: inherit; font-size: 13px; margin-right: 8px; }
+    .link.danger { color: var(--danger); }
+    .view { display: none; }
+    .view.on { display: block; }
+    .hint { font-size: 12px; color: var(--mute); margin-top: 8px; }
+    .mask {
+      position: fixed; inset: 0; background: rgba(15,30,28,.35); display: none;
+      align-items: stretch; justify-content: flex-end; z-index: 30;
+    }
+    .mask.on { display: flex; }
+    .mask.center { justify-content: center; align-items: center; }
+    .drawer, .modal {
+      background: #fff; box-shadow: -8px 0 30px rgba(0,0,0,.12); overflow: auto;
+    }
+    .drawer { width: min(460px, 100%); padding: 18px; }
+    .modal { width: min(520px, 94vw); max-height: 90vh; border-radius: 12px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+    .drawer h3, .modal h3 { margin: 0 0 14px; font-size: 16px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12px; color: var(--mute); margin-bottom: 4px; }
+    .field input, .field select, .field textarea { width: 100%; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+    .tabs button {
+      border: 1px solid var(--line); background: #fff; border-radius: 6px;
+      padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer;
+    }
+    .tabs button.on { background: #e6f4f1; border-color: #9cc9c1; color: var(--accent); }
+    .tree {
+      border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+      max-height: 240px; overflow: auto; font-size: 13px;
+    }
+    .tree label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
+    .tree .i1 { padding-left: 16px; }
+    .tree .i2 { padding-left: 32px; }
+    .bar { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .toast {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+      background: #14201e; color: #fff; padding: 10px 16px; border-radius: 8px;
+      font-size: 13px; z-index: 50; display: none;
+    }
+    .toast.on { display: block; }
+    .toast.err { background: var(--danger); }
+    .check-grid { display: grid; gap: 6px; max-height: 180px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+    .check-grid label { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+    pre.box {
+      background: #f7faf9; border: 1px solid var(--line); border-radius: 8px;
+      padding: 10px; font-size: 12px; white-space: pre-wrap; margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+  <div class="frame">
+    <aside>
+      <div class="brand">消息中心<small>方案 A · 功能完整</small></div>
+      <nav id="nav">
+        <button class="on" data-view="channel">渠道管理</button>
+        <button data-view="group">消息群组</button>
+        <button data-view="send">发送消息</button>
+        <button data-view="record">发送记录</button>
+        <button data-view="token">开放 Token</button>
+        <button data-view="inbox">我的收件箱</button>
+      </nav>
+      <a class="back" href="index.html">← 返回方案列表</a>
+    </aside>
+    <main>
+      <div class="top">
+        <h1 id="title">渠道管理</h1>
+        <div class="top-actions" id="topActions"></div>
+      </div>
+      <div class="content">
+        <div class="view on" id="channel"><div class="panel" id="channelPanel"></div></div>
+        <div class="view" id="group"><div class="panel" id="groupPanel"></div></div>
+        <div class="view" id="send"><div class="panel" id="sendPanel" style="max-width:760px"></div></div>
+        <div class="view" id="record"><div class="panel" id="recordPanel"></div></div>
+        <div class="view" id="token"><div class="panel" id="tokenPanel"></div></div>
+        <div class="view" id="inbox"><div class="panel" id="inboxPanel"></div></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="mask" id="drawerMask"><div class="drawer" id="drawer"></div></div>
+  <div class="mask center" id="modalMask"><div class="modal" id="modal"></div></div>
+
+  <script src="mock-store.js"></script>
+  <script src="mock-forms.js"></script>
+  <script>
+    const M = MsgMock;
+    const F = MsgForms;
+    const $ = (id) => document.getElementById(id);
+    let currentView = "channel";
+    let memberDraft = null;
+
+    function toast(msg, err) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.className = "toast on" + (err ? " err" : "");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove("on"), 2200);
+    }
+    function openDrawer(html) {
+      $("drawer").innerHTML = html;
+      $("drawerMask").classList.add("on");
+    }
+    function closeDrawer() { $("drawerMask").classList.remove("on"); }
+    function openModal(html) {
+      $("modal").innerHTML = html;
+      $("modalMask").classList.add("on");
+    }
+    function closeModal() { $("modalMask").classList.remove("on"); }
+    $("drawerMask").addEventListener("click", (e) => { if (e.target === $("drawerMask")) closeDrawer(); });
+    $("modalMask").addEventListener("click", (e) => { if (e.target === $("modalMask")) closeModal(); });
+
+    const titles = {
+      channel: "渠道管理", group: "消息群组",
+      send: "发送消息", record: "发送记录", token: "开放 Token", inbox: "我的收件箱",
+    };
+
+    function setView(view) {
+      currentView = view;
+      document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
+      document.querySelectorAll(".view").forEach((v) => v.classList.toggle("on", v.id === view));
+      $("title").textContent = titles[view];
+      renderTop();
+      renderAll();
+    }
+
+    function renderTop() {
+      const box = $("topActions");
+      const map = {
+        channel: `<button class="btn" type="button" id="actNewChannel">新建渠道</button>`,
+        group: `<button class="btn" type="button" id="actNewGroup">新建群组</button>`,
+        send: ``,
+        record: `<button class="btn ghost" type="button" id="actRefreshRecord">刷新</button>`,
+        token: `<button class="btn" type="button" id="actNewToken">新建 Token</button>`,
+        inbox: `<button class="btn ghost" type="button" id="actReadAll">全部已读</button>`,
+      };
+      box.innerHTML = map[currentView] || "";
+      $("actNewChannel")?.addEventListener("click", () => editChannel());
+      $("actNewGroup")?.addEventListener("click", () => editGroup());
+      $("actNewToken")?.addEventListener("click", () => editToken());
+      $("actRefreshRecord")?.addEventListener("click", () => { renderRecords(); toast("已刷新"); });
+      $("actReadAll")?.addEventListener("click", () => { M.markAllInboxRead(); renderInbox(); toast("已全部标为已读"); });
+    }
+
+    function renderAll() {
+      renderChannels();
+      renderGroups();
+      renderSend();
+      renderRecords();
+      renderTokens();
+      renderInbox();
+    }
+
+    function renderChannels() {
+      const q = ($("chQ")?.value || "").trim();
+      const type = $("chType")?.value || "";
+      const rows = M.state.channels.filter((c) => {
+        if (q && !c.name.includes(q)) return false;
+        if (type && c.type !== type) return false;
+        return true;
+      });
+      $("channelPanel").innerHTML = `
+        <div class="toolbar">
+          <input id="chQ" placeholder="搜索渠道名称" style="width:200px" value="${q}">
+          <select id="chType">
+            <option value="">全部类型</option>
+            <option value="INBOX" ${type==="INBOX"?"selected":""}>站内信</option>
+            <option value="WEBHOOK" ${type==="WEBHOOK"?"selected":""}>Webhook</option>
+            <option value="BEAN" ${type==="BEAN"?"selected":""}>Bean</option>
+          </select>
+          <button class="btn ghost" type="button" id="chSearch">查询</button>
+        </div>
+        <table>
+          <thead><tr><th>名称</th><th>类型</th><th>状态</th><th>配置</th><th>更新时间</th><th>操作</th></tr></thead>
+          <tbody>
+            ${rows.map((c) => `
+              <tr>
+                <td>${esc(c.name)}</td>
+                <td><span class="tag">${esc(M.channelTypeLabel(c.type))}</span></td>
+                <td><span class="tag ${c.status==="1"?"":"off"}">${c.status==="1"?"启用":"停用"}</span></td>
+                <td style="max-width:220px;word-break:break-all;color:var(--mute);font-size:12px">${esc(M.channelConfigText(c))}</td>
+                <td>${esc(c.updateTime)}</td>
+                <td>
+                  <button class="link" data-edit="${c.id}" type="button">编辑</button>
+                  <button class="link" data-toggle="${c.id}" type="button">${c.status==="1"?"停用":"启用"}</button>
+                </td>
+              </tr>`).join("") || `<tr><td colspan="6">暂无数据</td></tr>`}
+          </tbody>
+        </table>`;
+      $("chSearch").onclick = renderChannels;
+      $("chQ").onkeydown = (e) => { if (e.key === "Enter") renderChannels(); };
+      $("channelPanel").querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editChannel(b.dataset.edit));
+      $("channelPanel").querySelectorAll("[data-toggle]").forEach((b) => b.onclick = () => {
+        const ch = M.channelById(b.dataset.toggle);
+        try {
+          M.saveChannel({ id: ch.id, name: ch.name, type: ch.type, webhookUrl: ch.webhookUrl, beanName: ch.beanName, status: ch.status === "1" ? "0" : "1", remark: ch.remark });
+          toast(ch.status === "1" ? "已启用" : "已停用");
+          renderChannels();
+        } catch (e) { toast(e.message, true); }
+      });
+    }
+
+    function editChannel(id) {
+      const ch = id ? M.channelById(id) : { name: "", type: "WEBHOOK", status: "1", webhookUrl: "", beanName: "", remark: "" };
+      openDrawer(`
+        <h3>${id ? "编辑渠道" : "新建渠道"}</h3>
+        ${F.channelEditorFields(ch, { isNew: !id })}
+        <div class="bar">
+          <button class="btn ghost" type="button" id="cancel">取消</button>
+          <button class="btn" type="button" id="save">保存</button>
+        </div>`);
+      F.wireChannelTypeToggle();
+      $("cancel").onclick = closeDrawer;
+      $("save").onclick = () => {
+        try {
+          const body = F.readChannelForm(id ? ch : null);
+          M.saveChannel({ ...body, id: id || undefined });
+          closeDrawer();
+          toast("渠道已保存");
+          renderChannels();
+          renderSend();
+        } catch (e) { toast(e.message, true); }
+      };
+    }
+
+    function renderGroups() {
+      $("groupPanel").innerHTML = `
+        <table>
+          <thead><tr><th>群组</th><th>成员概要</th><th>展开用户数</th><th>备注</th><th>操作</th></tr></thead>
+          <tbody>
+            ${M.state.groups.map((g) => {
+              const s = M.groupSummary(g);
+              return `<tr>
+                <td>${esc(g.name)}</td>
+                <td>用户 ${s.userCount} · 外部人 ${s.externalCount} · 部门 ${s.deptCount}${s.deptNames ? "（" + esc(s.deptNames) + "）" : ""}</td>
+                <td>${s.expandedUserCount}</td>
+                <td>${esc(g.remark || "—")}</td>
+                <td>
+                  <button class="link" data-mem="${g.id}" type="button">成员</button>
+                  <button class="link" data-edit="${g.id}" type="button">编辑</button>
+                  <button class="link danger" data-del="${g.id}" type="button">删除</button>
+                </td>
+              </tr>`;
+            }).join("") || `<tr><td colspan="5">暂无群组，点击右上角新建</td></tr>`}
+          </tbody>
+        </table>
+        <p class="hint">群组 = 接收人集合（系统用户 / 部门 / <b>内嵌外部人</b>），无独立联系人模块；不绑定渠道。</p>`;
+      $("groupPanel").querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editGroup(b.dataset.edit));
+      $("groupPanel").querySelectorAll("[data-mem]").forEach((b) => b.onclick = () => editMembers(b.dataset.mem));
+      $("groupPanel").querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
+        if (!confirm("确认删除该群组？")) return;
+        M.removeGroup(b.dataset.del);
+        toast("已删除");
+        renderGroups();
+        renderSend();
+      });
+    }
+
+    function editGroup(id) {
+      const g = id ? M.state.groups.find((x) => x.id === id) : { name: "", remark: "", userIds: [], deptIds: [], externals: [] };
+      memberDraft = {
+        id: id || null,
+        name: g.name,
+        remark: g.remark || "",
+        userIds: [...(g.userIds || [])],
+        deptIds: [...(g.deptIds || [])],
+        externals: (g.externals || []).map((x) => ({ ...x })),
+      };
+      openModal(`
+        <h3>${id ? "编辑群组" : "新建群组"}</h3>
+        <div class="field"><label>名称</label><input id="gName" value="${escAttr(memberDraft.name)}"></div>
+        <div class="field"><label>备注</label><input id="gRemark" value="${escAttr(memberDraft.remark)}"></div>
+        <p class="hint">下一步维护成员（用户 / 部门 / 外部人）。也可先保存名称再点「成员」。</p>
+        <div class="bar">
+          <button class="btn ghost" type="button" id="cancel">取消</button>
+          <button class="btn ghost" type="button" id="toMembers">维护成员</button>
+          <button class="btn" type="button" id="save">仅保存基本信息</button>
+        </div>`);
+      $("cancel").onclick = closeModal;
+      $("toMembers").onclick = () => {
+        memberDraft.name = $("gName").value;
+        memberDraft.remark = $("gRemark").value;
+        closeModal();
+        openMemberDrawer(true);
+      };
+      $("save").onclick = () => {
+        try {
+          const saved = M.saveGroup({
+            id: memberDraft.id || undefined,
+            name: $("gName").value,
+            remark: $("gRemark").value,
+            userIds: memberDraft.userIds,
+            deptIds: memberDraft.deptIds,
+            externals: memberDraft.externals,
+          });
+          memberDraft.id = saved.id;
+          closeModal();
+          toast("群组已保存");
+          renderGroups();
+          renderSend();
+        } catch (e) { toast(e.message, true); }
+      };
+    }
+
+    function editMembers(id) {
+      const g = M.state.groups.find((x) => x.id === id);
+      if (!g) return;
+      memberDraft = {
+        id: g.id,
+        name: g.name,
+        remark: g.remark || "",
+        userIds: [...(g.userIds || [])],
+        deptIds: [...(g.deptIds || [])],
+        externals: (g.externals || []).map((x) => ({ ...x })),
+      };
+      openMemberDrawer(false);
+    }
+
+    function openMemberDrawer(fromCreate) {
+      const d = memberDraft;
+      openDrawer(`
+        <h3>维护成员 · ${esc(d.name || "未命名")}</h3>
+        <div class="tabs" id="memTabs">
+          <button type="button" class="on" data-pane="u">用户</button>
+          <button type="button" data-pane="d">部门</button>
+          <button type="button" data-pane="e">外部人</button>
+        </div>
+        <div id="pane-u" class="check-grid">
+          ${M.users.map((u) => `<label><input type="checkbox" value="${u.id}" ${d.userIds.includes(u.id)?"checked":""}> ${esc(u.name)}（${esc(u.dept)}）</label>`).join("")}
+        </div>
+        <div id="pane-d" class="tree" style="display:none">
+          ${deptTreeHtml(d.deptIds)}
+        </div>
+        <div id="pane-e" style="display:none">
+          ${F.externalsEditorHtml(d.externals)}
+        </div>
+        <p class="hint">外部人仅挂在本群组。站内信只投系统用户；Webhook/Bean 忽略成员列表。</p>
+        <div class="bar">
+          <button class="btn ghost" type="button" id="cancel">取消</button>
+          <button class="btn" type="button" id="saveMem">保存成员</button>
+        </div>`);
+      F.wireExternalsEditor();
+      $("memTabs").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
+        $("memTabs").querySelectorAll("button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        $("pane-u").style.display = btn.dataset.pane === "u" ? "grid" : "none";
+        $("pane-d").style.display = btn.dataset.pane === "d" ? "block" : "none";
+        $("pane-e").style.display = btn.dataset.pane === "e" ? "block" : "none";
+      });
+      $("cancel").onclick = closeDrawer;
+      $("saveMem").onclick = () => {
+        d.userIds = [...$("pane-u").querySelectorAll("input:checked")].map((i) => Number(i.value));
+        d.deptIds = [...$("pane-d").querySelectorAll("input:checked")].map((i) => Number(i.value));
+        d.externals = F.readExternalsFromEditor();
+        try {
+          M.saveGroup({
+            id: d.id || undefined,
+            name: d.name || "未命名群组",
+            remark: d.remark,
+            userIds: d.userIds,
+            deptIds: d.deptIds,
+            externals: d.externals,
+          });
+          closeDrawer();
+          toast(fromCreate ? "群组已创建" : "成员已更新");
+          renderGroups();
+          renderSend();
+        } catch (e) { toast(e.message, true); }
+      };
+    }
+
+    function deptTreeHtml(selected) {
+      const byParent = (pid) => M.depts.filter((d) => d.parentId === pid);
+      const level = (id) => {
+        let n = 0, cur = M.depts.find((d) => d.id === id);
+        while (cur?.parentId != null) { n++; cur = M.depts.find((d) => d.id === cur.parentId); }
+        return n;
+      };
+      return M.depts.map((d) => {
+        const lv = level(d.id);
+        return `<label class="i${lv}"><input type="checkbox" value="${d.id}" ${selected.includes(d.id)?"checked":""}> ${esc(d.name)}</label>`;
+      }).join("");
+    }
+
+    function renderSend() {
+      const channels = M.state.channels.filter((c) => c.status === "1");
+      $("sendPanel").innerHTML = `
+        ${F.sendRelationHintHtml()}
+        <div class="field"><label>标题</label><input id="sTitle" placeholder="消息标题"></div>
+        <div class="field"><label>内容</label><textarea id="sContent" rows="5" placeholder="消息正文"></textarea></div>
+        <div class="field"><label>渠道（可多选）</label>
+          <div class="check-grid" id="sChannels">
+            ${channels.map((c) => `<label><input type="checkbox" value="${c.id}" ${c.type==="INBOX"?"checked":""}> ${esc(c.name)} <span class="tag">${esc(M.channelTypeLabel(c.type))}</span>${M.channelUsesRecipients(c.type)?"":" · 忽略群组"}</label>`).join("") || "<div class='hint'>没有启用中的渠道</div>"}
+          </div>
+        </div>
+        <div class="field"><label>接收范围（群组可含外部人；站内信只投系统用户）</label>
+          <div class="tabs" id="recvTabs">
+            <button type="button" class="on" data-pane="g">群组</button>
+            <button type="button" data-pane="u">用户</button>
+            <button type="button" data-pane="d">部门</button>
+          </div>
+          <div id="sg" class="check-grid">${M.state.groups.map((g) => `<label><input type="checkbox" value="${g.id}"> ${esc(g.name)}</label>`).join("") || "<div class='hint'>暂无群组</div>"}</div>
+          <div id="su" class="check-grid" style="display:none">${M.users.map((u) => `<label><input type="checkbox" value="${u.id}"> ${esc(u.name)}</label>`).join("")}</div>
+          <div id="sd" class="tree" style="display:none">${deptTreeHtml([])}</div>
+        </div>
+        <label style="font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <input type="checkbox" id="sChild" checked> 部门含下级展开
+        </label>
+        <div class="bar" style="justify-content:flex-start">
+          <button class="btn" type="button" id="doSend">立即发送</button>
+          <button class="btn ghost" type="button" id="previewRecv">预览接收人</button>
+        </div>
+        <div id="sendResult" style="margin-top:14px"></div>`;
+      $("recvTabs").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
+        $("recvTabs").querySelectorAll("button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        const map = { g: "sg", u: "su", d: "sd" };
+        Object.entries(map).forEach(([k, id]) => { $(id).style.display = btn.dataset.pane === k ? (k==="d"?"block":"grid") : "none"; });
+      });
+      $("previewRecv").onclick = () => {
+        const payload = collectSend();
+        const exp = M.expandRecipients(payload);
+        openModal(`<h3>预览接收人</h3>
+          <p class="hint">系统用户 ${exp.users.length} · 外部人 ${exp.externals.length}（不入站内信）</p>
+          <pre class="box">用户：${exp.users.map((u)=>u.name).join("、") || "无"}
+外部人：${exp.externals.map((c)=>c.name).join("、") || "无"}</pre>
+          <div class="bar"><button class="btn" type="button" id="ok">知道了</button></div>`);
+        $("ok").onclick = closeModal;
+      };
+      $("doSend").onclick = () => {
+        try {
+          const record = M.sendMessage(collectSend());
+          $("sendResult").innerHTML = `<h4 style="margin:0 0 8px">发送结果</h4>
+            <table><thead><tr><th>渠道</th><th>状态</th><th>说明</th></tr></thead><tbody>
+            ${record.results.map((r) => {
+              const ch = M.channelById(r.channelId);
+              return `<tr><td>${esc(ch?.name||r.channelId)}</td><td><span class="tag ${r.status==="SUCCESS"?"ok":r.status==="FAIL"?"bad":"off"}">${r.status}</span></td><td>${esc(r.detail)}</td></tr>`;
+            }).join("")}
+            </tbody></table>
+            <p class="hint">${esc(record.recipientSummary)} · ${esc(record.time)}</p>`;
+          toast("发送完成（同步模拟）");
+          renderRecords();
+          renderInbox();
+        } catch (e) { toast(e.message, true); }
+      };
+    }
+
+    function collectSend() {
+      return {
+        title: $("sTitle").value,
+        content: $("sContent").value,
+        channelIds: [...$("sChannels").querySelectorAll("input:checked")].map((i) => i.value),
+        groupIds: [...$("sg").querySelectorAll("input:checked")].map((i) => i.value),
+        userIds: [...$("su").querySelectorAll("input:checked")].map((i) => Number(i.value)),
+        deptIds: [...$("sd").querySelectorAll("input:checked")].map((i) => Number(i.value)),
+        includeChildDepts: $("sChild").checked,
+      };
+    }
+
+    function renderRecords() {
+      $("recordPanel").innerHTML = `
+        <table>
+          <thead><tr><th>时间</th><th>标题</th><th>接收摘要</th><th>渠道结果</th><th>操作</th></tr></thead>
+          <tbody>
+            ${M.state.records.map((r) => `
+              <tr>
+                <td>${esc(r.time)}</td>
+                <td>${esc(r.title)}</td>
+                <td>${esc(r.recipientSummary)}</td>
+                <td>${r.results.map((x) => {
+                  const ch = M.channelById(x.channelId);
+                  return `<span class="tag ${x.status==="SUCCESS"?"ok":x.status==="FAIL"?"bad":"off"}">${esc(ch?.name||"")}:${x.status}</span>`;
+                }).join(" ")}</td>
+                <td><button class="link" data-id="${r.id}" type="button">详情</button></td>
+              </tr>`).join("") || `<tr><td colspan="5">暂无发送记录</td></tr>`}
+          </tbody>
+        </table>`;
+      $("recordPanel").querySelectorAll("[data-id]").forEach((b) => b.onclick = () => {
+        const r = M.state.records.find((x) => x.id === b.dataset.id);
+        openModal(`<h3>发送详情</h3>
+          <pre class="box">标题：${esc(r.title)}
+时间：${esc(r.time)}
+接收：${esc(r.recipientSummary)}
+
+内容：
+${esc(r.content)}
+
+结果：
+${r.results.map((x) => {
+  const ch = M.channelById(x.channelId);
+  return `- ${ch?.name}: ${x.status} (${x.detail})`;
+}).join("\n")}</pre>
+          <div class="bar"><button class="btn" type="button" id="ok">关闭</button></div>`);
+        $("ok").onclick = closeModal;
+      });
+    }
+
+    function renderTokens() {
+      $("tokenPanel").innerHTML = `
+        <table>
+          <thead><tr><th>名称</th><th>Token</th><th>过期</th><th>状态</th><th>允许渠道</th><th>操作</th></tr></thead>
+          <tbody>
+            ${M.state.tokens.map((t) => `
+              <tr>
+                <td>${esc(t.name)}</td>
+                <td><code>${esc(t.token)}</code></td>
+                <td>${esc(t.expireTime || "永不过期")}</td>
+                <td><span class="tag ${t.status==="1"?"":"off"}">${t.status==="1"?"启用":"停用"}</span></td>
+                <td style="font-size:12px;color:var(--mute)">${esc(M.tokenScopeText(t))}</td>
+                <td>
+                  <button class="link" data-copy="${t.token}" type="button">复制</button>
+                  <button class="link" data-edit="${t.id}" type="button">编辑</button>
+                  <button class="link" data-toggle="${t.id}" type="button">${t.status==="1"?"停用":"启用"}</button>
+                  <button class="link danger" data-del="${t.id}" type="button">删除</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+        <p class="hint">Token = 调用方身份（可多个）；请求再带 channelIds。不是一渠一 Token。示意：POST /open/msg/send</p>`;
+      $("tokenPanel").querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
+        try { await navigator.clipboard.writeText(b.dataset.copy); toast("已复制 Token"); }
+        catch { toast("复制失败，请手动选择", true); }
+      });
+      $("tokenPanel").querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editToken(b.dataset.edit));
+      $("tokenPanel").querySelectorAll("[data-toggle]").forEach((b) => b.onclick = () => {
+        const t = M.state.tokens.find((x) => x.id === b.dataset.toggle);
+        M.saveToken({ id: t.id, name: t.name, expireTime: t.expireTime, status: t.status === "1" ? "0" : "1", allowedChannelIds: t.allowedChannelIds || [] });
+        toast("状态已更新"); renderTokens();
+      });
+      $("tokenPanel").querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
+        if (!confirm("确认删除 Token？")) return;
+        M.removeToken(b.dataset.del); toast("已删除"); renderTokens();
+      });
+    }
+
+    function editToken(id) {
+      const t = id ? M.state.tokens.find((x) => x.id === id) : { name: "", expireTime: "", status: "1", allowedChannelIds: [] };
+      openDrawer(`
+        <h3>${id ? "编辑 Token" : "新建 Token"}</h3>
+        ${F.tokenScopeFields(t)}
+        ${id ? `<p class="hint">Token 值创建后不可改：<code>${esc(t.token)}</code></p>` : `<p class="hint">保存后自动生成 token 字符串。</p>`}
+        <div class="bar">
+          <button class="btn ghost" type="button" id="cancel">取消</button>
+          <button class="btn" type="button" id="save">保存</button>
+        </div>`);
+      $("cancel").onclick = closeDrawer;
+      $("save").onclick = () => {
+        try {
+          const body = F.readTokenForm(id ? t : null);
+          const saved = M.saveToken({ ...body, id: id || undefined });
+          closeDrawer(); toast(id ? "已保存" : `已创建：${saved.token}`); renderTokens();
+        } catch (e) { toast(e.message, true); }
+      };
+    }
+
+    function renderInbox() {
+      const filter = $("inFilter")?.value || "all";
+      const rows = M.state.inbox.filter((m) => filter === "unread" ? !m.read : true);
+      $("inboxPanel").innerHTML = `
+        <div class="toolbar">
+          <select id="inFilter"><option value="all" ${filter==="all"?"selected":""}>全部</option><option value="unread" ${filter==="unread"?"selected":""}>未读</option></select>
+          <button class="btn ghost" type="button" id="inApply">筛选</button>
+        </div>
+        <table>
+          <thead><tr><th>状态</th><th>标题</th><th>渠道</th><th>时间</th><th>操作</th></tr></thead>
+          <tbody>
+            ${rows.map((m) => `
+              <tr>
+                <td><span class="tag ${m.read?"off":""}">${m.read?"已读":"未读"}</span></td>
+                <td>${esc(m.title)}</td>
+                <td>${esc(m.channelName || "—")}</td>
+                <td>${esc(m.time)}</td>
+                <td>
+                  <button class="link" data-open="${m.id}" type="button">打开</button>
+                  ${m.read ? "" : `<button class="link" data-read="${m.id}" type="button">标已读</button>`}
+                </td>
+              </tr>`).join("") || `<tr><td colspan="5">收件箱为空</td></tr>`}
+          </tbody>
+        </table>`;
+      $("inApply").onclick = renderInbox;
+      $("inboxPanel").querySelectorAll("[data-read]").forEach((b) => b.onclick = () => { M.markInboxRead(b.dataset.read); renderInbox(); });
+      $("inboxPanel").querySelectorAll("[data-open]").forEach((b) => b.onclick = () => {
+        const m = M.markInboxRead(b.dataset.open);
+        openModal(`<h3>${esc(m.title)}</h3>
+          <p class="hint">${esc(m.time)} · ${esc(m.channelName || "")}${m.toUser ? " · 收件人 " + esc(m.toUser) : ""}</p>
+          <pre class="box">${esc(m.content)}</pre>
+          <div class="bar"><button class="btn" type="button" id="ok">关闭</button></div>`);
+        $("ok").onclick = () => { closeModal(); renderInbox(); };
+      });
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+    }
+    function escAttr(s) { return esc(s).replace(/\n/g, " "); }
+
+    document.querySelectorAll("#nav button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+    setView("channel");
+  </script>
+</body>
+</html>

@@ -23,6 +23,18 @@
   box-sizing: border-box;
 }
 
+:root {
+  --qb-page-bg: #f5f7fa;
+  --qb-surface: #ffffff;
+  --qb-border: #e4e7ed;
+  --qb-text: #303133;
+  --qb-text-secondary: #909399;
+  --qb-radius: 4px;
+  --qb-control-height: 32px;
+  --qb-menu-active-bg: transparent;
+  --qb-brand-soft: #ecf5ff;
+}
+
 html,
 body,
 #app {
@@ -36,7 +48,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f7fa;
+  background-color: var(--qb-page-bg, #f5f7fa);
   /* 移动端适配 */
   -webkit-touch-callout: none;
   -webkit-user-select: none;

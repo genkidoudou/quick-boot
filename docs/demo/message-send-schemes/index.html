@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>消息中心 · 页面方案选型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ebe7df;
+      --ink: #1a1a18;
+      --mute: #6b6860;
+      --panel: #f7f4ee;
+      --line: #d4cfc4;
+      --a: #0f766e;
+      --b: #c2410c;
+      --c: #7c3aed;
+      --d: #1d4ed8;
+      --e: #166534;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Instrument Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        repeating-linear-gradient(-12deg, transparent, transparent 22px, rgba(0,0,0,.015) 22px, rgba(0,0,0,.015) 23px),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .wrap { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 72px; }
+    .kicker {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      color: var(--mute);
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 42px);
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      max-width: 12ch;
+    }
+    .lead {
+      margin: 14px 0 0;
+      max-width: 48ch;
+      color: var(--mute);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    .grid {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      border-color: #9a9488;
+    }
+    .preview {
+      height: 148px;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+    .preview svg { width: 100%; height: 100%; display: block; }
+    .body { padding: 16px 18px 18px; }
+    .body .id {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: var(--mute);
+    }
+    .body h2 {
+      margin: 4px 0 6px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+    .body p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--mute);
+      line-height: 1.5;
+    }
+    .go {
+      margin-top: 12px;
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    a.card[data-s="a"] .go { color: var(--a); }
+    a.card[data-s="b"] .go { color: var(--b); }
+    a.card[data-s="c"] .go { color: #5b21b6; }
+    a.card[data-s="d"] .go { color: var(--d); }
+    a.card[data-s="e"] .go { color: var(--e); }
+    footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: var(--mute);
+      font-family: "IBM Plex Mono", monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="kicker">quick-boot / message UI schemes</div>
+    <h1>选一套页面长什么样</h1>
+    <p class="lead">五套可点通 mockup：群组=接收人（用户/部门/内嵌外部人，无独立联系人）；渠道发送时勾选（含 Bean）；Token=调用方+可选渠道白名单。刷新重置数据。</p>
+
+    <div class="grid">
+      <a class="card" data-s="a" href="a-classic.html">
+        <div class="preview" aria-hidden="true">
+          <svg viewBox="0 0 360 148" xmlns="http://www.w3.org/2000/svg">
+            <rect width="360" height="148" fill="#e8efee"/>
+            <rect width="64" height="148" fill="#134e4a"/>
+            <rect x="76" y="16" width="268" height="18" rx="3" fill="#cbd5d1"/>
+            <rect x="76" y="44" width="268" height="88" rx="4" fill="#fff"/>
+            <rect x="88" y="56" width="240" height="8" rx="2" fill="#d1e7e3"/>
+            <rect x="88" y="72" width="240" height="8" rx="2" fill="#eef2f1"/>
+            <rect x="88" y="88" width="180" height="8" rx="2" fill="#eef2f1"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="id">SCHEME A</div>
+          <h2>经典后台</h2>
+          <p>侧栏菜单 + 表格列表 + 抽屉表单。群组里勾选用户、部门，并内嵌外部人。</p>
+          <span class="go">打开预览 →</span>
+        </div>
+      </a>
+
+      <a class="card" data-s="b" href="b-workbench.html">
+        <div class="preview" aria-hidden="true">
+          <svg viewBox="0 0 360 148" xmlns="http://www.w3.org/2000/svg">
+            <rect width="360" height="148" fill="#12151a"/>
+            <rect x="16" y="14" width="210" height="120" rx="6" fill="#1c212b"/>
+            <rect x="28" y="28" width="120" height="10" rx="2" fill="#3f4554"/>
+            <rect x="28" y="48" width="186" height="56" rx="3" fill="#262c38"/>
+            <rect x="28" y="114" width="64" height="12" rx="3" fill="#ea580c"/>
+            <rect x="240" y="14" width="104" height="120" rx="6" fill="#1c212b"/>
+            <rect x="252" y="28" width="80" height="8" rx="2" fill="#3f4554"/>
+            <rect x="252" y="46" width="80" height="40" rx="3" fill="#262c38"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="id">SCHEME B</div>
+          <h2>发送工作台</h2>
+          <p>中间写消息，右侧选渠道与接收人（部门树 + 群组），发送结果贴在下方。</p>
+          <span class="go">打开预览 →</span>
+        </div>
+      </a>
+
+      <a class="card" data-s="c" href="c-cards.html">
+        <div class="preview" aria-hidden="true">
+          <svg viewBox="0 0 360 148" xmlns="http://www.w3.org/2000/svg">
+            <rect width="360" height="148" fill="#f3efe8"/>
+            <rect x="18" y="24" width="100" height="100" rx="10" fill="#fff" stroke="#ddd4c5"/>
+            <rect x="130" y="24" width="100" height="100" rx="10" fill="#fff" stroke="#ddd4c5"/>
+            <rect x="242" y="24" width="100" height="100" rx="10" fill="#fff" stroke="#ddd4c5"/>
+            <circle cx="48" cy="54" r="12" fill="#7c3aed"/>
+            <circle cx="160" cy="54" r="12" fill="#0f766e"/>
+            <circle cx="272" cy="54" r="12" fill="#c2410c"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="id">SCHEME C</div>
+          <h2>卡片运维台</h2>
+          <p>渠道做成卡片墙；点卡片进配置。群组用标签，部门从组织图点选。</p>
+          <span class="go">打开预览 →</span>
+        </div>
+      </a>
+
+      <a class="card" data-s="d" href="d-inbox.html">
+        <div class="preview" aria-hidden="true">
+          <svg viewBox="0 0 360 148" xmlns="http://www.w3.org/2000/svg">
+            <rect width="360" height="148" fill="#f8fafc"/>
+            <rect width="120" height="148" fill="#fff" stroke="#e2e8f0"/>
+            <rect x="12" y="16" width="96" height="28" rx="4" fill="#dbeafe"/>
+            <rect x="12" y="52" width="96" height="20" rx="3" fill="#f1f5f9"/>
+            <rect x="12" y="78" width="96" height="20" rx="3" fill="#f1f5f9"/>
+            <rect x="136" y="16" width="208" height="116" rx="6" fill="#fff" stroke="#e2e8f0"/>
+            <rect x="152" y="32" width="140" height="10" rx="2" fill="#94a3b8"/>
+            <rect x="152" y="52" width="176" height="6" rx="2" fill="#e2e8f0"/>
+            <rect x="152" y="66" width="160" height="6" rx="2" fill="#e2e8f0"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="id">SCHEME D</div>
+          <h2>收件箱优先</h2>
+          <p>像邮箱：先看站内信。发消息、渠道、群组收到「设置」里。</p>
+          <span class="go">打开预览 →</span>
+        </div>
+      </a>
+
+      <a class="card" data-s="e" href="e-org.html">
+        <div class="preview" aria-hidden="true">
+          <svg viewBox="0 0 360 148" xmlns="http://www.w3.org/2000/svg">
+            <rect width="360" height="148" fill="#ecf4ec"/>
+            <rect width="140" height="148" fill="#14352a"/>
+            <rect x="16" y="20" width="108" height="10" rx="2" fill="#2f6b54"/>
+            <rect x="28" y="40" width="88" height="8" rx="2" fill="#3d8f6e"/>
+            <rect x="40" y="56" width="76" height="8" rx="2" fill="#1f4a3a"/>
+            <rect x="40" y="72" width="76" height="8" rx="2" fill="#1f4a3a"/>
+            <rect x="156" y="20" width="188" height="108" rx="8" fill="#fff"/>
+            <rect x="172" y="36" width="100" height="10" rx="2" fill="#166534"/>
+            <rect x="172" y="56" width="156" height="48" rx="4" fill="#e8f5e9"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="id">SCHEME E</div>
+          <h2>组织广播台</h2>
+          <p>左栏部门树为主；选部门后右侧配通知策略与 Webhook。</p>
+          <span class="go">打开预览 →</span>
+        </div>
+      </a>
+    </div>
+
+    <footer>docs/demo/message-send-schemes · 完整交互 mockup（mock-store.js）· 无后端</footer>
+  </div>
+</body>
+</html>

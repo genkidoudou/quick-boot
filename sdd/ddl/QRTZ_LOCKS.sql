@@ -1,0 +1,5 @@
+CREATE TABLE `QRTZ_LOCKS` (
+  `SCHED_NAME` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `LOCK_NAME` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`SCHED_NAME`,`LOCK_NAME`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

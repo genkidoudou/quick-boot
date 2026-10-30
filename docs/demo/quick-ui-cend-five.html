@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick C 端五套风格</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #d9d9d9;
+      color: #1a1a1a;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+    .page-intro, .block-h {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+    .page-intro { padding: 32px 0 8px; }
+    .page-intro h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
+    .page-intro p { margin: 8px 0 0; max-width: 68ch; color: #333; }
+    .jumps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 16px 0 0; padding: 0; list-style: none; }
+    .jumps a { color: #1a1a1a; }
+    .block { padding: 28px 0 8px; }
+    .block-h h2 { margin: 0; font-size: 20px; font-weight: 600; }
+    .block-h p { margin: 6px 0 0; max-width: 68ch; color: #333; }
+    .swatch { margin: 4px 0 12px; color: #333; font-size: 14px; }
+    h3, h4, p { margin: 0; }
+    .off { color: #9f1239; font-style: normal; }
+    .s5 .off { color: #ffb4a8; }
+
+    /* ---------- 1 青台 ---------- */
+    .s1 {
+      --ink: #1a2332;
+      --steel: #5c6b7a;
+      --paper: #f2f4f7;
+      --sheet: #fff;
+      --line: #e1e6ec;
+      --sea: #115e59;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .s1 .bar {
+      display: flex; align-items: center; gap: 28px;
+      height: 64px; padding: 0 28px;
+      background: var(--sheet); border-bottom: 1px solid var(--line);
+    }
+    .s1 .logo { border: 0; background: none; padding: 0; color: var(--sea); font-weight: 700; font-size: 18px; }
+    .s1 .menu { display: flex; gap: 4px; }
+    .s1 .menu button {
+      border: 0; background: transparent; min-height: 64px; padding: 0 12px; border-radius: 0;
+    }
+    .s1 .menu button.on { color: var(--sea); box-shadow: inset 0 -2px 0 var(--sea); }
+    .s1 .who { margin-left: auto; border: 0; background: none; font-weight: 600; }
+    .s1 .col { width: min(640px, calc(100% - 48px)); margin: 0 auto; padding: 40px 0 56px; }
+    .s1 .name { font-size: 44px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+    .s1 .wait { margin-top: 10px; color: var(--sea); font-size: 20px; }
+    .s1 .go, .s1 .save {
+      min-height: 44px; padding: 0 18px; border: 0; border-radius: 6px;
+      background: var(--sea); color: #fff; font-weight: 600;
+    }
+    .s1 .go { margin-top: 22px; }
+    .s1 h4 { margin-top: 36px; font-size: 17px; font-weight: 600; }
+    .s1 .row {
+      display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
+      padding: 16px 0; border-bottom: 1px solid var(--line);
+    }
+    .s1 .row span, .s1 .meta { color: var(--steel); }
+    .s1 .textbtn { border: 0; background: none; padding: 0; color: var(--sea); text-decoration: underline; text-underline-offset: 3px; }
+    .s1 .links { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; padding: 0; list-style: none; }
+    .s1 .ops { display: flex; gap: 14px; }
+    .s1 .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 28px; }
+    .s1 .head h4 { margin-top: 0; }
+    .s1 form { display: grid; gap: 12px; max-width: 420px; margin-top: 16px; }
+    .s1 label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+    .s1 input {
+      min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet);
+    }
+
+    /* ---------- 2 信箱 ---------- */
+    .s2 {
+      --ink: #1c2834;
+      --mute: #5e7082;
+      --room: #e8eef4;
+      --sheet: #fff;
+      --stamp: #1d4e89;
+      background: var(--room);
+      color: var(--ink);
+    }
+    .s2 .mail {
+      display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 640px;
+    }
+    .s2 .list { background: #f7f9fb; border-right: 1px solid #d5dee8; padding: 18px 0 24px; }
+    .s2 .list-top { display: flex; justify-content: space-between; align-items: baseline; padding: 0 18px 12px; }
+    .s2 .logo { border: 0; background: none; padding: 0; font-weight: 700; color: var(--stamp); }
+    .s2 .count { color: var(--stamp); font-weight: 600; }
+    .s2 .item {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px;
+      width: 100%; padding: 12px 18px; border: 0; border-left: 3px solid transparent;
+      background: transparent; text-align: left;
+    }
+    .s2 .item b { font-weight: 600; }
+    .s2 .item span { grid-column: 1; color: var(--mute); font-size: 14px; }
+    .s2 .item time { color: var(--mute); font-size: 13px; }
+    .s2 .item.on { background: var(--sheet); border-left-color: var(--stamp); }
+    .s2 .item.read b { font-weight: 400; color: var(--mute); }
+    .s2 .side-links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 18px; padding: 0 18px; }
+    .s2 .side-links button { border: 0; background: none; padding: 6px 0; color: var(--mute); }
+    .s2 .letter { background: var(--sheet); padding: 48px 56px 40px; }
+    .s2 .letter h3 { font-size: 32px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.25; max-width: 18em; }
+    .s2 .from { margin-top: 10px; color: var(--mute); }
+    .s2 .body { margin-top: 28px; max-width: 38em; font-size: 18px; line-height: 1.6; }
+    .s2 .reply { margin-top: 36px; max-width: 460px; }
+    .s2 .reply span { display: block; margin-bottom: 8px; font-weight: 600; }
+    .s2 textarea {
+      width: 100%; min-height: 88px; padding: 12px; border: 1px solid #d5dee8; background: #fff; resize: vertical;
+    }
+    .s2 .send {
+      margin-top: 12px; min-height: 44px; padding: 0 18px; border: 0; background: var(--stamp); color: #fff; font-weight: 600;
+    }
+
+    /* ---------- 3 账本 ---------- */
+    .s3 {
+      --ink: #1e1e1b;
+      --mute: #5e6158;
+      --paper: #f3f5ee;
+      --rule: #d5d8cc;
+      --red: #c4312e;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .s3 .sheet {
+      width: min(880px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 28px 48px 64px;
+      background:
+        linear-gradient(var(--red), var(--red)) 28px 0 / 2px 100% no-repeat,
+        var(--paper);
+    }
+    .s3 .top { display: flex; justify-content: space-between; align-items: baseline; }
+    .s3 .logo { font-weight: 600; }
+    .s3 .menu { display: flex; gap: 16px; }
+    .s3 .menu button { border: 0; background: none; padding: 0; }
+    .s3 .menu button.on { color: var(--red); }
+    .s3 .name {
+      margin-top: 28px;
+      font-family: "Songti SC", "STSong", "SimSun", serif;
+      font-size: 42px; font-weight: 500; line-height: 1.2;
+    }
+    .s3 .wait { margin-top: 6px; }
+    .s3 table { width: 100%; margin-top: 22px; border-collapse: collapse; }
+    .s3 th, .s3 td { padding: 11px 8px 11px 0; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+    .s3 th { color: var(--mute); font-weight: 500; font-size: 14px; }
+    .s3 td.when { width: 96px; font-variant-numeric: tabular-nums; color: var(--red); }
+    .s3 .links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 18px 0 0; padding: 0; list-style: none; }
+    .s3 .links button { border: 0; background: none; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+    .s3 h4 { margin-top: 32px; font-size: 17px; font-weight: 600; }
+    .s3 form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 16px; align-items: end; margin-top: 12px; }
+    .s3 label { display: grid; gap: 6px; font-size: 14px; }
+    .s3 input { min-height: 40px; padding: 0; border: 0; border-bottom: 1px solid var(--ink); border-radius: 0; background: transparent; }
+    .s3 .save { min-height: 40px; padding: 0 8px; border: 0; border-bottom: 2px solid var(--red); background: none; color: var(--red); font-weight: 600; }
+
+    /* ---------- 4 市集 ---------- */
+    .s4 {
+      --ink: #1a1a1a;
+      --mute: #5c5c5c;
+      --band: #e25b2a;
+      --paper: #fff;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .s4 .band { background: var(--band); color: #fff; }
+    .s4 .band-in { width: min(880px, calc(100% - 40px)); margin: 0 auto; padding: 18px 0 32px; }
+    .s4 .band-top { display: flex; align-items: center; gap: 22px; }
+    .s4 .logo { border: 0; background: none; padding: 0; color: #fff; font-weight: 700; font-size: 18px; }
+    .s4 .menu { display: flex; gap: 6px; }
+    .s4 .menu button { border: 0; background: none; min-height: 36px; padding: 0 8px; color: #fff; }
+    .s4 .menu button.on { box-shadow: inset 0 -2px 0 #fff; }
+    .s4 .who { margin-left: auto; border: 0; background: none; color: #fff; }
+    .s4 .name { margin-top: 26px; font-size: 52px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+    .s4 .wait { margin-top: 10px; font-size: 18px; }
+    .s4 .go {
+      margin-top: 18px; min-height: 44px; padding: 0 18px; border: 0; background: #fff; color: #1a1a1a; font-weight: 700;
+    }
+    .s4 .feed { width: min(880px, calc(100% - 40px)); margin: 0 auto; padding: 8px 0 48px; }
+    .s4 .feed article, .s4 .person {
+      display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px 18px;
+      padding: 18px 0; border-bottom: 1px solid #eee;
+    }
+    .s4 .when { color: var(--band); font-weight: 700; }
+    .s4 .when.off { color: #9f1239; }
+    .s4 .feed p, .s4 .person span { color: var(--mute); }
+    .s4 h4 { margin: 28px 0 0; font-size: 17px; font-weight: 700; }
+    .s4 .links { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 12px 0 0; padding: 0; list-style: none; }
+    .s4 .links button { border: 0; background: none; padding: 0; color: var(--band); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+    .s4 form { display: grid; gap: 12px; max-width: 420px; margin-top: 14px; }
+    .s4 label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
+    .s4 input { min-height: 44px; padding: 0 12px; border: 1px solid #e4e4e4; background: #fff; }
+    .s4 .save { min-height: 44px; border: 0; background: var(--band); color: #fff; font-weight: 700; }
+
+    /* ---------- 5 夜灯 ---------- */
+    .s5 {
+      --ink: #f6f1ea;
+      --mute: #c4b8aa;
+      --bg: #241e1a;
+      --lamp: #f0c14a;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .s5 .split { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr); min-height: 620px; }
+    .s5 .left { padding: 36px 40px 48px; }
+    .s5 .logo { font-weight: 600; color: var(--lamp); }
+    .s5 .hello { margin-top: 48px; color: var(--mute); }
+    .s5 .name { margin-top: 8px; font-size: 72px; font-weight: 600; letter-spacing: -0.04em; line-height: 0.95; }
+    .s5 .wait { margin-top: 16px; color: var(--lamp); font-size: 20px; }
+    .s5 .go {
+      margin-top: 22px; min-height: 48px; padding: 0 20px; border: 0; background: var(--lamp); color: #241e1a; font-weight: 700;
+    }
+    .s5 .vlinks { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 36px; }
+    .s5 .vlinks button { border: 0; background: none; padding: 6px 0; color: var(--mute); text-align: left; }
+    .s5 .vlinks button.on { color: var(--lamp); }
+    .s5 .right { padding: 36px 40px 48px 36px; border-left: 1px solid rgba(246, 241, 234, 0.16); }
+    .s5 h4 { font-size: 15px; font-weight: 600; color: var(--mute); }
+    .s5 .task { padding: 18px 0 0; }
+    .s5 .task b { display: block; font-size: 20px; font-weight: 600; }
+    .s5 .task span { display: block; margin-top: 4px; color: var(--mute); }
+    .s5 .person { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding-top: 16px; }
+    .s5 .person span { color: var(--mute); }
+    .s5 .person span.off { color: #ffb4a8; }
+    .s5 form { display: grid; gap: 14px; max-width: 420px; margin-top: 16px; }
+    .s5 label { display: grid; gap: 6px; color: var(--mute); font-size: 14px; }
+    .s5 input {
+      min-height: 42px; padding: 0; border: 0; border-bottom: 1px solid rgba(240, 193, 74, 0.7);
+      border-radius: 0; background: transparent; color: var(--ink);
+    }
+    .s5 .save { justify-self: start; min-height: 44px; padding: 0 18px; border: 0; background: var(--lamp); color: #241e1a; font-weight: 700; }
+
+    @media (max-width: 800px) {
+      .s1 .bar { height: auto; flex-wrap: wrap; gap: 0 12px; padding: 8px 16px; }
+      .s1 .menu button { min-height: 44px; }
+      .s1 .name { font-size: 36px; }
+      .s2 .mail { grid-template-columns: 1fr; }
+      .s2 .letter { padding: 28px 20px 32px; }
+      .s3 form, .s4 .feed article, .s4 .person { grid-template-columns: 1fr; }
+      .s3 .sheet { padding-left: 48px; }
+      .s4 .name { font-size: 40px; }
+      .s4 .band-top { flex-wrap: wrap; }
+      .s5 .split { grid-template-columns: 1fr; }
+      .s5 .name { font-size: 56px; }
+      .s5 .right { border-left: 0; border-top: 1px solid rgba(246, 241, 234, 0.16); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-intro">
+    <h1>C 端五套风格</h1>
+    <p>同一个人、同一件事：林晓打开 Quick，先看到没读的消息，再去文件或用户。五套差别在版式和颜色，不在功能。</p>
+    <ul class="jumps">
+      <li><a href="#qing">1 青台</a></li>
+      <li><a href="#mail">2 信箱</a></li>
+      <li><a href="#book">3 账本</a></li>
+      <li><a href="#market">4 市集</a></li>
+      <li><a href="#lamp">5 夜灯</a></li>
+    </ul>
+  </div>
+
+  <section class="block" id="qing">
+    <div class="block-h">
+      <h2>1 青台</h2>
+      <p>内容收在一条窄栏里。顶栏当前项用下划线，深青只出现在品牌、这句话和主按钮上。</p>
+      <p class="swatch">底 #F2F4F7 · 字 #1A2332 · 强调 #115E59</p>
+    </div>
+    <div class="s1">
+      <header class="bar">
+        <button class="logo" type="button">Quick</button>
+        <nav class="menu" aria-label="青台导航">
+          <button class="on" type="button">首页</button>
+          <button type="button">消息</button>
+          <button type="button">文件</button>
+          <button type="button">我的</button>
+        </nav>
+        <button class="who" type="button">林晓</button>
+      </header>
+      <div class="col">
+        <h3 class="name">林晓</h3>
+        <p class="wait">2 条消息还没看</p>
+        <button class="go" type="button">看消息</button>
+        <h4>接着办</h4>
+        <div class="row"><b>合同扫描件</b><button class="textbtn" type="button">打开</button></div>
+        <div class="row"><div><b>清理过期日志</b><div class="meta">今晚 2:00 运行</div></div><button class="textbtn" type="button">查看</button></div>
+        <h4>管理</h4>
+        <ul class="links">
+          <li><button class="textbtn" type="button">用户</button></li>
+          <li><button class="textbtn" type="button">角色</button></li>
+          <li><button class="textbtn" type="button">部门</button></li>
+          <li><button class="textbtn" type="button">菜单</button></li>
+          <li><button class="textbtn" type="button">字典</button></li>
+          <li><button class="textbtn" type="button">参数</button></li>
+          <li><button class="textbtn" type="button">定时任务</button></li>
+          <li><button class="textbtn" type="button">日志</button></li>
+        </ul>
+        <div class="head"><h4>用户</h4><button class="textbtn" type="button">新建用户</button></div>
+        <div class="row">
+          <div><b>林晓</b><div class="meta">产品部、普通角色、13800002618，正常</div></div>
+          <div class="ops"><button class="textbtn" type="button">修改</button><button class="textbtn" type="button">删除</button></div>
+        </div>
+        <div class="row">
+          <div><b>周启</b><div class="meta">研发部、管理员、13900001120，<i class="off">停用</i></div></div>
+          <div class="ops"><button class="textbtn" type="button">修改</button><button class="textbtn" type="button">删除</button></div>
+        </div>
+        <form>
+          <label>用户名<input aria-label="用户名" placeholder="linxiao"></label>
+          <label>昵称<input aria-label="昵称" placeholder="林晓"></label>
+          <label>手机号码<input aria-label="手机号码" placeholder="13800002618"></label>
+          <button class="save" type="button">保存</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="mail">
+    <div class="block-h">
+      <h2>2 信箱</h2>
+      <p>左边是目录，右边是打开的那一封。没读的标题更重，正在看的一封左侧有一条蓝边。</p>
+      <p class="swatch">底 #E8EEF4 · 信纸 #FFFFFF · 邮戳蓝 #1D4E89</p>
+    </div>
+    <div class="s2">
+      <div class="mail">
+        <aside class="list">
+          <div class="list-top">
+            <button class="logo" type="button">Quick</button>
+            <span class="count">2 封没看</span>
+          </div>
+          <button class="item on" type="button">
+            <b>本周五前提交考勤</b>
+            <time>09:12</time>
+            <span>人事通知</span>
+          </button>
+          <button class="item" type="button">
+            <b>密码将在 7 天后过期</b>
+            <time>08:02</time>
+            <span>账号安全</span>
+          </button>
+          <button class="item read" type="button">
+            <b>合同扫描件已上传</b>
+            <time>昨天</time>
+            <span>文件</span>
+          </button>
+          <div class="side-links">
+            <button type="button">文件</button>
+            <button type="button">我的</button>
+            <button type="button">用户</button>
+            <button type="button">定时任务</button>
+            <button type="button">日志</button>
+          </div>
+        </aside>
+        <article class="letter">
+          <h3>本周五前提交考勤</h3>
+          <p class="from">人事通知，今天 09:12</p>
+          <p class="body">请在周五 18:00 前确认本月考勤。有缺勤的话，在下面写明日期和原因。</p>
+          <form class="reply">
+            <span>回复</span>
+            <textarea aria-label="回复" placeholder="写给人事通知"></textarea>
+            <button class="send" type="button">发出</button>
+          </form>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="book">
+    <div class="block-h">
+      <h2>3 账本</h2>
+      <p>左侧一条红线，横格对齐日期和事项。名字用宋体，其余仍是黑体。适合想一眼扫完今天要办的事。</p>
+      <p class="swatch">纸 #F3F5EE · 字 #1E1E1B · 红线 #C4312E</p>
+    </div>
+    <div class="s3">
+      <div class="sheet">
+        <div class="top">
+          <div class="logo">Quick</div>
+          <nav class="menu" aria-label="账本导航">
+            <button class="on" type="button">首页</button>
+            <button type="button">消息</button>
+            <button type="button">文件</button>
+            <button type="button">我的</button>
+          </nav>
+        </div>
+        <h3 class="name">林晓</h3>
+        <p class="wait">2 条消息还没看</p>
+        <table>
+          <thead>
+            <tr><th>时间</th><th>事项</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="when">09:12</td><td>本周五前提交考勤</td><td>人事通知，没看</td></tr>
+            <tr><td class="when">08:02</td><td>密码将在 7 天后过期</td><td>账号安全，没看</td></tr>
+            <tr><td class="when">昨天</td><td>合同扫描件</td><td>1.2 MB，文档</td></tr>
+            <tr><td class="when">今晚</td><td>清理过期日志</td><td>2:00 运行</td></tr>
+          </tbody>
+        </table>
+        <h4>管理</h4>
+        <ul class="links">
+          <li><button type="button">用户</button></li>
+          <li><button type="button">角色</button></li>
+          <li><button type="button">部门</button></li>
+          <li><button type="button">菜单</button></li>
+          <li><button type="button">字典</button></li>
+          <li><button type="button">参数</button></li>
+          <li><button type="button">定时任务</button></li>
+          <li><button type="button">日志</button></li>
+        </ul>
+        <h4>用户</h4>
+        <table>
+          <thead>
+            <tr><th>用户名</th><th>昵称</th><th>部门</th><th>状态</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>linxiao</td><td>林晓</td><td>产品部</td><td>正常</td></tr>
+            <tr><td>zhouqi</td><td>周启</td><td>研发部</td><td class="off">停用</td></tr>
+          </tbody>
+        </table>
+        <form>
+          <label>用户名<input aria-label="用户名" placeholder="linxiao"></label>
+          <label>昵称<input aria-label="昵称" placeholder="林晓"></label>
+          <label>手机号码<input aria-label="手机号码" placeholder="13800002618"></label>
+          <button class="save" type="button">保存</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="market">
+    <div class="block-h">
+      <h2>4 市集</h2>
+      <p>顶上是一整条橙色，名字直接写在色块里。下面按时间往下排，时间本身就是这一套的强调色。</p>
+      <p class="swatch">色带 #E25B2A · 底 #FFFFFF · 字 #1A1A1A</p>
+    </div>
+    <div class="s4">
+      <div class="band">
+        <div class="band-in">
+          <div class="band-top">
+            <button class="logo" type="button">Quick</button>
+            <nav class="menu" aria-label="市集导航">
+              <button class="on" type="button">首页</button>
+              <button type="button">消息</button>
+              <button type="button">文件</button>
+              <button type="button">我的</button>
+            </nav>
+            <button class="who" type="button">林晓</button>
+          </div>
+          <h3 class="name">林晓</h3>
+          <p class="wait">2 条消息还没看</p>
+          <button class="go" type="button">看消息</button>
+        </div>
+      </div>
+      <div class="feed">
+        <article>
+          <div class="when">09:12</div>
+          <div><b>本周五前提交考勤</b><p>人事通知，没看</p></div>
+        </article>
+        <article>
+          <div class="when">08:02</div>
+          <div><b>密码将在 7 天后过期</b><p>账号安全，没看</p></div>
+        </article>
+        <article>
+          <div class="when">昨天</div>
+          <div><b>合同扫描件</b><p>1.2 MB，文档</p></div>
+        </article>
+        <article>
+          <div class="when">今晚</div>
+          <div><b>清理过期日志</b><p>2:00 运行</p></div>
+        </article>
+        <h4>管理</h4>
+        <ul class="links">
+          <li><button type="button">用户</button></li>
+          <li><button type="button">角色</button></li>
+          <li><button type="button">部门</button></li>
+          <li><button type="button">菜单</button></li>
+          <li><button type="button">字典</button></li>
+          <li><button type="button">参数</button></li>
+          <li><button type="button">定时任务</button></li>
+          <li><button type="button">日志</button></li>
+        </ul>
+        <h4>用户</h4>
+        <div class="person"><div class="when">正常</div><div><b>林晓</b><span>产品部、普通角色、13800002618</span></div></div>
+        <div class="person"><div class="when off">停用</div><div><b>周启</b><span>研发部、管理员、13900001120</span></div></div>
+        <form>
+          <label>用户名<input aria-label="用户名" placeholder="linxiao"></label>
+          <label>昵称<input aria-label="昵称" placeholder="林晓"></label>
+          <label>手机号码<input aria-label="手机号码" placeholder="13800002618"></label>
+          <button class="save" type="button">保存</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="lamp">
+    <div class="block-h">
+      <h2>5 夜灯</h2>
+      <p>左边只留称呼和一句黄字，右边是要办的事。黄色只用于这句话和按钮，其余是暖色纸字写在深棕底上。</p>
+      <p class="swatch">底 #241E1A · 字 #F6F1EA · 灯 #F0C14A</p>
+    </div>
+    <div class="s5">
+      <div class="split">
+        <div class="left">
+          <div class="logo">Quick</div>
+          <p class="hello">晚上好</p>
+          <h3 class="name">林晓</h3>
+          <p class="wait">2 条消息还没看</p>
+          <button class="go" type="button">看消息</button>
+          <nav class="vlinks" aria-label="夜灯导航">
+            <button class="on" type="button">首页</button>
+            <button type="button">消息</button>
+            <button type="button">文件</button>
+            <button type="button">我的</button>
+            <button type="button">用户</button>
+            <button type="button">定时任务</button>
+            <button type="button">日志</button>
+          </nav>
+        </div>
+        <div class="right">
+          <h4>接着办</h4>
+          <div class="task"><b>本周五前提交考勤</b><span>人事通知，今天 09:12，没看</span></div>
+          <div class="task"><b>密码将在 7 天后过期</b><span>账号安全，今天 08:02，没看</span></div>
+          <div class="task"><b>合同扫描件</b><span>昨天上传，1.2 MB</span></div>
+          <div class="task"><b>清理过期日志</b><span>今晚 2:00 运行</span></div>
+          <h4 style="margin-top:28px">用户</h4>
+          <div class="person"><b>林晓</b><span>产品部，正常</span></div>
+          <div class="person"><b>周启</b><span class="off">研发部，停用</span></div>
+          <form>
+            <label>用户名<input aria-label="用户名" placeholder="linxiao"></label>
+            <label>昵称<input aria-label="昵称" placeholder="林晓"></label>
+            <label>手机号码<input aria-label="手机号码" placeholder="13800002618"></label>
+            <button class="save" type="button">保存</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

@@ -5,6 +5,8 @@ CREATE TABLE `sys_job_log` (
   `digest` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '摘要',
   `job_id` bigint NOT NULL COMMENT '任务id',
   `trigger_type` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '触发来源(CRON/MANUAL)',
+  `instance_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '执行节点实例ID',
+  `heartbeat_time` datetime DEFAULT NULL COMMENT '租约心跳时间；过期可视为僵尸',
   `start_time` datetime NOT NULL COMMENT '开始时间',
   `end_time` datetime DEFAULT NULL COMMENT '结束时间',
   `cost_ms` bigint DEFAULT NULL COMMENT '耗时',
@@ -12,5 +14,6 @@ CREATE TABLE `sys_job_log` (
   `result` text COLLATE utf8mb4_unicode_ci COMMENT '返回结果',
   `error_msg` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '错误异常',
   `job_param` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '任务参数',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_job_log_running_hb` (`status`,`heartbeat_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务日志';

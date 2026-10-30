@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>方案 D · 收件箱优先（完整）</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f4f7fb;--panel:#fff;--ink:#0f172a;--mute:#64748b;--line:#e2e8f0;--blue:#1d4ed8;--soft:#dbeafe;--bad:#b42318;--ok:#067647}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"IBM Plex Sans","PingFang SC",sans-serif;color:var(--ink);background:var(--bg);min-height:100vh}
+    .app{width:min(1160px,calc(100% - 20px));margin:16px auto;height:min(800px,calc(100vh - 32px));background:var(--panel);border:1px solid var(--line);border-radius:16px;display:grid;grid-template-columns:300px 1fr;overflow:hidden;box-shadow:0 12px 40px rgba(15,23,42,.06)}
+    @media(max-width:860px){.app{grid-template-columns:1fr;height:auto}.list{max-height:340px}}
+    .list{border-right:1px solid var(--line);display:flex;flex-direction:column;background:#fbfcfe;min-width:0}
+    .list-head{padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .list-head h1{margin:0;font-family:"Source Serif 4",serif;font-size:22px;font-weight:650}
+    .icon-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;color:var(--ink);text-decoration:none}
+    .filters{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line)}
+    .filters button{border:0;background:transparent;color:var(--mute);border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+    .filters button.on{background:var(--soft);color:var(--blue);font-weight:600}
+    .items{overflow:auto;flex:1}
+    .item{width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:12px 14px;cursor:pointer;font:inherit;color:inherit}
+    .item:hover{background:#f8fafc}.item.on{background:var(--soft)}
+    .item .t{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+    .item .t b{font-size:13px;font-weight:600}.item.unread .t b{color:var(--blue)}
+    .item .t span{font-size:11px;color:var(--mute);white-space:nowrap}
+    .item p{margin:0;font-size:12px;color:var(--mute);line-height:1.4}
+    .detail{display:flex;flex-direction:column;min-width:0}
+    .detail-head{padding:18px 22px 12px;border-bottom:1px solid var(--line)}
+    .detail-head h2{margin:0 0 6px;font-family:"Source Serif 4",serif;font-size:26px;font-weight:650;letter-spacing:-.02em}
+    .meta{font-size:12px;color:var(--mute)}
+    .body{padding:20px 22px;flex:1;overflow:auto;font-size:14px;line-height:1.7;white-space:pre-wrap}
+    .compose-bar{border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px;justify-content:flex-end;background:#fbfcfe;flex-wrap:wrap}
+    .primary{border:0;background:var(--blue);color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+    .drawer{position:fixed;inset:0;background:rgba(15,23,42,.28);display:none;justify-content:flex-end;z-index:20}
+    .drawer.on{display:flex}.drawer.center{justify-content:center;align-items:center}
+    .sheet{width:min(460px,100%);background:#fff;padding:18px;overflow:auto;max-height:100%}
+    .drawer.center .sheet{width:min(560px,94vw);max-height:90vh;border-radius:14px}
+    .sheet h3{margin:0 0 4px;font-family:"Source Serif 4",serif;font-size:22px}
+    .sheet .sub{margin:0 0 16px;color:var(--mute);font-size:13px}
+    .sheet section{margin-bottom:18px}
+    .sheet h4{margin:0 0 8px;font-size:13px;color:var(--mute);font-weight:600}
+    .sheet label{display:flex;gap:8px;align-items:center;font-size:13px;padding:4px 0}
+    .sheet input[type=text],.sheet textarea,.sheet select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;margin-bottom:8px}
+    .chip{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;margin-left:6px}
+    .line{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}
+    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;display:none;z-index:40}
+    .toast.on{display:block}.toast.err{background:var(--bad)}
+    .ok{color:var(--ok)}.bad{color:var(--bad)}.mute{color:var(--mute)}
+    .check{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px}
+    .tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+    .tabs button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 8px;font:inherit;font-size:12px;cursor:pointer}
+    .tabs button.on{background:var(--soft);border-color:#93c5fd;color:var(--blue)}
+    .tree label{display:flex;gap:8px;padding:3px 0;font-size:13px}.tree .i1{padding-left:14px}.tree .i2{padding-left:28px}
+    .bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+    table{width:100%;border-collapse:collapse;font-size:13px} th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+    .danger{color:var(--bad);border-color:#fecaca}
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+  <div class="app">
+    <section class="list">
+      <div class="list-head">
+        <h1>收件箱</h1>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="icon-btn" type="button" id="openSettings">设置</button>
+          <button class="icon-btn" type="button" id="openCompose">写消息</button>
+          <a class="icon-btn" href="index.html">方案</a>
+        </div>
+      </div>
+      <div class="filters" id="filters">
+        <button class="on" data-f="all" type="button">全部</button>
+        <button data-f="unread" type="button">未读</button>
+      </div>
+      <div class="items" id="items"></div>
+    </section>
+    <section class="detail">
+      <div class="detail-head">
+        <h2 id="dTitle">选择一封消息</h2>
+        <div class="meta" id="dMeta">左侧列表打开详情；管理能力在「设置」。</div>
+      </div>
+      <div class="body" id="dBody">方案 D 首页是收件体验。渠道 / 群组 / 联系人 / Token / 发送记录都在设置抽屉里完成。</div>
+      <div class="compose-bar">
+        <button class="icon-btn" type="button" id="markRead" disabled>标为已读</button>
+        <button class="primary" type="button" id="openCompose2">写消息</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="drawer" id="settings"><div class="sheet" id="settingsSheet"></div></div>
+  <div class="drawer center" id="modal"><div class="sheet" id="modalSheet"></div></div>
+
+  <script src="mock-store.js"></script>
+  <script src="mock-forms.js"></script>
+  <script>
+    const M=MsgMock; const F=MsgForms; const $=id=>document.getElementById(id);
+    const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    const escA=s=>esc(s).replace(/\n/g," ");
+    let filter="all", currentId=null, settingsTab="channels", gDraft=null;
+
+    function toast(m,err){const t=$("toast");t.textContent=m;t.className="toast on"+(err?" err":"");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2200);}
+    function openSettings(){renderSettings();$("settings").classList.add("on");}
+    function closeSettings(){$("settings").classList.remove("on");}
+    function openModal(html){$("modalSheet").innerHTML=html;$("modal").classList.add("on");}
+    function closeModal(){$("modal").classList.remove("on");}
+    $("settings").onclick=e=>{if(e.target===$("settings"))closeSettings();};
+    $("modal").onclick=e=>{if(e.target===$("modal"))closeModal();};
+
+    function deptHtml(sel=[]){
+      const level=id=>{let n=0,cur=M.depts.find(d=>d.id===id);while(cur?.parentId!=null){n++;cur=M.depts.find(d=>d.id===cur.parentId);}return n;};
+      return `<div class="tree check">${M.depts.map(d=>`<label class="i${level(d.id)}"><input type="checkbox" value="${d.id}" ${sel.includes(d.id)?"checked":""}> ${esc(d.name)}</label>`).join("")}</div>`;
+    }
+
+    function renderInbox(){
+      const rows=M.state.inbox.filter(m=>filter==="unread"?!m.read:true);
+      $("items").innerHTML=rows.map(m=>`
+        <button class="item ${m.read?"":"unread"} ${m.id===currentId?"on":""}" type="button" data-id="${m.id}">
+          <div class="t"><b>${esc(m.title)}</b><span>${esc(m.time.slice(5,16))}</span></div>
+          <p>${esc((m.content||"").split("\n")[0])}</p>
+        </button>`).join("")||`<div class="mute" style="padding:16px">收件箱为空</div>`;
+      $("items").querySelectorAll(".item").forEach(b=>b.onclick=()=>openMsg(b.dataset.id));
+      if(currentId && !M.state.inbox.some(m=>m.id===currentId)){currentId=null;clearDetail();}
+      else if(currentId) openMsg(currentId,true);
+    }
+    function clearDetail(){
+      $("dTitle").textContent="选择一封消息";
+      $("dMeta").textContent="左侧列表打开详情；管理能力在「设置」。";
+      $("dBody").textContent="方案 D 首页是收件体验。渠道 / 群组 / 联系人 / Token / 发送记录都在设置抽屉里完成。";
+      $("markRead").disabled=true;
+    }
+    function openMsg(id, keepUnread){
+      const m=M.state.inbox.find(x=>x.id===id); if(!m) return;
+      currentId=id;
+      if(!keepUnread) M.markInboxRead(id);
+      $("dTitle").textContent=m.title;
+      $("dMeta").textContent=`${m.time} · ${m.channelName||"站内信"}${m.toUser?" · "+m.toUser:""} · ${m.read?"已读":"未读"}`;
+      $("dBody").textContent=m.content;
+      $("markRead").disabled=!!m.read;
+      renderInbox();
+    }
+
+    $("filters").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+      filter=b.dataset.f;
+      $("filters").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+      renderInbox();
+    });
+    $("markRead").onclick=()=>{if(!currentId)return;M.markInboxRead(currentId);toast("已标为已读");openMsg(currentId,true);};
+    $("openSettings").onclick=openSettings;
+    $("openCompose").onclick=$("openCompose2").onclick=()=>openCompose();
+
+    function renderSettings(){
+      const tabs=[
+        ["channels","渠道"],["groups","群组"],["tokens","Token"],["records","发送记录"]
+      ];
+      $("settingsSheet").innerHTML=`
+        <h3>设置</h3>
+        <p class="sub">方案 D：管理能力集中在此。点空白处关闭。</p>
+        <div class="tabs" id="stabs">${tabs.map(([k,n])=>`<button type="button" class="${settingsTab===k?"on":""}" data-t="${k}">${n}</button>`).join("")}</div>
+        <div id="sbody"></div>
+        <div class="bar"><button class="primary" type="button" id="closeS">完成</button></div>`;
+      $("closeS").onclick=closeSettings;
+      $("stabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{settingsTab=b.dataset.t;renderSettings();});
+      const body=$("sbody");
+      if(settingsTab==="channels"){
+        body.innerHTML=`<p class="mute" style="font-size:12px;margin:0 0 8px">渠道含站内信/Webhook/Bean。群组不绑渠道。</p>
+          <div class="bar" style="justify-content:flex-start;margin:0 0 8px"><button class="icon-btn" type="button" id="newCh">新建渠道</button></div>
+          ${M.state.channels.map(c=>`<div class="line"><div>${esc(c.name)} <span class="chip">${esc(M.channelTypeLabel(c.type))}</span><div class="mute" style="font-size:11px;max-width:220px;word-break:break-all">${esc(M.channelConfigText(c))}</div></div>
+            <div><button class="icon-btn" data-e="${c.id}" type="button">编辑</button>
+            <button class="icon-btn" data-t="${c.id}" type="button">${c.status==="1"?"停用":"启用"}</button></div></div>`).join("")}`;
+        $("newCh").onclick=()=>editChannel();
+        body.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>editChannel(b.dataset.e));
+        body.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const c=M.channelById(b.dataset.t);M.saveChannel({id:c.id,name:c.name,type:c.type,webhookUrl:c.webhookUrl,beanName:c.beanName,status:c.status==="1"?"0":"1",remark:c.remark});toast("已更新");renderSettings();});
+      } else if(settingsTab==="groups"){
+        body.innerHTML=`<div class="bar" style="justify-content:flex-start;margin:0 0 8px"><button class="icon-btn" type="button" id="newG">新建群组</button></div>
+          ${M.state.groups.map(g=>{const s=M.groupSummary(g);return `<div class="line"><div>${esc(g.name)}<div class="mute" style="font-size:11px">用户${s.userCount} · 外部人${s.externalCount} · 部门${s.deptCount} · 展开${s.expandedUserCount}</div></div>
+            <div><button class="icon-btn" data-m="${g.id}" type="button">成员</button>
+            <button class="icon-btn" data-e="${g.id}" type="button">编辑</button>
+            <button class="icon-btn danger" data-d="${g.id}" type="button">删</button></div></div>`;}).join("")||`<p class="mute">暂无群组</p>`}`;
+        $("newG").onclick=()=>editGroup();
+        body.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>editGroup(b.dataset.e));
+        body.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>editMembers(b.dataset.m));
+        body.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("删除群组？")){M.removeGroup(b.dataset.d);toast("已删除");renderSettings();}});
+      } else if(settingsTab==="tokens"){
+        body.innerHTML=`<p class="mute" style="font-size:12px">Token=调用方身份；可配允许渠道。不是一渠一 Token。</p>
+          <div class="bar" style="justify-content:flex-start;margin:0 0 8px"><button class="icon-btn" type="button" id="newT">新建 Token</button></div>
+          ${M.state.tokens.map(t=>`<div class="line"><div>${esc(t.name)} <span class="chip">${t.status==="1"?"启用":"停用"}</span><div class="mute" style="font-size:11px">${esc(t.token)} · ${esc(M.tokenScopeText(t))}</div></div>
+            <div>
+              <button class="icon-btn" data-c="${t.token}" type="button">复制</button>
+              <button class="icon-btn" data-e="${t.id}" type="button">编辑</button>
+              <button class="icon-btn" data-t="${t.id}" type="button">${t.status==="1"?"停用":"启用"}</button>
+              <button class="icon-btn danger" data-d="${t.id}" type="button">删</button>
+            </div></div>`).join("")}`;
+        $("newT").onclick=()=>editToken();
+        body.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.c);toast("已复制");}catch{toast("复制失败",true);}});
+        body.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>editToken(b.dataset.e));
+        body.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const t=M.state.tokens.find(x=>x.id===b.dataset.t);M.saveToken({id:t.id,name:t.name,expireTime:t.expireTime,status:t.status==="1"?"0":"1",allowedChannelIds:t.allowedChannelIds||[]});toast("已更新");renderSettings();});
+        body.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("删除？")){M.removeToken(b.dataset.d);toast("已删除");renderSettings();}});
+      } else {
+        body.innerHTML=`<table><thead><tr><th>时间</th><th>标题</th><th></th></tr></thead><tbody>
+          ${M.state.records.map(r=>`<tr><td class="mute">${esc(r.time)}</td><td>${esc(r.title)}</td><td><button class="icon-btn" data-i="${r.id}" type="button">详情</button></td></tr>`).join("")||`<tr><td colspan="3" class="mute">暂无</td></tr>`}
+          </tbody></table>`;
+        body.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{
+          const r=M.state.records.find(x=>x.id===b.dataset.i);
+          openModal(`<h3>发送详情</h3><p class="sub">${esc(r.time)} · ${esc(r.recipientSummary)}</p>
+            <pre style="white-space:pre-wrap;background:#f8fafc;padding:12px;border-radius:8px;font-size:12px">${esc(r.content)}\n\n${r.results.map(x=>`${M.channelById(x.channelId)?.name}: ${x.status} (${x.detail})`).join("\n")}</pre>
+            <div class="bar"><button class="primary" type="button" id="x">关闭</button></div>`);
+          $("x").onclick=closeModal;
+        });
+      }
+    }
+
+    function editChannel(id){
+      const c=id?M.channelById(id):{name:"",type:"WEBHOOK",status:"1",webhookUrl:"",beanName:"",remark:""};
+      openModal(`<h3>${id?"编辑渠道":"新建渠道"}</h3>${F.channelEditorFields(c,{isNew:!id})}
+        <div class="bar"><button class="icon-btn" type="button" id="x">取消</button><button class="primary" type="button" id="s">保存</button></div>`);
+      F.wireChannelTypeToggle();
+      $("x").onclick=closeModal;
+      $("s").onclick=()=>{try{const body=F.readChannelForm(id?c:null);M.saveChannel({...body,id:id||undefined});closeModal();toast("已保存");renderSettings();}catch(e){toast(e.message,true);}};
+    }
+    function editGroup(id){
+      const g=id?M.state.groups.find(x=>x.id===id):{name:"",remark:"",userIds:[],deptIds:[],externals:[]};
+      gDraft={id:id||null,name:g.name,remark:g.remark||"",userIds:[...(g.userIds||[])],deptIds:[...(g.deptIds||[])],externals:(g.externals||[]).map(x=>({...x}))};
+      openModal(`<h3>${id?"编辑群组":"新建群组"}</h3>
+        <input type="text" id="gName" value="${escA(gDraft.name)}" placeholder="名称">
+        <input type="text" id="gRemark" value="${escA(gDraft.remark)}" placeholder="备注">
+        <div class="bar">
+          <button class="icon-btn" type="button" id="x">取消</button>
+          <button class="icon-btn" type="button" id="mem">成员</button>
+          <button class="primary" type="button" id="s">保存</button>
+        </div>`);
+      $("x").onclick=closeModal;
+      $("mem").onclick=()=>{gDraft.name=$("gName").value;gDraft.remark=$("gRemark").value;closeModal();editMembers(null,true);};
+      $("s").onclick=()=>{try{const saved=M.saveGroup({id:gDraft.id||undefined,name:$("gName").value,remark:$("gRemark").value,userIds:gDraft.userIds,deptIds:gDraft.deptIds,externals:gDraft.externals});gDraft.id=saved.id;closeModal();toast("已保存");renderSettings();}catch(e){toast(e.message,true);}};
+    }
+    function editMembers(id,fromCreate){
+      if(id){const g=M.state.groups.find(x=>x.id===id);gDraft={id:g.id,name:g.name,remark:g.remark||"",userIds:[...(g.userIds||[])],deptIds:[...(g.deptIds||[])],externals:(g.externals||[]).map(x=>({...x}))};}
+      const d=gDraft;
+      openModal(`<h3>成员 · ${esc(d.name||"未命名")}</h3>
+        <div class="tabs" id="mt"><button class="on" data-p="u" type="button">用户</button><button data-p="d" type="button">部门</button><button data-p="e" type="button">外部人</button></div>
+        <div id="pu" class="check">${M.users.map(u=>`<label><input type="checkbox" value="${u.id}" ${d.userIds.includes(u.id)?"checked":""}> ${esc(u.name)}</label>`).join("")}</div>
+        <div id="pd" style="display:none">${deptHtml(d.deptIds)}</div>
+        <div id="pe" style="display:none">${F.externalsEditorHtml(d.externals)}</div>
+        <div class="bar"><button class="icon-btn" type="button" id="x">取消</button><button class="primary" type="button" id="s">保存成员</button></div>`);
+      F.wireExternalsEditor();
+      $("mt").querySelectorAll("button").forEach(btn=>btn.onclick=()=>{
+        $("mt").querySelectorAll("button").forEach(b=>b.classList.remove("on"));btn.classList.add("on");
+        $("pu").style.display=btn.dataset.p==="u"?"block":"none";
+        $("pd").style.display=btn.dataset.p==="d"?"block":"none";
+        $("pe").style.display=btn.dataset.p==="e"?"block":"none";
+      });
+      $("x").onclick=closeModal;
+      $("s").onclick=()=>{
+        d.userIds=[...$("pu").querySelectorAll("input:checked")].map(i=>Number(i.value));
+        d.deptIds=[...$("pd").querySelectorAll("input:checked")].map(i=>Number(i.value));
+        d.externals=F.readExternalsFromEditor();
+        try{M.saveGroup({id:d.id||undefined,name:d.name||"未命名群组",remark:d.remark,userIds:d.userIds,deptIds:d.deptIds,externals:d.externals});closeModal();toast(fromCreate?"已创建":"成员已更新");renderSettings();}catch(e){toast(e.message,true);}
+      };
+    }
+    function editToken(id){
+      const t=id?M.state.tokens.find(x=>x.id===id):{name:"",expireTime:"",status:"1",allowedChannelIds:[]};
+      openModal(`<h3>${id?"编辑":"新建"} Token</h3>${F.tokenScopeFields(t)}
+        <div class="bar"><button class="icon-btn" type="button" id="x">取消</button><button class="primary" type="button" id="s">保存</button></div>`);
+      $("x").onclick=closeModal;
+      $("s").onclick=()=>{try{const body=F.readTokenForm(id?t:null);const saved=M.saveToken({...body,id:id||undefined});closeModal();toast(id?"已保存":"已创建 "+saved.token);renderSettings();}catch(e){toast(e.message,true);}};
+    }
+
+    function openCompose(){
+      openModal(`<h3>写消息</h3>${F.sendRelationHintHtml()}
+        <input type="text" id="sTitle" placeholder="标题">
+        <textarea id="sContent" rows="4" placeholder="正文"></textarea>
+        <h4>渠道</h4>
+        <div class="check" id="sCh">${M.state.channels.filter(c=>c.status==="1").map(c=>`<label><input type="checkbox" value="${c.id}" ${c.type==="INBOX"?"checked":""}> ${esc(c.name)} · ${esc(M.channelTypeLabel(c.type))}</label>`).join("")}</div>
+        <h4>接收人（站内信消费）</h4>
+        <div class="tabs" id="rt"><button class="on" data-p="g" type="button">群组</button><button data-p="d" type="button">部门</button><button data-p="u" type="button">用户</button></div>
+        <div id="sg" class="check">${M.state.groups.map(g=>`<label><input type="checkbox" value="${g.id}"> ${esc(g.name)}</label>`).join("")||"<div class='mute'>暂无群组</div>"}</div>
+        <div id="sd" style="display:none">${deptHtml()}</div>
+        <div id="su" class="check" style="display:none">${M.users.map(u=>`<label><input type="checkbox" value="${u.id}"> ${esc(u.name)}</label>`).join("")}</div>
+                <label><input type="checkbox" id="sChild" checked> 部门含下级</label>
+        <div class="bar"><button class="icon-btn" type="button" id="x">取消</button><button class="primary" type="button" id="go">发送</button></div>`);
+      $("rt").querySelectorAll("button").forEach(btn=>btn.onclick=()=>{
+        $("rt").querySelectorAll("button").forEach(b=>b.classList.remove("on"));btn.classList.add("on");
+        const map={g:"sg",d:"sd",u:"su"};
+        Object.entries(map).forEach(([k,id])=>$(id).style.display=btn.dataset.p===k?"block":"none");
+      });
+      $("x").onclick=closeModal;
+      $("go").onclick=()=>{
+        try{
+          const r=M.sendMessage({
+            title:$("sTitle").value,content:$("sContent").value,
+            channelIds:[...$("sCh").querySelectorAll("input:checked")].map(i=>i.value),
+            groupIds:[...$("sg").querySelectorAll("input:checked")].map(i=>i.value),
+            deptIds:[...$("sd").querySelectorAll("input:checked")].map(i=>Number(i.value)),
+            userIds:[...$("su").querySelectorAll("input:checked")].map(i=>Number(i.value)),
+            
+            includeChildDepts:$("sChild").checked,
+          });
+          closeModal(); toast("发送完成"); renderInbox();
+          openModal(`<h3>发送结果</h3><p class="sub">${esc(r.recipientSummary)}</p>
+            <table><tbody>${r.results.map(x=>`<tr><td>${esc(M.channelById(x.channelId)?.name)}</td><td class="${x.status==="SUCCESS"?"ok":"bad"}">${x.status}</td><td class="mute">${esc(x.detail)}</td></tr>`).join("")}</tbody></table>
+            <div class="bar"><button class="primary" type="button" id="x">关闭</button></div>`);
+          $("x").onclick=closeModal;
+        }catch(e){toast(e.message,true);}
+      };
+    }
+
+    renderInbox();
+  </script>
+</body>
+</html>

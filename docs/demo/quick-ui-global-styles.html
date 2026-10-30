@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick 五套国外大厂风格</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #ececef;
+      color: #1a1a1a;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid #0067c0; outline-offset: 2px; }
+    table { width: 100%; border-collapse: collapse; }
+    .doc { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 4px; }
+    .doc h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+    .doc p { margin: 8px 0 0; max-width: 68ch; }
+    .jumps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0 0; padding: 0; list-style: none; }
+    .jumps a { color: #1a1a1a; }
+    .cap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 10px; }
+    .cap h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .cap p { margin: 4px 0 0; color: #3a3a3c; font-size: 14px; }
+    .frame { overflow-x: auto; background: #dedee3; }
+    svg.ico { width: 16px; height: 16px; display: block; flex: none; }
+
+    /* ---------- Microsoft Fluent ---------- */
+    .ms {
+      width: 1120px; min-height: 680px; margin: 0 auto;
+      display: grid; grid-template-columns: 240px 1fr;
+      background: #f5f5f5; color: #1a1a1a;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+    }
+    .ms .side { padding: 16px 8px; background: #fafafa; border-right: 1px solid #e5e5e5; }
+    .ms .brand { margin: 4px 12px 16px; font-size: 16px; font-weight: 600; }
+    .ms .navb {
+      display: flex; align-items: center; gap: 10px; width: 100%; height: 36px;
+      padding: 0 10px; border: 0; border-radius: 4px; background: transparent; text-align: left;
+    }
+    .ms .navb.on { background: #ebf3fc; color: #0067c0; font-weight: 600; }
+    .ms .main { padding: 28px 36px 32px; }
+    .ms h3 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+    .ms .sub { margin: 4px 0 0; color: #616161; }
+    .ms .primary {
+      margin-top: 16px; height: 32px; padding: 0 16px; border: 1px solid #0067c0; border-radius: 4px;
+      background: #0067c0; color: #fff; font-weight: 600;
+    }
+    .ms .card { margin-top: 20px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; }
+    .ms .card h4 { margin: 0; padding: 12px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #f0f0f0; }
+    .ms .row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      width: 100%; min-height: 52px; padding: 8px 16px; border: 0; background: #fff; text-align: left;
+    }
+    .ms .row + .row { border-top: 1px solid #f0f0f0; }
+    .ms .row b { display: block; font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .ms .row span span { display: block; margin-top: 2px; color: #616161; font-size: 12px; }
+    .ms .stop { color: #c42b1c; font-style: normal; }
+
+    /* ---------- Google Material ---------- */
+    .gg {
+      width: 1120px; min-height: 700px; margin: 0 auto;
+      background: #fff; color: #202124;
+      font-family: Roboto, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+    }
+    .gg .top {
+      display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 16px;
+      border-bottom: 1px solid #e8eaed;
+    }
+    .gg .logo { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+    .gg .logo i { color: #1a73e8; font-style: normal; }
+    .gg .find {
+      flex: 1; max-width: 560px; height: 46px; padding: 0 20px; border: 0; border-radius: 24px; background: #f1f3f4;
+    }
+    .gg .who { margin-left: auto; border: 0; background: #e8f0fe; color: #1967d2; width: 36px; height: 36px; border-radius: 50%; font-weight: 600; }
+    .gg .main { padding: 24px 32px 32px; }
+    .gg h3 { margin: 0; font-size: 22px; font-weight: 400; }
+    .gg .sub { margin: 4px 0 0; color: #5f6368; }
+    .gg .actions { display: flex; gap: 8px; margin-top: 16px; }
+    .gg .fill, .gg .textb {
+      height: 40px; padding: 0 20px; border-radius: 20px; font-weight: 500;
+    }
+    .gg .fill { border: 0; background: #1a73e8; color: #fff; }
+    .gg .textb { border: 1px solid #dadce0; background: #fff; color: #1a73e8; }
+    .gg .chips { display: flex; gap: 8px; margin-top: 18px; }
+    .gg .chips button {
+      height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: #f1f3f4; color: #3c4043;
+    }
+    .gg .chips button.on { background: #e8f0fe; color: #1967d2; }
+    .gg .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .gg .card { border: 1px solid #e0e0e0; border-radius: 16px; padding: 4px 0; }
+    .gg .card h4 { margin: 0; padding: 12px 16px 4px; font-size: 14px; font-weight: 500; color: #5f6368; }
+    .gg .item { display: block; width: 100%; padding: 10px 16px; border: 0; background: transparent; text-align: left; }
+    .gg .item b { display: block; font-weight: 500; }
+    .gg .item span { display: block; margin-top: 2px; color: #5f6368; font-size: 13px; }
+    .gg .stop { color: #d93025; font-style: normal; }
+
+    /* ---------- AWS ---------- */
+    .aws {
+      width: 1120px; min-height: 680px; margin: 0 auto;
+      display: grid; grid-template-rows: 40px 1fr; background: #f2f3f3; color: #16191f;
+      font-size: 13px;
+    }
+    .aws .top {
+      display: flex; align-items: center; gap: 16px; padding: 0 16px; background: #232f3e; color: #fff;
+    }
+    .aws .mark { width: 18px; height: 18px; background: #ff9900; }
+    .aws .brand { font-weight: 700; }
+    .aws .top nav { display: flex; gap: 4px; }
+    .aws .top button { height: 40px; padding: 0 10px; border: 0; background: transparent; color: #d5dbdb; }
+    .aws .top button.on { color: #fff; box-shadow: inset 0 -2px 0 #ff9900; }
+    .aws .who { margin-left: auto; border: 0; background: none; color: #fff; }
+    .aws .body { display: grid; grid-template-columns: 196px 1fr; }
+    .aws .side { background: #fff; border-right: 1px solid #d5dbdb; padding: 8px 0; }
+    .aws .side button {
+      display: block; width: 100%; height: 32px; padding: 0 14px; border: 0; border-left: 4px solid transparent;
+      background: transparent; text-align: left; color: #16191f;
+    }
+    .aws .side button.on { border-left-color: #ff9900; font-weight: 700; color: #c45500; }
+    .aws .main { padding: 16px 20px; }
+    .aws .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+    .aws h3 { margin: 0; font-size: 18px; font-weight: 700; }
+    .aws .sub { margin: 4px 0 0; color: #545b64; }
+    .aws .go {
+      height: 30px; padding: 0 14px; border: 1px solid #ff9900; border-radius: 2px;
+      background: #ff9900; color: #16191f; font-weight: 700;
+    }
+    .aws .tools { display: flex; gap: 8px; margin: 12px 0; }
+    .aws .tools input, .aws .tools select {
+      height: 30px; padding: 0 8px; border: 1px solid #aab7b8; border-radius: 2px; background: #fff;
+    }
+    .aws .tools input { width: 240px; }
+    .aws th, .aws td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eaeded; font-weight: 400; background: #fff; }
+    .aws th { background: #fafafa; color: #545b64; font-weight: 700; }
+    .aws a { color: #0073bb; text-decoration: none; }
+    .aws .ok { color: #1d8102; }
+    .aws .stop { color: #d13212; }
+
+    /* ---------- Slack ---------- */
+    .sk {
+      width: 1120px; height: 640px; margin: 0 auto;
+      display: grid; grid-template-columns: 260px 1fr;
+      background: #fff; color: #1d1c1d; font-size: 15px; overflow: hidden;
+    }
+    .sk .side { background: #3f0e40; color: #fff; padding: 14px 10px; display: flex; flex-direction: column; }
+    .sk .ws { margin: 0 8px 12px; font-size: 18px; font-weight: 700; }
+    .sk .hint { margin: 8px 8px 4px; color: rgba(255,255,255,.7); font-size: 13px; font-weight: 600; }
+    .sk .ch {
+      display: flex; align-items: center; justify-content: space-between; width: 100%;
+      height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent;
+      color: rgba(255,255,255,.8); text-align: left;
+    }
+    .sk .ch.on { background: #1164a3; color: #fff; font-weight: 700; }
+    .sk .ch.unread { color: #fff; font-weight: 700; }
+    .sk .badge {
+      min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #e01e5a; color: #fff;
+      font-size: 11px; line-height: 18px; text-align: center;
+    }
+    .sk .talk { display: grid; grid-template-rows: 56px 1fr 92px; min-width: 0; }
+    .sk header { display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #e8e8e8; font-weight: 700; }
+    .sk .stream { padding: 16px 20px; overflow: auto; }
+    .sk .msg { display: grid; grid-template-columns: 36px 1fr; gap: 8px 10px; margin-bottom: 14px; }
+    .sk .av {
+      width: 36px; height: 36px; border-radius: 4px; background: #007a5a; color: #fff;
+      display: grid; place-items: center; font-weight: 700; grid-row: 1 / span 2;
+    }
+    .sk .av.b { background: #e01e5a; }
+    .sk .msg b { font-weight: 700; }
+    .sk .msg time { margin-left: 8px; color: #616061; font-size: 12px; font-weight: 400; }
+    .sk .msg p { margin: 2px 0 0; }
+    .sk .box { margin: 0 16px 16px; border: 1px solid #c4c4c4; border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; }
+    .sk textarea { border: 0; resize: none; min-height: 36px; outline: none; }
+    .sk .send { align-self: flex-end; height: 28px; padding: 0 10px; border: 0; border-radius: 4px; background: #007a5a; color: #fff; font-weight: 700; }
+
+    /* ---------- IBM Carbon ---------- */
+    .ibm {
+      width: 1120px; min-height: 680px; margin: 0 auto;
+      display: grid; grid-template-rows: 48px 1fr; background: #f4f4f4; color: #161616;
+      font-size: 14px;
+    }
+    .ibm .top { display: flex; align-items: center; gap: 16px; padding: 0 16px; background: #161616; color: #fff; }
+    .ibm .mark { width: 16px; height: 16px; background: #0f62fe; }
+    .ibm .brand { font-weight: 600; }
+    .ibm .top nav { display: flex; height: 100%; }
+    .ibm .top button { height: 48px; padding: 0 16px; border: 0; background: transparent; color: #c6c6c6; }
+    .ibm .top button.on { color: #fff; background: #393939; }
+    .ibm .who { margin-left: auto; border: 0; background: none; color: #fff; }
+    .ibm .body { display: grid; grid-template-columns: 220px 1fr; }
+    .ibm .side { background: #fff; border-right: 1px solid #e0e0e0; padding-top: 8px; }
+    .ibm .side button {
+      display: block; width: 100%; height: 32px; padding: 0 16px; border: 0; border-left: 3px solid transparent;
+      background: transparent; text-align: left; color: #161616;
+    }
+    .ibm .side button.on { border-left-color: #0f62fe; background: #e0e0e0; font-weight: 600; }
+    .ibm .main { padding: 16px; }
+    .ibm .tile { background: #fff; padding: 16px; }
+    .ibm .head { display: flex; justify-content: space-between; align-items: flex-end; }
+    .ibm h3 { margin: 0; font-size: 20px; font-weight: 400; }
+    .ibm .sub { margin: 4px 0 0; color: #525252; font-size: 14px; }
+    .ibm .go { height: 40px; padding: 0 16px; border: 0; background: #0f62fe; color: #fff; }
+    .ibm .filters { display: flex; gap: 0; margin: 16px 0; }
+    .ibm .filters input, .ibm .filters select {
+      height: 40px; padding: 0 16px; border: 0; border-bottom: 1px solid #8d8d8d; background: #f4f4f4;
+    }
+    .ibm .filters input { width: 240px; }
+    .ibm th, .ibm td { padding: 14px 16px; text-align: left; font-weight: 400; border-bottom: 1px solid #e0e0e0; }
+    .ibm th { background: #e0e0e0; font-weight: 600; }
+    .ibm .ops button { border: 0; background: none; padding: 0 12px 0 0; color: #0f62fe; }
+    .ibm .tag { background: #defbe6; color: #0e6027; padding: 2px 8px; }
+    .ibm .tag.off { background: #e0e0e0; color: #161616; }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" hidden>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M5 6h14v9H8l-3 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6 19c1.1-2.6 3.2-4 6-4s4.9 1.4 6 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.5V12l2.5 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <header class="doc">
+    <h1>五套国外大厂风格</h1>
+    <p>还是林晓、未读消息和用户。这五套分别按微软、谷歌、亚马逊云、Slack、IBM 的界面来排，和前面的苹果、阿里云、飞书、腾讯云、微信不重复。</p>
+    <ul class="jumps">
+      <li><a href="#ms">微软</a></li>
+      <li><a href="#gg">谷歌</a></li>
+      <li><a href="#aws">亚马逊云</a></li>
+      <li><a href="#sk">Slack</a></li>
+      <li><a href="#ibm">IBM</a></li>
+    </ul>
+  </header>
+
+  <section id="ms">
+    <div class="cap">
+      <h2>微软</h2>
+      <p>Windows 11 那一套。浅灰底、4 像素圆角、选中项是淡蓝底加深蓝字，主按钮是方角蓝块。</p>
+    </div>
+    <div class="frame">
+      <div class="ms">
+        <aside class="side">
+          <p class="brand">Quick</p>
+          <button class="navb on" type="button"><svg class="ico"><use href="#i-home"/></svg>首页</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-msg"/></svg>消息</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-file"/></svg>文件</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-user"/></svg>用户</button>
+          <button class="navb" type="button"><svg class="ico"><use href="#i-clock"/></svg>定时任务</button>
+        </aside>
+        <div class="main">
+          <h3>林晓</h3>
+          <p class="sub">2 条消息还没看</p>
+          <button class="primary" type="button">看消息</button>
+          <section class="card">
+            <h4>消息</h4>
+            <button class="row" type="button"><span><b>本周五前提交考勤</b><span>人事通知，今天 09:12</span></span></button>
+            <button class="row" type="button"><span><b>密码将在 7 天后过期</b><span>账号安全，今天 08:02</span></span></button>
+          </section>
+          <section class="card">
+            <h4>用户</h4>
+            <button class="row" type="button"><span><b>林晓</b><span>产品部，普通角色，正常</span></span></button>
+            <button class="row" type="button"><span><b>周启</b><span>研发部，管理员，<i class="stop">停用</i></span></span></button>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="gg">
+    <div class="cap">
+      <h2>谷歌</h2>
+      <p>顶栏一条圆角搜索。按钮和卡片都更圆，选中的筛选是浅蓝底。</p>
+    </div>
+    <div class="frame">
+      <div class="gg">
+        <header class="top">
+          <div class="logo"><i>Q</i>uick</div>
+          <input class="find" type="search" aria-label="搜索" placeholder="搜索消息、文件、用户">
+          <button class="who" type="button" aria-label="林晓">林</button>
+        </header>
+        <div class="main">
+          <h3>林晓，2 条消息还没看</h3>
+          <p class="sub">最近一条来自人事通知。</p>
+          <div class="actions">
+            <button class="fill" type="button">看消息</button>
+            <button class="textb" type="button">新建用户</button>
+          </div>
+          <div class="chips" role="group" aria-label="筛选">
+            <button class="on" type="button">全部</button>
+            <button type="button">消息</button>
+            <button type="button">文件</button>
+            <button type="button">用户</button>
+          </div>
+          <div class="grid">
+            <section class="card">
+              <h4>消息</h4>
+              <button class="item" type="button"><b>本周五前提交考勤</b><span>人事通知，今天 09:12</span></button>
+              <button class="item" type="button"><b>密码将在 7 天后过期</b><span>账号安全，今天 08:02</span></button>
+            </section>
+            <section class="card">
+              <h4>用户</h4>
+              <button class="item" type="button"><b>林晓</b><span>产品部，正常</span></button>
+              <button class="item" type="button"><b>周启</b><span>研发部，<i class="stop">停用</i></span></button>
+              <button class="item" type="button"><b>陈可</b><span>设计部，正常</span></button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="aws">
+    <div class="cap">
+      <h2>亚马逊云</h2>
+      <p>深色顶栏，当前服务左侧一条橙色。主按钮是橙底黑字，表格链接是另一支蓝。</p>
+    </div>
+    <div class="frame">
+      <div class="aws">
+        <header class="top">
+          <i class="mark" aria-hidden="true"></i>
+          <span class="brand">Quick</span>
+          <nav aria-label="亚马逊云顶部">
+            <button class="on" type="button">控制台</button>
+            <button type="button">消息</button>
+            <button type="button">文件</button>
+          </nav>
+          <button class="who" type="button">林晓</button>
+        </header>
+        <div class="body">
+          <aside class="side">
+            <button type="button">概览</button>
+            <button type="button">消息</button>
+            <button class="on" type="button">用户</button>
+            <button type="button">定时任务</button>
+            <button type="button">日志</button>
+          </aside>
+          <div class="main">
+            <div class="head">
+              <div>
+                <h3>用户</h3>
+                <p class="sub">查看账号、部门和状态。停用的账号不能登录。</p>
+              </div>
+              <button class="go" type="button">新建用户</button>
+            </div>
+            <div class="tools">
+              <input type="search" aria-label="搜索用户" placeholder="用户名或手机号">
+              <select aria-label="状态"><option>全部状态</option><option>正常</option><option>停用</option></select>
+            </div>
+            <table>
+              <thead>
+                <tr><th>用户名</th><th>昵称</th><th>部门</th><th>手机号码</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>linxiao</td><td>林晓</td><td>产品部</td><td>13800002618</td><td class="ok">正常</td><td><a href="#aws">修改</a></td></tr>
+                <tr><td>zhouqi</td><td>周启</td><td>研发部</td><td>13900001120</td><td class="stop">停用</td><td><a href="#aws">修改</a></td></tr>
+                <tr><td>chenke</td><td>陈可</td><td>设计部</td><td>13700008821</td><td class="ok">正常</td><td><a href="#aws">修改</a></td></tr>
+                <tr><td>wudi</td><td>吴迪</td><td>运营部</td><td>13600004567</td><td class="ok">正常</td><td><a href="#aws">修改</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sk">
+    <div class="cap">
+      <h2>Slack</h2>
+      <p>左侧是紫色频道栏。当前频道是蓝色底，未读是白字加粗，自己发的按钮用绿色。</p>
+    </div>
+    <div class="frame">
+      <div class="sk">
+        <aside class="side">
+          <p class="ws">Quick</p>
+          <p class="hint">频道</p>
+          <button class="ch on" type="button">人事通知 <i class="badge">1</i></button>
+          <button class="ch unread" type="button">账号安全 <i class="badge">1</i></button>
+          <button class="ch" type="button">文件助手</button>
+          <p class="hint">目录</p>
+          <button class="ch" type="button">用户</button>
+          <button class="ch" type="button">定时任务</button>
+        </aside>
+        <section class="talk" aria-label="人事通知">
+          <header>人事通知</header>
+          <div class="stream">
+            <article class="msg">
+              <div class="av b">人</div>
+              <div><b>人事通知</b><time>今天 09:12</time><p>请在周五 18:00 前确认本月考勤。有缺勤的话，直接写在这个频道。</p></div>
+            </article>
+            <article class="msg">
+              <div class="av">林</div>
+              <div><b>林晓</b><time>今天 09:18</time><p>好，我今天下班前确认。</p></div>
+            </article>
+          </div>
+          <form class="box">
+            <textarea aria-label="给人事通知发消息" placeholder="给人事通知发消息"></textarea>
+            <button class="send" type="button">发送</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section id="ibm">
+    <div class="cap">
+      <h2>IBM</h2>
+      <p>Carbon 那一套。黑顶栏、直角、没有圆角。当前菜单左侧一条蓝线，主按钮是纯蓝方块。</p>
+    </div>
+    <div class="frame">
+      <div class="ibm">
+        <header class="top">
+          <i class="mark" aria-hidden="true"></i>
+          <span class="brand">Quick</span>
+          <nav aria-label="IBM 顶部">
+            <button class="on" type="button">控制台</button>
+            <button type="button">消息</button>
+            <button type="button">文件</button>
+          </nav>
+          <button class="who" type="button">林晓</button>
+        </header>
+        <div class="body">
+          <aside class="side">
+            <button type="button">概览</button>
+            <button class="on" type="button">用户</button>
+            <button type="button">角色</button>
+            <button type="button">部门</button>
+            <button type="button">定时任务</button>
+          </aside>
+          <div class="main">
+            <div class="tile">
+              <div class="head">
+                <div>
+                  <h3>用户</h3>
+                  <p class="sub">查看账号、部门和状态。</p>
+                </div>
+                <button class="go" type="button">新建用户</button>
+              </div>
+              <div class="filters">
+                <input type="search" aria-label="搜索用户" placeholder="用户名或手机号">
+                <select aria-label="状态"><option>全部状态</option><option>正常</option><option>停用</option></select>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>用户名</th><th>昵称</th><th>部门</th><th>手机号码</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>linxiao</td><td>林晓</td><td>产品部</td><td>13800002618</td>
+                    <td><span class="tag">正常</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                  <tr>
+                    <td>zhouqi</td><td>周启</td><td>研发部</td><td>13900001120</td>
+                    <td><span class="tag off">停用</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                  <tr>
+                    <td>chenke</td><td>陈可</td><td>设计部</td><td>13700008821</td>
+                    <td><span class="tag">正常</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                  <tr>
+                    <td>wudi</td><td>吴迪</td><td>运营部</td><td>13600004567</td>
+                    <td><span class="tag">正常</span></td>
+                    <td class="ops"><button type="button">修改</button><button type="button">删除</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

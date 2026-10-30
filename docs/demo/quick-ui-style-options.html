@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="sky">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick 三套界面方案</title>
+  <style>
+    html, body { margin: 0; min-height: 100%; }
+    body { background: #eef3fb; }
+    html[data-scheme="night"] body { background: #0c0e12; }
+    html[data-scheme="plain"] body { background: #ffffff; }
+    .scheme-bar {
+      position: fixed;
+      z-index: 30;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 8px 8px 14px;
+      border-radius: 999px;
+      background: #ffffff;
+      box-shadow: 0 10px 40px rgba(16, 24, 40, 0.18);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    html[data-scheme="night"] .scheme-bar { background: #1c212b; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45); }
+    .scheme-bar span { color: #667085; font-size: 13px; white-space: nowrap; }
+    html[data-scheme="night"] .scheme-bar span { color: #c5cedd; }
+    .scheme-bar div { display: flex; gap: 4px; }
+    .scheme-bar button {
+      min-height: 36px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: #1d2433;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    html[data-scheme="night"] .scheme-bar button { color: #f4f6fb; }
+    .scheme-bar button[aria-pressed="true"] { background: #1f6feb; color: #fff; }
+    html[data-scheme="night"] .scheme-bar button[aria-pressed="true"] { background: #d6ff4a; color: #14180a; }
+    html[data-scheme="plain"] .scheme-bar button[aria-pressed="true"] { background: #1d1d1f; color: #fff; }
+
+    html[data-scheme="sky"] #qb-style {
+      --bg: #eef3fb; --surface: #ffffff; --ink: #142033; --muted: #5d6b82;
+      --line: #e4ebf5; --accent: #1f6feb; --fill: #1f6feb; --on: #ffffff;
+      --soft: #e8f1ff; --ok: #0f7a45; --bad: #c42323;
+    }
+    html[data-scheme="sky"] #qb-style .app { grid-template-columns: 1fr; }
+    html[data-scheme="sky"] #qb-style .side {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+      padding: 10px 20px; border-right: 0; border-bottom: 1px solid #e4ebf5;
+      box-shadow: 0 8px 24px rgba(31, 78, 160, 0.05);
+    }
+    html[data-scheme="sky"] #qb-style .nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    html[data-scheme="sky"] #qb-style .group { width: auto; margin: 0 2px 0 10px; font-size: 12px; }
+    html[data-scheme="sky"] #qb-style .nav button { border-radius: 999px; min-height: 36px; padding: 6px 12px; }
+    html[data-scheme="sky"] #qb-style .main { width: min(100%, 1040px); margin-inline: auto; padding: 28px 20px 108px; }
+    html[data-scheme="sky"] #qb-style h1 { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; }
+    html[data-scheme="sky"] #qb-style .tile,
+    html[data-scheme="sky"] #qb-style .record,
+    html[data-scheme="sky"] #qb-style .editor {
+      border-color: transparent;
+      border-radius: 20px;
+      box-shadow: 0 10px 28px rgba(28, 64, 128, 0.07);
+    }
+    html[data-scheme="sky"] #qb-style .tiles { gap: 14px; }
+    html[data-scheme="sky"] #qb-style .tile {
+      display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; align-items: center; min-height: 92px;
+    }
+    html[data-scheme="sky"] #qb-style .tile::before {
+      content: ""; width: 44px; height: 44px; border-radius: 14px; background: #1f6feb; grid-row: 1 / span 2;
+    }
+    html[data-scheme="sky"] #qb-style .tiles .tile:nth-child(3n+2)::before { background: #12a37a; }
+    html[data-scheme="sky"] #qb-style .tiles .tile:nth-child(3n)::before { background: #f08a24; }
+    html[data-scheme="sky"] #qb-style .tile-title { grid-column: 2; grid-row: 1; }
+    html[data-scheme="sky"] #qb-style .tile .meta { grid-column: 2; grid-row: 2; }
+    html[data-scheme="sky"] #qb-style .btn-primary,
+    html[data-scheme="sky"] #qb-style .btn-line,
+    html[data-scheme="sky"] #qb-style input { border-radius: 999px; }
+    html[data-scheme="sky"] #qb-style .editor input,
+    html[data-scheme="sky"] #qb-style .field input { border-radius: 14px; }
+
+    html[data-scheme="night"] #qb-style {
+      --bg: #0c0e12; --surface: #171b22; --ink: #f5f7fb; --muted: #aeb6c6;
+      --line: #2c3342; --accent: #d6ff4a; --fill: #d6ff4a; --on: #14180a;
+      --soft: #2a3118; --ok: #c6f58a; --bad: #ff9b9b;
+    }
+    html[data-scheme="night"] #qb-style .side { background: #101318; border-right-color: #262c38; }
+    html[data-scheme="night"] #qb-style .brand { color: #d6ff4a; letter-spacing: 0.12em; }
+    html[data-scheme="night"] #qb-style .nav button[aria-current="page"] { background: #d6ff4a; color: #14180a; }
+    html[data-scheme="night"] #qb-style .main { padding: 32px 28px 108px; }
+    html[data-scheme="night"] #qb-style h1 { font-size: 36px; font-weight: 600; letter-spacing: -0.04em; }
+    html[data-scheme="night"] #qb-style .kicker { color: #d6ff4a; letter-spacing: 0.08em; }
+    html[data-scheme="night"] #qb-style .tile,
+    html[data-scheme="night"] #qb-style .record,
+    html[data-scheme="night"] #qb-style .editor { border-radius: 18px; background: #171b22; }
+    html[data-scheme="night"] #qb-style .tile { min-height: 104px; padding: 18px; }
+    html[data-scheme="night"] #qb-style input { background: #101318; }
+
+    html[data-scheme="plain"] #qb-style {
+      --bg: #ffffff; --surface: #ffffff; --ink: #1d1d1f; --muted: #6e6e73;
+      --line: #e6e6eb; --accent: #0066cc; --fill: #1d1d1f; --on: #ffffff;
+      --soft: #f5f5f7; --ok: #1d7a3a; --bad: #d70015;
+    }
+    html[data-scheme="plain"] #qb-style .app { grid-template-columns: 1fr; }
+    html[data-scheme="plain"] #qb-style .side {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+      padding: 18px 28px 8px; background: #fff; border-right: 0; border-bottom: 0;
+    }
+    html[data-scheme="plain"] #qb-style .brand { font-size: 15px; letter-spacing: 0; }
+    html[data-scheme="plain"] #qb-style .nav { flex-direction: row; flex-wrap: wrap; }
+    html[data-scheme="plain"] #qb-style .group { display: none; }
+    html[data-scheme="plain"] #qb-style .nav button { border-radius: 0; background: transparent; color: #6e6e73; }
+    html[data-scheme="plain"] #qb-style .nav button[aria-current="page"] {
+      background: transparent; color: #1d1d1f; box-shadow: inset 0 -2px 0 #1d1d1f;
+    }
+    html[data-scheme="plain"] #qb-style .main { width: min(100%, 820px); margin-inline: auto; padding: 12px 28px 120px; }
+    html[data-scheme="plain"] #qb-style h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.035em; }
+    html[data-scheme="plain"] #qb-style h2 { margin-top: 36px; font-size: 13px; color: #6e6e73; font-weight: 500; }
+    html[data-scheme="plain"] #qb-style .tiles { grid-template-columns: 1fr; gap: 0; border-top: 1px solid #e6e6eb; }
+    html[data-scheme="plain"] #qb-style .tile {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto;
+      min-height: 68px; padding: 14px 2px; border: 0; border-bottom: 1px solid #e6e6eb; border-radius: 0; background: transparent;
+    }
+    html[data-scheme="plain"] #qb-style .tile-title { grid-column: 1; grid-row: 1; font-size: 17px; }
+    html[data-scheme="plain"] #qb-style .tile .meta { grid-column: 1; grid-row: 2; }
+    html[data-scheme="plain"] #qb-style .tile::after {
+      content: ""; grid-column: 2; grid-row: 1 / span 2; align-self: center;
+      width: 8px; height: 8px; border-right: 1.5px solid #aeaeb2; border-bottom: 1.5px solid #aeaeb2; transform: rotate(-45deg);
+    }
+    html[data-scheme="plain"] #qb-style .records { gap: 0; }
+    html[data-scheme="plain"] #qb-style .record,
+    html[data-scheme="plain"] #qb-style .editor {
+      border: 0; border-bottom: 1px solid #e6e6eb; border-radius: 0; background: transparent; box-shadow: none;
+    }
+    html[data-scheme="plain"] #qb-style .btn-primary { border-radius: 999px; }
+    html[data-scheme="plain"] #qb-style .btn-line { border-radius: 999px; background: #f5f5f7; }
+    html[data-scheme="plain"] #qb-style input { border-radius: 12px; background: #f5f5f7; border-color: transparent; }
+  </style>
+</head>
+<body>
+<div class="scheme-bar">
+  <span>三套界面</span>
+  <div role="group" aria-label="界面方案">
+    <button type="button" data-pick="sky" aria-pressed="true">晴空</button>
+    <button type="button" data-pick="night" aria-pressed="false">夜色</button>
+    <button type="button" data-pick="plain" aria-pressed="false">留白</button>
+  </div>
+</div>
+<div id="qb-style">
+  <p class="vis-sr-only">Quick 的全部功能用 C 端样式呈现。左侧可进入用户、角色、部门、菜单、字典、字典数据、参数、文件、文件分类、定时任务、执行日志、操作日志、登录日志和个人中心。</p>
+  <div class="app">
+    <aside class="side">
+      <button type="button" class="brand" data-go="home">Quick</button>
+      <nav class="nav" aria-label="全部功能">
+        <p class="group">组织与账号</p>
+        <button type="button" data-go="user">用户</button>
+        <button type="button" data-go="role">角色</button>
+        <button type="button" data-go="dept">部门</button>
+        <p class="group">系统配置</p>
+        <button type="button" data-go="menu">菜单</button>
+        <button type="button" data-go="dict">字典</button>
+        <button type="button" data-go="dictData">字典数据</button>
+        <button type="button" data-go="config">参数</button>
+        <p class="group">文件</p>
+        <button type="button" data-go="file">文件</button>
+        <button type="button" data-go="classify">文件分类</button>
+        <p class="group">定时任务</p>
+        <button type="button" data-go="job">定时任务</button>
+        <button type="button" data-go="jobLog">执行日志</button>
+        <p class="group">记录</p>
+        <button type="button" data-go="oper">操作日志</button>
+        <button type="button" data-go="loginLog">登录日志</button>
+        <p class="group">个人</p>
+        <button type="button" data-go="profile">个人中心</button>
+      </nav>
+    </aside>
+    <div class="main">
+      <section class="view" data-view="home">
+        <p class="kicker">全部功能</p>
+        <h1>林晓，要办哪一件？</h1>
+        <p class="lead">用户、权限、配置、文件、任务和日志都在这里。</p>
+        <h2>组织与账号</h2>
+        <div class="tiles">
+          <button type="button" class="tile" data-go="user"><span class="tile-title">用户</span><span class="meta">用户名、昵称、部门、角色、手机、邮箱、状态</span></button>
+          <button type="button" class="tile" data-go="role"><span class="tile-title">角色</span><span class="meta">角色名称、编码、数据权限、排序</span></button>
+          <button type="button" class="tile" data-go="dept"><span class="tile-title">部门</span><span class="meta">部门树、负责人、排序、状态</span></button>
+        </div>
+        <h2>系统配置</h2>
+        <div class="tiles">
+          <button type="button" class="tile" data-go="menu"><span class="tile-title">菜单</span><span class="meta">目录和菜单、路由、权限、排序</span></button>
+          <button type="button" class="tile" data-go="dict"><span class="tile-title">字典</span><span class="meta">字典名称、字典类型、状态</span></button>
+          <button type="button" class="tile" data-go="dictData"><span class="tile-title">字典数据</span><span class="meta">标签、字典值、排序、是否默认</span></button>
+          <button type="button" class="tile" data-go="config"><span class="tile-title">参数</span><span class="meta">参数名称、键名、参数值、是否内置</span></button>
+        </div>
+        <h2>文件</h2>
+        <div class="tiles">
+          <button type="button" class="tile" data-go="file"><span class="tile-title">文件</span><span class="meta">原始文件名、分类、大小、上传人</span></button>
+          <button type="button" class="tile" data-go="classify"><span class="tile-title">文件分类</span><span class="meta">分类编码、允许后缀、大小上限</span></button>
+        </div>
+        <h2>定时任务</h2>
+        <div class="tiles">
+          <button type="button" class="tile" data-go="job"><span class="tile-title">定时任务</span><span class="meta">任务名称、分组、Bean、Cron、状态</span></button>
+          <button type="button" class="tile" data-go="jobLog"><span class="tile-title">执行日志</span><span class="meta">触发来源、状态、开始时间、耗时</span></button>
+        </div>
+        <h2>记录</h2>
+        <div class="tiles">
+          <button type="button" class="tile" data-go="oper"><span class="tile-title">操作日志</span><span class="meta">操作人、请求方式、URL、IP、耗时</span></button>
+          <button type="button" class="tile" data-go="loginLog"><span class="tile-title">登录日志</span><span class="meta">用户名、IP、浏览器、地点、登录时间</span></button>
+        </div>
+        <h2>个人</h2>
+        <div class="tiles">
+          <button type="button" class="tile" data-go="profile"><span class="tile-title">个人中心</span><span class="meta">头像、昵称、手机、邮箱、密码</span></button>
+        </div>
+      </section>
+
+      <section class="view" data-view="user" hidden>
+        <div class="head">
+          <div>
+            <h1>用户</h1>
+            <p class="lead">查看和修改账号。字段和原来的用户列表一致。</p>
+          </div>
+          <button type="button" class="btn-primary" data-open-form="新建用户">新建用户</button>
+        </div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建用户</h2>
+          <label class="field"><span>用户名</span><input id="user-name" aria-label="用户名" required placeholder="linxiao"></label>
+          <p class="err" data-err-for="user-name" hidden></p>
+          <label class="field"><span>昵称</span><input id="user-nick" aria-label="昵称" required placeholder="林晓"></label>
+          <p class="err" data-err-for="user-nick" hidden></p>
+          <label class="field"><span>手机号码</span><input id="user-phone" aria-label="手机号码" required inputmode="numeric" placeholder="13800002618"></label>
+          <p class="err" data-err-for="user-phone" hidden></p>
+          <label class="field"><span>邮箱</span><input id="user-mail" aria-label="邮箱" type="email" placeholder="linxiao@quick.dev"></label>
+          <label class="field"><span>部门</span><input id="user-dept" aria-label="部门" placeholder="产品部"></label>
+          <label class="field"><span>角色</span><input id="user-role" aria-label="角色" placeholder="普通角色"></label>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">保存</button>
+            <button type="button" class="btn-line" data-close-form>取消</button>
+          </div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools">
+          <label class="search"><span>搜索</span><input data-search type="search" placeholder="林晓"></label>
+          <div class="chips" role="group" aria-label="状态">
+            <button type="button" data-filter="all" aria-pressed="true">全部</button>
+            <button type="button" data-filter="正常" aria-pressed="false">正常</button>
+            <button type="button" data-filter="停用" aria-pressed="false">停用</button>
+          </div>
+        </div>
+        <div class="records">
+          <article class="record" data-id="user-1" data-record="linxiao 林晓 产品部 普通角色" data-state="正常">
+            <div class="record-main">
+              <div class="record-copy"><p class="record-title">林晓</p><p class="meta">linxiao · 产品部 · 普通角色 · 13800002618 · 女 · 正常</p></div>
+              <div class="record-actions">
+                <button type="button" data-detail="user-1" aria-expanded="false">详情</button>
+                <button type="button" data-open-form="修改用户">修改</button>
+                <button type="button" data-open-confirm="user-1">删除</button>
+                <button type="button" data-open-reset="user-1">重置密码</button>
+              </div>
+            </div>
+            <dl class="fields" data-detail-panel="user-1" hidden>
+              <div><dt>用户名</dt><dd>linxiao</dd></div>
+              <div><dt>昵称</dt><dd>林晓</dd></div>
+              <div><dt>部门</dt><dd>产品部</dd></div>
+              <div><dt>角色</dt><dd>普通角色</dd></div>
+              <div><dt>手机号码</dt><dd>13800002618</dd></div>
+              <div><dt>邮箱</dt><dd>linxiao@quick.dev</dd></div>
+              <div><dt>用户类型</dt><dd>系统用户</dd></div>
+              <div><dt>性别</dt><dd>女</dd></div>
+              <div><dt>状态</dt><dd>正常</dd></div>
+            </dl>
+            <div class="confirm" data-confirm="user-1" hidden>
+              <p>确认删除用户「林晓」？</p>
+              <button type="button" class="btn-primary" data-delete="user-1">确认删除</button>
+              <button type="button" class="btn-line" data-close-confirm="user-1">取消</button>
+            </div>
+            <form class="editor editor-in" data-reset="user-1" hidden>
+              <label class="field"><span>新密码</span><input id="user-1-pass" aria-label="新密码" type="password" required></label>
+              <p class="err" data-err-for="user-1-pass" hidden></p>
+              <button type="submit" class="btn-primary">保存密码</button>
+              <p class="ok" data-saved hidden></p>
+            </form>
+          </article>
+          <article class="record" data-id="user-2" data-record="zhouqi 周启 研发部 管理员" data-state="停用">
+            <div class="record-main">
+              <div class="record-copy"><p class="record-title">周启</p><p class="meta">zhouqi · 研发部 · 管理员 · 13900001120 · 男 · 停用</p></div>
+              <div class="record-actions">
+                <button type="button" data-detail="user-2" aria-expanded="false">详情</button>
+                <button type="button" data-open-form="修改用户">修改</button>
+                <button type="button" data-open-confirm="user-2">删除</button>
+                <button type="button" data-open-reset="user-2">重置密码</button>
+              </div>
+            </div>
+            <dl class="fields" data-detail-panel="user-2" hidden>
+              <div><dt>用户名</dt><dd>zhouqi</dd></div>
+              <div><dt>昵称</dt><dd>周启</dd></div>
+              <div><dt>部门</dt><dd>研发部</dd></div>
+              <div><dt>角色</dt><dd>管理员</dd></div>
+              <div><dt>手机号码</dt><dd>13900001120</dd></div>
+              <div><dt>邮箱</dt><dd>zhouqi@quick.dev</dd></div>
+              <div><dt>用户类型</dt><dd>系统用户</dd></div>
+              <div><dt>性别</dt><dd>男</dd></div>
+              <div><dt>状态</dt><dd>停用</dd></div>
+            </dl>
+            <div class="confirm" data-confirm="user-2" hidden>
+              <p>确认删除用户「周启」？</p>
+              <button type="button" class="btn-primary" data-delete="user-2">确认删除</button>
+              <button type="button" class="btn-line" data-close-confirm="user-2">取消</button>
+            </div>
+            <form class="editor editor-in" data-reset="user-2" hidden>
+              <label class="field"><span>新密码</span><input id="user-2-pass" aria-label="新密码" type="password" required></label>
+              <p class="err" data-err-for="user-2-pass" hidden></p>
+              <button type="submit" class="btn-primary">保存密码</button>
+              <p class="ok" data-saved hidden></p>
+            </form>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的用户。换个关键词，或改看全部状态。</p>
+      </section>
+
+      <section class="view" data-view="role" hidden>
+        <div class="head">
+          <div><h1>角色</h1><p class="lead">维护角色名称、编码、数据权限和状态。</p></div>
+          <button type="button" class="btn-primary" data-open-form="新建角色">新建角色</button>
+        </div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建角色</h2>
+          <label class="field"><span>角色名称</span><input id="role-name" aria-label="角色名称" required placeholder="普通角色"></label>
+          <p class="err" data-err-for="role-name" hidden></p>
+          <label class="field"><span>角色编码</span><input id="role-code" aria-label="角色编码" required placeholder="common"></label>
+          <p class="err" data-err-for="role-code" hidden></p>
+          <label class="field"><span>数据权限</span><input id="role-scope" aria-label="数据权限" placeholder="本部门数据"></label>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="普通角色"></label></div>
+        <div class="records">
+          <article class="record" data-id="role-1" data-record="普通角色 common">
+            <div class="record-main">
+              <div class="record-copy"><p class="record-title">普通角色</p><p class="meta">common · 排序 2 · 本部门数据 · 正常</p></div>
+              <div class="record-actions"><button type="button" data-detail="role-1" aria-expanded="false">详情</button><button type="button" data-open-form="修改角色">修改</button><button type="button" data-open-confirm="role-1">删除</button></div>
+            </div>
+            <dl class="fields" data-detail-panel="role-1" hidden>
+              <div><dt>角色名称</dt><dd>普通角色</dd></div><div><dt>角色编码</dt><dd>common</dd></div><div><dt>排序</dt><dd>2</dd></div><div><dt>数据权限</dt><dd>本部门数据</dd></div><div><dt>状态</dt><dd>正常</dd></div><div><dt>备注</dt><dd>日常使用</dd></div>
+            </dl>
+            <div class="confirm" data-confirm="role-1" hidden><p>确认删除角色「普通角色」？</p><button type="button" class="btn-primary" data-delete="role-1">确认删除</button><button type="button" class="btn-line" data-close-confirm="role-1">取消</button></div>
+          </article>
+          <article class="record" data-id="role-2" data-record="管理员 admin">
+            <div class="record-main">
+              <div class="record-copy"><p class="record-title">管理员</p><p class="meta">admin · 排序 1 · 全部数据 · 正常</p></div>
+              <div class="record-actions"><button type="button" data-detail="role-2" aria-expanded="false">详情</button><button type="button" data-open-form="修改角色">修改</button><button type="button" data-open-confirm="role-2">删除</button></div>
+            </div>
+            <dl class="fields" data-detail-panel="role-2" hidden>
+              <div><dt>角色名称</dt><dd>管理员</dd></div><div><dt>角色编码</dt><dd>admin</dd></div><div><dt>排序</dt><dd>1</dd></div><div><dt>数据权限</dt><dd>全部数据</dd></div><div><dt>状态</dt><dd>正常</dd></div><div><dt>备注</dt><dd>系统管理</dd></div>
+            </dl>
+            <div class="confirm" data-confirm="role-2" hidden><p>确认删除角色「管理员」？</p><button type="button" class="btn-primary" data-delete="role-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="role-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的角色。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="dept" hidden>
+        <div class="head">
+          <div><h1>部门</h1><p class="lead">按层级查看部门、负责人和状态。</p></div>
+          <div class="head-actions"><button type="button" class="btn-line" data-fold="dept" aria-expanded="true">折叠下级</button><button type="button" class="btn-primary" data-open-form="新建部门">新建部门</button></div>
+        </div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建部门</h2>
+          <label class="field"><span>部门名称</span><input id="dept-name" aria-label="部门名称" required placeholder="设计组"></label>
+          <p class="err" data-err-for="dept-name" hidden></p>
+          <label class="field"><span>上级部门</span><input id="dept-parent" aria-label="上级部门" placeholder="产品部"></label>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="产品部"></label></div>
+        <div class="records">
+          <article class="record" data-id="dept-1" data-record="总公司">
+            <div class="record-main"><div class="record-copy"><p class="record-title">总公司</p><p class="meta">排序 1 · 负责人 林晓 · 正常</p></div><div class="record-actions"><button type="button" data-detail="dept-1" aria-expanded="false">详情</button><button type="button" data-open-form="修改部门">修改</button></div></div>
+            <dl class="fields" data-detail-panel="dept-1" hidden><div><dt>部门名称</dt><dd>总公司</dd></div><div><dt>排序</dt><dd>1</dd></div><div><dt>负责人</dt><dd>林晓</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+          </article>
+          <article class="record child" data-child="dept" data-id="dept-2" data-record="产品部">
+            <div class="record-main"><div class="record-copy"><p class="record-title">产品部</p><p class="meta">上级 总公司 · 排序 1 · 正常</p></div><div class="record-actions"><button type="button" data-detail="dept-2" aria-expanded="false">详情</button><button type="button" data-open-form="修改部门">修改</button><button type="button" data-open-confirm="dept-2">删除</button></div></div>
+            <dl class="fields" data-detail-panel="dept-2" hidden><div><dt>部门名称</dt><dd>产品部</dd></div><div><dt>上级部门</dt><dd>总公司</dd></div><div><dt>排序</dt><dd>1</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+            <div class="confirm" data-confirm="dept-2" hidden><p>确认删除部门「产品部」？</p><button type="button" class="btn-primary" data-delete="dept-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="dept-2">取消</button></div>
+          </article>
+          <article class="record child" data-child="dept" data-id="dept-3" data-record="研发部">
+            <div class="record-main"><div class="record-copy"><p class="record-title">研发部</p><p class="meta">上级 总公司 · 排序 2 · 正常</p></div><div class="record-actions"><button type="button" data-detail="dept-3" aria-expanded="false">详情</button><button type="button" data-open-form="修改部门">修改</button><button type="button" data-open-confirm="dept-3">删除</button></div></div>
+            <dl class="fields" data-detail-panel="dept-3" hidden><div><dt>部门名称</dt><dd>研发部</dd></div><div><dt>上级部门</dt><dd>总公司</dd></div><div><dt>排序</dt><dd>2</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+            <div class="confirm" data-confirm="dept-3" hidden><p>确认删除部门「研发部」？</p><button type="button" class="btn-primary" data-delete="dept-3">确认删除</button><button type="button" class="btn-line" data-close-confirm="dept-3">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的部门。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="menu" hidden>
+        <div class="head">
+          <div><h1>菜单</h1><p class="lead">维护目录、菜单、路由和权限标识。</p></div>
+          <div class="head-actions"><button type="button" class="btn-line" data-fold="menu" aria-expanded="true">折叠下级</button><button type="button" class="btn-primary" data-open-form="新建菜单">新建菜单</button></div>
+        </div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建菜单</h2>
+          <label class="field"><span>菜单名称</span><input id="menu-name" aria-label="菜单名称" required placeholder="用户"></label>
+          <p class="err" data-err-for="menu-name" hidden></p>
+          <label class="field"><span>路由地址</span><input id="menu-path" aria-label="路由地址" placeholder="/system/user"></label>
+          <label class="field"><span>权限标识</span><input id="menu-perm" aria-label="权限标识" placeholder="system:user:list"></label>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="用户"></label></div>
+        <div class="records">
+          <article class="record" data-id="menu-1" data-record="系统管理">
+            <div class="record-main"><div class="record-copy"><p class="record-title">系统管理</p><p class="meta">目录 · /system · 排序 1 · 正常</p></div><div class="record-actions"><button type="button" data-detail="menu-1" aria-expanded="false">详情</button><button type="button" data-open-form="修改菜单">修改</button></div></div>
+            <dl class="fields" data-detail-panel="menu-1" hidden><div><dt>菜单名称</dt><dd>系统管理</dd></div><div><dt>类型</dt><dd>目录</dd></div><div><dt>路由地址</dt><dd>/system</dd></div><div><dt>排序</dt><dd>1</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+          </article>
+          <article class="record child" data-child="menu" data-id="menu-2" data-record="用户">
+            <div class="record-main"><div class="record-copy"><p class="record-title">用户</p><p class="meta">菜单 · /system/user · system:user:list · 正常</p></div><div class="record-actions"><button type="button" data-detail="menu-2" aria-expanded="false">详情</button><button type="button" data-open-form="修改菜单">修改</button><button type="button" data-open-confirm="menu-2">删除</button></div></div>
+            <dl class="fields" data-detail-panel="menu-2" hidden><div><dt>菜单名称</dt><dd>用户</dd></div><div><dt>类型</dt><dd>菜单</dd></div><div><dt>路由地址</dt><dd>/system/user</dd></div><div><dt>权限标识</dt><dd>system:user:list</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+            <div class="confirm" data-confirm="menu-2" hidden><p>确认删除菜单「用户」？</p><button type="button" class="btn-primary" data-delete="menu-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="menu-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的菜单。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="dict" hidden>
+        <div class="head"><div><h1>字典</h1><p class="lead">维护字典名称和字典类型。</p></div><button type="button" class="btn-primary" data-open-form="新建字典">新建字典</button></div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建字典</h2>
+          <label class="field"><span>字典名称</span><input id="dict-name" aria-label="字典名称" required placeholder="用户性别"></label>
+          <p class="err" data-err-for="dict-name" hidden></p>
+          <label class="field"><span>字典类型</span><input id="dict-type" aria-label="字典类型" required placeholder="sys_user_sex"></label>
+          <p class="err" data-err-for="dict-type" hidden></p>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="用户性别"></label></div>
+        <div class="records">
+          <article class="record" data-id="dict-1" data-record="用户性别 sys_user_sex">
+            <div class="record-main"><div class="record-copy"><p class="record-title">用户性别</p><p class="meta">sys_user_sex · 正常</p></div><div class="record-actions"><button type="button" data-go="dictData">字典数据</button><button type="button" data-open-form="修改字典">修改</button><button type="button" data-open-confirm="dict-1">删除</button></div></div>
+            <div class="confirm" data-confirm="dict-1" hidden><p>确认删除字典「用户性别」？</p><button type="button" class="btn-primary" data-delete="dict-1">确认删除</button><button type="button" class="btn-line" data-close-confirm="dict-1">取消</button></div>
+          </article>
+          <article class="record" data-id="dict-2" data-record="系统状态 sys_normal_disable">
+            <div class="record-main"><div class="record-copy"><p class="record-title">系统状态</p><p class="meta">sys_normal_disable · 正常</p></div><div class="record-actions"><button type="button" data-go="dictData">字典数据</button><button type="button" data-open-form="修改字典">修改</button><button type="button" data-open-confirm="dict-2">删除</button></div></div>
+            <div class="confirm" data-confirm="dict-2" hidden><p>确认删除字典「系统状态」？</p><button type="button" class="btn-primary" data-delete="dict-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="dict-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的字典。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="dictData" hidden>
+        <div class="head"><div><h1>字典数据</h1><p class="lead">维护某个字典下的标签、字典值和排序。</p></div><button type="button" class="btn-primary" data-open-form="新建字典数据">新建字典数据</button></div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建字典数据</h2>
+          <label class="field"><span>字典标签</span><input id="data-label" aria-label="字典标签" required placeholder="男"></label>
+          <p class="err" data-err-for="data-label" hidden></p>
+          <label class="field"><span>字典值</span><input id="data-value" aria-label="字典值" required placeholder="0"></label>
+          <p class="err" data-err-for="data-value" hidden></p>
+          <label class="field"><span>排序</span><input id="data-sort" aria-label="排序" placeholder="1"></label>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="男"></label></div>
+        <div class="records">
+          <article class="record" data-id="data-1" data-record="男 sys_user_sex">
+            <div class="record-main"><div class="record-copy"><p class="record-title">男</p><p class="meta">sys_user_sex · 字典值 0 · 排序 1 · 默认 · 正常</p></div><div class="record-actions"><button type="button" data-detail="data-1" aria-expanded="false">详情</button><button type="button" data-open-form="修改字典数据">修改</button><button type="button" data-open-confirm="data-1">删除</button></div></div>
+            <dl class="fields" data-detail-panel="data-1" hidden><div><dt>字典类型</dt><dd>sys_user_sex</dd></div><div><dt>字典标签</dt><dd>男</dd></div><div><dt>字典值</dt><dd>0</dd></div><div><dt>排序</dt><dd>1</dd></div><div><dt>是否默认</dt><dd>是</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+            <div class="confirm" data-confirm="data-1" hidden><p>确认删除字典数据「男」？</p><button type="button" class="btn-primary" data-delete="data-1">确认删除</button><button type="button" class="btn-line" data-close-confirm="data-1">取消</button></div>
+          </article>
+          <article class="record" data-id="data-2" data-record="女 sys_user_sex">
+            <div class="record-main"><div class="record-copy"><p class="record-title">女</p><p class="meta">sys_user_sex · 字典值 1 · 排序 2 · 正常</p></div><div class="record-actions"><button type="button" data-detail="data-2" aria-expanded="false">详情</button><button type="button" data-open-form="修改字典数据">修改</button><button type="button" data-open-confirm="data-2">删除</button></div></div>
+            <dl class="fields" data-detail-panel="data-2" hidden><div><dt>字典类型</dt><dd>sys_user_sex</dd></div><div><dt>字典标签</dt><dd>女</dd></div><div><dt>字典值</dt><dd>1</dd></div><div><dt>排序</dt><dd>2</dd></div><div><dt>是否默认</dt><dd>否</dd></div><div><dt>状态</dt><dd>正常</dd></div></dl>
+            <div class="confirm" data-confirm="data-2" hidden><p>确认删除字典数据「女」？</p><button type="button" class="btn-primary" data-delete="data-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="data-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的字典数据。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="config" hidden>
+        <div class="head"><div><h1>参数</h1><p class="lead">维护参数名称、键名和参数值。</p></div><button type="button" class="btn-primary" data-open-form="新建参数">新建参数</button></div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建参数</h2>
+          <label class="field"><span>参数名称</span><input id="config-name" aria-label="参数名称" required placeholder="主框架页-默认皮肤"></label>
+          <p class="err" data-err-for="config-name" hidden></p>
+          <label class="field"><span>参数键名</span><input id="config-key" aria-label="参数键名" required placeholder="sys.index.skinName"></label>
+          <p class="err" data-err-for="config-key" hidden></p>
+          <label class="field"><span>参数值</span><input id="config-value" aria-label="参数值" required placeholder="skin-warm"></label>
+          <p class="err" data-err-for="config-value" hidden></p>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="皮肤"></label></div>
+        <div class="records">
+          <article class="record" data-id="config-1" data-record="主框架页-默认皮肤 sys.index.skinName">
+            <div class="record-main"><div class="record-copy"><p class="record-title">主框架页-默认皮肤</p><p class="meta">sys.index.skinName · skin-warm · 内置</p></div><div class="record-actions"><button type="button" data-open-form="修改参数">修改</button></div></div>
+          </article>
+          <article class="record" data-id="config-2" data-record="用户初始密码 sys.user.initPassword">
+            <div class="record-main"><div class="record-copy"><p class="record-title">用户初始密码</p><p class="meta">sys.user.initPassword · 123456 · 内置</p></div><div class="record-actions"><button type="button" data-open-form="修改参数">修改</button><button type="button" data-open-confirm="config-2">删除</button></div></div>
+            <div class="confirm" data-confirm="config-2" hidden><p>确认删除参数「用户初始密码」？</p><button type="button" class="btn-primary" data-delete="config-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="config-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的参数。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="file" hidden>
+        <div class="head"><div><h1>文件</h1><p class="lead">查看已上传文件的名称、分类、大小和上传人。</p></div><button type="button" class="btn-primary" id="upload-btn">上传文件</button></div>
+        <p class="ok" id="upload-ok" hidden></p>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="入职说明"></label></div>
+        <div class="records">
+          <article class="record" data-id="file-1" data-record="入职说明.pdf">
+            <div class="record-main"><div class="record-copy"><p class="record-title">入职说明.pdf</p><p class="meta">文档 · pdf · 1.2 MB · 林晓 · 昨天</p></div><div class="record-actions"><button type="button" data-detail="file-1" aria-expanded="false">详情</button><button type="button" data-open-confirm="file-1">删除</button></div></div>
+            <dl class="fields" data-detail-panel="file-1" hidden><div><dt>原始文件名</dt><dd>入职说明.pdf</dd></div><div><dt>分类编码</dt><dd>doc</dd></div><div><dt>后缀</dt><dd>pdf</dd></div><div><dt>文件大小</dt><dd>1.2 MB</dd></div><div><dt>上传人</dt><dd>林晓</dd></div><div><dt>上传时间</dt><dd>昨天 16:20</dd></div></dl>
+            <div class="confirm" data-confirm="file-1" hidden><p>确认删除文件「入职说明.pdf」？</p><button type="button" class="btn-primary" data-delete="file-1">确认删除</button><button type="button" class="btn-line" data-close-confirm="file-1">取消</button></div>
+          </article>
+          <article class="record" data-id="file-2" data-record="证件照片.jpg">
+            <div class="record-main"><div class="record-copy"><p class="record-title">证件照片.jpg</p><p class="meta">图片 · jpg · 640 KB · 周启 · 10月20日</p></div><div class="record-actions"><button type="button" data-detail="file-2" aria-expanded="false">详情</button><button type="button" data-open-confirm="file-2">删除</button></div></div>
+            <dl class="fields" data-detail-panel="file-2" hidden><div><dt>原始文件名</dt><dd>证件照片.jpg</dd></div><div><dt>分类编码</dt><dd>image</dd></div><div><dt>后缀</dt><dd>jpg</dd></div><div><dt>文件大小</dt><dd>640 KB</dd></div><div><dt>上传人</dt><dd>周启</dd></div><div><dt>上传时间</dt><dd>10月20日</dd></div></dl>
+            <div class="confirm" data-confirm="file-2" hidden><p>确认删除文件「证件照片.jpg」？</p><button type="button" class="btn-primary" data-delete="file-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="file-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的文件。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="classify" hidden>
+        <div class="head"><div><h1>文件分类</h1><p class="lead">规定每一类文件的后缀、大小和个数。</p></div><button type="button" class="btn-primary" data-open-form="新建分类">新建分类</button></div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建分类</h2>
+          <label class="field"><span>分类名称</span><input id="cls-name" aria-label="分类名称" required placeholder="文档"></label>
+          <p class="err" data-err-for="cls-name" hidden></p>
+          <label class="field"><span>分类编码</span><input id="cls-code" aria-label="分类编码" required placeholder="doc"></label>
+          <p class="err" data-err-for="cls-code" hidden></p>
+          <label class="field"><span>允许后缀</span><input id="cls-ext" aria-label="允许后缀" placeholder="pdf,docx"></label>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools"><label class="search"><span>搜索</span><input data-search type="search" placeholder="文档"></label></div>
+        <div class="records">
+          <article class="record" data-id="cls-1" data-record="文档 doc">
+            <div class="record-main"><div class="record-copy"><p class="record-title">文档</p><p class="meta">doc · pdf,docx · 20 MB · 每次 5 个 · 正常</p></div><div class="record-actions"><button type="button" data-open-form="修改分类">修改</button><button type="button" data-open-confirm="cls-1">删除</button></div></div>
+            <div class="confirm" data-confirm="cls-1" hidden><p>确认删除分类「文档」？</p><button type="button" class="btn-primary" data-delete="cls-1">确认删除</button><button type="button" class="btn-line" data-close-confirm="cls-1">取消</button></div>
+          </article>
+          <article class="record" data-id="cls-2" data-record="图片 image">
+            <div class="record-main"><div class="record-copy"><p class="record-title">图片</p><p class="meta">image · jpg,png · 10 MB · 每次 9 个 · 正常</p></div><div class="record-actions"><button type="button" data-open-form="修改分类">修改</button><button type="button" data-open-confirm="cls-2">删除</button></div></div>
+            <div class="confirm" data-confirm="cls-2" hidden><p>确认删除分类「图片」？</p><button type="button" class="btn-primary" data-delete="cls-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="cls-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的分类。换个关键词再查。</p>
+      </section>
+
+      <section class="view" data-view="job" hidden>
+        <div class="head"><div><h1>定时任务</h1><p class="lead">查看任务名称、分组、Bean、Cron，并可以执行。</p></div><button type="button" class="btn-primary" data-open-form="新建任务">新建任务</button></div>
+        <form class="editor" data-form hidden>
+          <h2 data-form-title>新建任务</h2>
+          <label class="field"><span>任务名称</span><input id="job-name" aria-label="任务名称" required placeholder="清理过期日志"></label>
+          <p class="err" data-err-for="job-name" hidden></p>
+          <label class="field"><span>Bean 名称</span><input id="job-bean" aria-label="Bean 名称" required placeholder="cleanLogTask"></label>
+          <p class="err" data-err-for="job-bean" hidden></p>
+          <label class="field"><span>Cron</span><input id="job-cron" aria-label="Cron" required placeholder="0 0 2 * * ?"></label>
+          <p class="err" data-err-for="job-cron" hidden></p>
+          <div class="form-actions"><button type="submit" class="btn-primary">保存</button><button type="button" class="btn-line" data-close-form>取消</button></div>
+          <p class="ok" data-saved hidden></p>
+        </form>
+        <div class="tools">
+          <label class="search"><span>搜索</span><input data-search type="search" placeholder="清理过期日志"></label>
+          <div class="chips" role="group" aria-label="状态"><button type="button" data-filter="all" aria-pressed="true">全部</button><button type="button" data-filter="正常" aria-pressed="false">正常</button><button type="button" data-filter="暂停" aria-pressed="false">暂停</button></div>
+        </div>
+        <div class="records">
+          <article class="record" data-id="job-1" data-record="清理过期日志 cleanLogTask" data-state="正常">
+            <div class="record-main"><div class="record-copy"><p class="record-title">清理过期日志</p><p class="meta">默认 · Bean · cleanLogTask · 0 0 2 * * ? · 允许重叠 · 正常</p></div><div class="record-actions"><button type="button" data-run="job-1">执行</button><button type="button" data-open-form="修改任务">修改</button><button type="button" data-go="jobLog">日志</button><button type="button" data-open-confirm="job-1">删除</button></div></div>
+            <p class="ok" data-run-status="job-1" hidden></p>
+            <div class="confirm" data-confirm="job-1" hidden><p>确认删除任务「清理过期日志」？</p><button type="button" class="btn-primary" data-delete="job-1">确认删除</button><button type="button" class="btn-line" data-close-confirm="job-1">取消</button></div>
+          </article>
+          <article class="record" data-id="job-2" data-record="同步字典 syncDictTask" data-state="暂停">
+            <div class="record-main"><div class="record-copy"><p class="record-title">同步字典</p><p class="meta">系统 · Bean · syncDictTask · 0 0/30 * * * ? · 暂停</p></div><div class="record-actions"><button type="button" data-run="job-2">执行</button><button type="button" data-open-form="修改任务">修改</button><button type="button" data-go="jobLog">日志</button><button type="button" data-open-confirm="job-2">删除</button></div></div>
+            <p class="ok" data-run-status="job-2" hidden></p>
+            <div class="confirm" data-confirm="job-2" hidden><p>确认删除任务「同步字典」？</p><button type="button" class="btn-primary" data-delete="job-2">确认删除</button><button type="button" class="btn-line" data-close-confirm="job-2">取消</button></div>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的任务。换个关键词，或改看全部状态。</p>
+      </section>
+
+      <section class="view" data-view="jobLog" hidden>
+        <div class="head"><div><h1>执行日志</h1><p class="lead">查看每次执行的来源、状态、时间和耗时。</p></div></div>
+        <div class="tools">
+          <label class="search"><span>搜索</span><input data-search type="search" placeholder="清理过期日志"></label>
+          <div class="chips" role="group" aria-label="状态"><button type="button" data-filter="all" aria-pressed="true">全部</button><button type="button" data-filter="成功" aria-pressed="false">成功</button><button type="button" data-filter="失败" aria-pressed="false">失败</button></div>
+        </div>
+        <div class="records">
+          <article class="record" data-id="jlog-1" data-record="清理过期日志" data-state="成功">
+            <div class="record-main"><div class="record-copy"><p class="record-title">清理过期日志</p><p class="meta">手动 · 成功 · 今天 02:00 · 耗时 1.2 秒</p></div><div class="record-actions"><button type="button" data-detail="jlog-1" aria-expanded="false">查看过程</button></div></div>
+            <dl class="fields" data-detail-panel="jlog-1" hidden><div><dt>触发来源</dt><dd>手动</dd></div><div><dt>状态</dt><dd>成功</dd></div><div><dt>开始时间</dt><dd>今天 02:00:00</dd></div><div><dt>结束时间</dt><dd>今天 02:00:01</dd></div><div><dt>耗时</dt><dd>1.2 秒</dd></div><div><dt>任务参数</dt><dd>keepDays=30</dd></div></dl>
+          </article>
+          <article class="record" data-id="jlog-2" data-record="同步字典" data-state="失败">
+            <div class="record-main"><div class="record-copy"><p class="record-title">同步字典</p><p class="meta">调度 · 失败 · 昨天 18:30 · 耗时 8 秒</p></div><div class="record-actions"><button type="button" data-detail="jlog-2" aria-expanded="false">查看过程</button></div></div>
+            <dl class="fields" data-detail-panel="jlog-2" hidden><div><dt>触发来源</dt><dd>调度</dd></div><div><dt>状态</dt><dd>失败</dd></div><div><dt>开始时间</dt><dd>昨天 18:30:00</dd></div><div><dt>结束时间</dt><dd>昨天 18:30:08</dd></div><div><dt>耗时</dt><dd>8 秒</dd></div><div><dt>任务参数</dt><dd>dictType=sys_user_sex</dd></div></dl>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的执行日志。换个关键词，或改看全部状态。</p>
+      </section>
+
+      <section class="view" data-view="oper" hidden>
+        <div class="head"><div><h1>操作日志</h1><p class="lead">查看谁在什么时间调用了哪个地址。</p></div></div>
+        <div class="tools">
+          <label class="search"><span>搜索</span><input data-search type="search" placeholder="林晓"></label>
+          <div class="chips" role="group" aria-label="状态"><button type="button" data-filter="all" aria-pressed="true">全部</button><button type="button" data-filter="成功" aria-pressed="false">成功</button><button type="button" data-filter="失败" aria-pressed="false">失败</button></div>
+        </div>
+        <div class="records">
+          <article class="record" data-id="oper-1" data-record="林晓 修改用户" data-state="成功">
+            <div class="record-main"><div class="record-copy"><p class="record-title">林晓修改了用户</p><p class="meta">PUT · /system/user · 成功 · 86 ms · 今天 09:24</p></div><div class="record-actions"><button type="button" data-detail="oper-1" aria-expanded="false">详情</button></div></div>
+            <dl class="fields" data-detail-panel="oper-1" hidden><div><dt>操作人</dt><dd>林晓</dd></div><div><dt>请求方式</dt><dd>PUT</dd></div><div><dt>URL</dt><dd>/system/user</dd></div><div><dt>IP</dt><dd>10.0.0.18</dd></div><div><dt>地点</dt><dd>上海</dd></div><div><dt>浏览器</dt><dd>Chrome</dd></div><div><dt>耗时</dt><dd>86 ms</dd></div><div><dt>状态</dt><dd>成功</dd></div><div><dt>操作时间</dt><dd>今天 09:24</dd></div></dl>
+          </article>
+          <article class="record" data-id="oper-2" data-record="周启 删除角色" data-state="失败">
+            <div class="record-main"><div class="record-copy"><p class="record-title">周启删除角色未成功</p><p class="meta">DELETE · /system/role · 失败 · 40 ms · 昨天 11:02</p></div><div class="record-actions"><button type="button" data-detail="oper-2" aria-expanded="false">详情</button></div></div>
+            <dl class="fields" data-detail-panel="oper-2" hidden><div><dt>操作人</dt><dd>周启</dd></div><div><dt>请求方式</dt><dd>DELETE</dd></div><div><dt>URL</dt><dd>/system/role</dd></div><div><dt>IP</dt><dd>10.0.0.22</dd></div><div><dt>状态</dt><dd>失败</dd></div><div><dt>错误信息</dt><dd>该角色仍有用户在使用。</dd></div><div><dt>操作时间</dt><dd>昨天 11:02</dd></div></dl>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的操作日志。换个关键词，或改看全部状态。</p>
+      </section>
+
+      <section class="view" data-view="loginLog" hidden>
+        <div class="head"><div><h1>登录日志</h1><p class="lead">查看登录账号、地点、浏览器和结果。</p></div></div>
+        <div class="tools">
+          <label class="search"><span>搜索</span><input data-search type="search" placeholder="linxiao"></label>
+          <div class="chips" role="group" aria-label="状态"><button type="button" data-filter="all" aria-pressed="true">全部</button><button type="button" data-filter="成功" aria-pressed="false">成功</button><button type="button" data-filter="失败" aria-pressed="false">失败</button></div>
+        </div>
+        <div class="records">
+          <article class="record" data-id="ll-1" data-record="linxiao" data-state="成功">
+            <div class="record-main"><div class="record-copy"><p class="record-title">linxiao</p><p class="meta">成功 · Chrome · macOS · 上海 · 今天 08:02</p></div><div class="record-actions"><button type="button" data-detail="ll-1" aria-expanded="false">详情</button></div></div>
+            <dl class="fields" data-detail-panel="ll-1" hidden><div><dt>用户名</dt><dd>linxiao</dd></div><div><dt>状态</dt><dd>成功</dd></div><div><dt>IP</dt><dd>10.0.0.18</dd></div><div><dt>地点</dt><dd>上海</dd></div><div><dt>浏览器</dt><dd>Chrome</dd></div><div><dt>操作系统</dt><dd>macOS</dd></div><div><dt>登录时间</dt><dd>今天 08:02</dd></div></dl>
+          </article>
+          <article class="record" data-id="ll-2" data-record="zhouqi" data-state="失败">
+            <div class="record-main"><div class="record-copy"><p class="record-title">zhouqi</p><p class="meta">失败 · Chrome · Windows · 杭州 · 昨天 23:18</p></div><div class="record-actions"><button type="button" data-detail="ll-2" aria-expanded="false">详情</button></div></div>
+            <dl class="fields" data-detail-panel="ll-2" hidden><div><dt>用户名</dt><dd>zhouqi</dd></div><div><dt>状态</dt><dd>失败</dd></div><div><dt>IP</dt><dd>10.0.0.22</dd></div><div><dt>地点</dt><dd>杭州</dd></div><div><dt>浏览器</dt><dd>Chrome</dd></div><div><dt>操作系统</dt><dd>Windows</dd></div><div><dt>登录时间</dt><dd>昨天 23:18</dd></div></dl>
+          </article>
+        </div>
+        <p class="empty" data-empty hidden>没有符合条件的登录日志。换个关键词，或改看全部状态。</p>
+      </section>
+
+      <section class="view" data-view="profile" hidden>
+        <div class="head"><div><h1>个人中心</h1><p class="lead">修改自己的头像、昵称、手机、邮箱和密码。</p></div></div>
+        <div class="profile">
+          <div class="avatar" aria-hidden="true">林</div>
+          <div><p class="record-title">林晓</p><p class="meta">linxiao</p></div>
+        </div>
+        <form class="editor editor-show" id="profile-form">
+          <label class="field"><span>昵称</span><input id="profile-nick" aria-label="昵称" required value="林晓"></label>
+          <p class="err" data-err-for="profile-nick" hidden></p>
+          <label class="field"><span>手机号码</span><input id="profile-phone" aria-label="手机号码" required value="13800002618"></label>
+          <p class="err" data-err-for="profile-phone" hidden></p>
+          <label class="field"><span>邮箱</span><input id="profile-mail" aria-label="邮箱" type="email" value="linxiao@quick.dev"></label>
+          <label class="field"><span>当前密码</span><input id="profile-old" aria-label="当前密码" type="password"></label>
+          <label class="field"><span>新密码</span><input id="profile-new" aria-label="新密码" type="password"></label>
+          <button type="submit" class="btn-primary">保存资料</button>
+          <p class="ok" data-saved hidden></p>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+<style>
+  #qb-style {
+    --bg: light-dark(#f6f3ee, #12110f);
+    --surface: light-dark(#fffcf9, #1c1916);
+    --ink: light-dark(#1a1814, #f6f1ea);
+    --muted: light-dark(#5c564e, #c4bbb0);
+    --line: light-dark(#e6dfd6, #3a342c);
+    --accent: light-dark(#9a3412, #f0b090);
+    --fill: light-dark(#9a3412, #e08a55);
+    --on: light-dark(#fffaf6, #1c120c);
+    --soft: light-dark(#f6e6dc, #3a261c);
+    --ok: light-dark(#1f6b45, #9dceb4);
+    --bad: light-dark(#8f1d1d, #ffb4b4);
+    color: var(--ink);
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  #qb-style .vis-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  #qb-style [hidden] { display: none !important; }
+  #qb-style .app { display: grid; grid-template-columns: 196px minmax(0, 1fr); background: var(--bg); color: var(--ink); color-scheme: light dark; min-height: 100%; }
+  #qb-style .side { padding: 16px 12px 28px; background: var(--surface); border-right: 1px solid var(--line); }
+  #qb-style .brand { border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 500; letter-spacing: 0.04em; min-height: 44px; padding: 8px; cursor: pointer; }
+  #qb-style .group { margin: 16px 8px 4px; color: var(--muted); font-size: 13px; }
+  #qb-style .nav { display: flex; flex-direction: column; }
+  #qb-style .nav button { min-height: 40px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  #qb-style .nav button[aria-current="page"] { background: var(--soft); color: var(--accent); }
+  #qb-style .main { padding: 24px 20px 48px; min-width: 0; }
+  #qb-style h1 { margin: 0; font-size: 28px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.25; }
+  #qb-style h2 { margin: 22px 0 10px; font-size: 16px; font-weight: 500; }
+  #qb-style .kicker { margin: 0 0 8px; color: var(--accent); font-size: 14px; font-weight: 500; }
+  #qb-style .lead { margin: 8px 0 0; color: var(--muted); }
+  #qb-style .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 16px; }
+  #qb-style .head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #qb-style .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+  #qb-style .tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 88px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  #qb-style .tile-title { font-weight: 500; }
+  #qb-style .meta { color: var(--muted); font-size: 14px; }
+  #qb-style .tools { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin: 18px 0; }
+  #qb-style .search, #qb-style .field { display: flex; flex-direction: column; gap: 6px; }
+  #qb-style .search { flex: 1 1 220px; }
+  #qb-style .search span, #qb-style .field span { font-size: 14px; font-weight: 500; }
+  #qb-style input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
+  #qb-style input::placeholder { color: var(--muted); opacity: 1; }
+  #qb-style .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  #qb-style .chips button, #qb-style .btn-line, #qb-style .btn-primary, #qb-style .record-actions button { font: inherit; cursor: pointer; }
+  #qb-style .chips button { min-height: 40px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); }
+  #qb-style .chips button[aria-pressed="true"] { background: var(--soft); color: var(--accent); border-color: transparent; }
+  #qb-style .btn-primary { min-height: 44px; padding: 8px 16px; border: 0; border-radius: 12px; background: var(--fill); color: var(--on); font-weight: 500; }
+  #qb-style .btn-line { min-height: 44px; padding: 8px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); }
+  #qb-style .records { display: flex; flex-direction: column; gap: 10px; }
+  #qb-style .record { padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+  #qb-style .record.child { margin-left: 22px; }
+  #qb-style .record-main { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 12px; align-items: center; }
+  #qb-style .record-title { margin: 0; font-weight: 500; }
+  #qb-style .record-copy { min-width: 0; flex: 1 1 200px; }
+  #qb-style .record-actions { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  #qb-style .record-actions button { min-height: 44px; padding: 8px 2px; border: 0; background: transparent; color: var(--accent); }
+  #qb-style .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px 16px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+  #qb-style .fields div { margin: 0; }
+  #qb-style dt { color: var(--muted); font-size: 13px; }
+  #qb-style dd { margin: 0; }
+  #qb-style .editor { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+  #qb-style .editor-in { margin-top: 8px; }
+  #qb-style .editor-show { display: block; max-width: 460px; }
+  #qb-style .field { margin-bottom: 12px; }
+  #qb-style .form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #qb-style .confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+  #qb-style .confirm p, #qb-style .ok, #qb-style .err, #qb-style .empty { margin: 8px 0 0; }
+  #qb-style .err { color: var(--bad); font-size: 14px; }
+  #qb-style .ok { color: var(--ok); font-size: 14px; }
+  #qb-style .empty { color: var(--muted); }
+  #qb-style .profile { display: flex; align-items: center; gap: 14px; margin: 18px 0; }
+  #qb-style .avatar { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--soft); color: var(--accent); font-size: 24px; font-weight: 500; }
+  #qb-style :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 720px) {
+    #qb-style .app { grid-template-columns: 1fr; }
+    #qb-style .side { border-right: 0; border-bottom: 1px solid var(--line); }
+    #qb-style .nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    #qb-style .group { width: 100%; }
+    #qb-style .main { padding: 18px 14px 36px; }
+    #qb-style h1 { font-size: 24px; }
+    #qb-style .record.child { margin-left: 12px; }
+  }
+</style>
+<script>
+(function () {
+  var root = document.getElementById('qb-style')
+  if (!root) return
+  var views = root.querySelectorAll('[data-view]')
+  var tabs = root.querySelectorAll('.nav [data-go]')
+
+  function setText(node, text) {
+    if (!node) return
+    node.textContent = text
+    node.hidden = !text
+  }
+
+  function applyFilter(view) {
+    if (!view) return
+    var search = view.querySelector('[data-search]')
+    var q = search ? search.value.trim().toLowerCase() : ''
+    var current = view.querySelector('[data-filter][aria-pressed="true"]')
+    var state = current ? current.getAttribute('data-filter') : 'all'
+    var fold = view.querySelector('[data-fold]')
+    var folded = fold && fold.getAttribute('aria-expanded') === 'false'
+    var visible = 0
+    view.querySelectorAll('[data-record]').forEach(function (row) {
+      if (row.getAttribute('data-removed') === 'true') {
+        row.hidden = true
+        return
+      }
+      var text = (row.getAttribute('data-record') || '').toLowerCase()
+      var rowState = row.getAttribute('data-state')
+      var textOk = !q || text.indexOf(q) !== -1
+      var stateOk = state === 'all' || !rowState || rowState === state
+      var childHidden = folded && row.hasAttribute('data-child')
+      var show = textOk && stateOk && !childHidden
+      row.hidden = !show
+      if (show) visible += 1
+    })
+    var empty = view.querySelector('[data-empty]')
+    if (empty) {
+      var hasRows = view.querySelector('[data-record]')
+      empty.hidden = !hasRows || visible !== 0
+    }
+  }
+
+  function show(name) {
+    views.forEach(function (view) {
+      view.hidden = view.getAttribute('data-view') !== name
+    })
+    tabs.forEach(function (tab) {
+      if (tab.getAttribute('data-go') === name) tab.setAttribute('aria-current', 'page')
+      else tab.removeAttribute('aria-current')
+    })
+  }
+
+  root.addEventListener('click', function (event) {
+    var go = event.target.closest('[data-go]')
+    if (go && root.contains(go)) show(go.getAttribute('data-go'))
+
+    var detail = event.target.closest('[data-detail]')
+    if (detail && root.contains(detail)) {
+      var panel = root.querySelector('[data-detail-panel="' + detail.getAttribute('data-detail') + '"]')
+      if (panel) {
+        panel.hidden = !panel.hidden
+        detail.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true')
+      }
+    }
+
+    var opener = event.target.closest('[data-open-form]')
+    if (opener && root.contains(opener)) {
+      var view = opener.closest('[data-view]')
+      var form = view.querySelector('[data-form]')
+      var title = form.querySelector('[data-form-title]')
+      if (title) title.textContent = opener.getAttribute('data-open-form')
+      form.hidden = false
+    }
+
+    var closer = event.target.closest('[data-close-form]')
+    if (closer && root.contains(closer)) closer.closest('[data-form]').hidden = true
+
+    var ask = event.target.closest('[data-open-confirm]')
+    if (ask && root.contains(ask)) {
+      var confirmBox = root.querySelector('[data-confirm="' + ask.getAttribute('data-open-confirm') + '"]')
+      if (confirmBox) confirmBox.hidden = false
+    }
+    var shut = event.target.closest('[data-close-confirm]')
+    if (shut && root.contains(shut)) {
+      var box = root.querySelector('[data-confirm="' + shut.getAttribute('data-close-confirm') + '"]')
+      if (box) box.hidden = true
+    }
+    var remove = event.target.closest('[data-delete]')
+    if (remove && root.contains(remove)) {
+      var record = root.querySelector('[data-id="' + remove.getAttribute('data-delete') + '"]')
+      if (record) {
+        record.setAttribute('data-removed', 'true')
+        record.hidden = true
+        applyFilter(record.closest('[data-view]'))
+      }
+    }
+
+    var reset = event.target.closest('[data-open-reset]')
+    if (reset && root.contains(reset)) {
+      var resetForm = root.querySelector('[data-reset="' + reset.getAttribute('data-open-reset') + '"]')
+      if (resetForm) resetForm.hidden = false
+    }
+
+    var run = event.target.closest('[data-run]')
+    if (run && root.contains(run)) {
+      setText(root.querySelector('[data-run-status="' + run.getAttribute('data-run') + '"]'), '已提交执行。')
+    }
+
+    var fold = event.target.closest('[data-fold]')
+    if (fold && root.contains(fold)) {
+      var expanded = fold.getAttribute('aria-expanded') === 'true'
+      fold.setAttribute('aria-expanded', expanded ? 'false' : 'true')
+      fold.textContent = expanded ? '展开下级' : '折叠下级'
+      applyFilter(fold.closest('[data-view]'))
+    }
+
+    var chip = event.target.closest('[data-filter]')
+    if (chip && root.contains(chip)) {
+      var host = chip.closest('[data-view]')
+      host.querySelectorAll('[data-filter]').forEach(function (item) {
+        item.setAttribute('aria-pressed', item === chip ? 'true' : 'false')
+      })
+      applyFilter(host)
+    }
+  })
+
+  root.querySelectorAll('[data-search]').forEach(function (input) {
+    input.addEventListener('input', function () {
+      applyFilter(input.closest('[data-view]'))
+    })
+  })
+
+  root.querySelectorAll('form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault()
+      var bad = false
+      form.querySelectorAll('[required]').forEach(function (input) {
+        var err = form.querySelector('[data-err-for="' + input.id + '"]')
+        var label = input.getAttribute('aria-label') || '这项'
+        var value = input.value.trim()
+        var message = ''
+        if (!value) message = '请填写' + label + '。'
+        else if (input.id === 'user-phone' || input.id === 'profile-phone') {
+          if (!/^1\d{10}$/.test(value)) message = '请输入 11 位手机号。'
+        } else if (input.type === 'password' && value.length < 6) message = '密码至少 6 位。'
+        if (message) {
+          bad = true
+          setText(err, message)
+        } else setText(err, '')
+      })
+      var saved = form.querySelector('[data-saved]')
+      if (bad) setText(saved, '')
+      else setText(saved, '已保存。')
+    })
+    form.addEventListener('input', function (event) {
+      if (!event.target.id) return
+      setText(form.querySelector('[data-err-for="' + event.target.id + '"]'), '')
+      setText(form.querySelector('[data-saved]'), '')
+    })
+  })
+
+  var upload = document.getElementById('upload-btn')
+  if (upload) {
+    upload.addEventListener('click', function () {
+      setText(document.getElementById('upload-ok'), '选择文件后即可上传。')
+    })
+  }
+
+  show('home')
+})()
+</script>
+
+<script>
+(function () {
+  var bar = document.querySelector('.scheme-bar')
+  if (!bar) return
+  bar.addEventListener('click', function (event) {
+    var btn = event.target.closest('[data-pick]')
+    if (!btn || !bar.contains(btn)) return
+    document.documentElement.setAttribute('data-scheme', btn.getAttribute('data-pick'))
+    bar.querySelectorAll('[data-pick]').forEach(function (item) {
+      item.setAttribute('aria-pressed', item === btn ? 'true' : 'false')
+    })
+  })
+})()
+</script>
+</body>
+</html>

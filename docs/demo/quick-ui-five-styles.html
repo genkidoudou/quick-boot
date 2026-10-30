@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick 五套界面风格</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #f3f3f3;
+      color: #1a1a1a;
+      font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+    .page-intro {
+      width: min(100% - 32px, 760px);
+      margin: 0 auto;
+      padding: 28px 0 8px;
+    }
+    .page-intro h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+    .page-intro p { margin: 6px 0 0; color: #666; font-size: 14px; }
+    .sample { width: min(100% - 32px, 760px); margin: 0 auto; padding: 28px 0 8px; }
+    .sample > h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .sample > .note { margin: 4px 0 12px; color: #666; font-size: 14px; }
+    .frame {
+      width: min(100%, 400px);
+      margin: 0 auto 22px;
+      overflow: hidden;
+      border: 1px solid #e4e4e4;
+      border-radius: 28px;
+      background: #fff;
+    }
+    .wide { width: min(100%, 720px); border-radius: 18px; }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    svg.ico { width: 24px; height: 24px; display: block; }
+    .screen-tag {
+      width: min(100%, 400px);
+      margin: 0 auto 8px;
+      color: #888;
+      font-size: 12px;
+    }
+    .wide + .screen-tag, .sample .wide { }
+    .tag-wide { width: min(100%, 720px); }
+
+    .blue .frame { background: #f5f6f8; }
+    .blue .hello { padding: 22px 16px 6px; }
+    .blue .hello h3 { margin: 0; font-size: 22px; font-weight: 600; }
+    .blue .hello p { margin: 4px 0 0; color: #666; font-size: 13px; }
+    .blue h4 { margin: 14px 16px 8px; font-size: 14px; font-weight: 600; }
+    .blue .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 4px; padding: 0 8px 18px; }
+    .blue .cell {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      border: 0; background: transparent; font-size: 12px; color: #1f1f1f;
+    }
+    .blue .well {
+      width: 48px; height: 48px; border-radius: 16px; background: #e8f3ff;
+      display: grid; place-items: center; color: #0958d9;
+    }
+    .blue .bar, .green .bar, .red .bar {
+      display: grid; grid-template-columns: 52px 1fr 52px; align-items: center;
+      min-height: 48px; padding: 0 8px;
+    }
+    .blue .bar { background: #fff; }
+    .blue .bar b, .green .bar b, .red .bar b { text-align: center; font-size: 17px; }
+    .blue .back, .blue .action, .green .back, .red .back, .red .action {
+      border: 0; background: transparent; color: #0958d9; font-size: 15px;
+    }
+    .blue .sheet { margin: 12px; background: #fff; border-radius: 12px; overflow: hidden; }
+    .blue .person { padding: 12px 14px; border-bottom: 1px solid #f2f2f2; }
+    .blue .person:last-child { border-bottom: 0; }
+    .blue .person b, .green .person b, .red .person b, .gold .person b { display: block; font-size: 16px; font-weight: 600; }
+    .blue .person span, .green .person span, .red .person span { display: block; margin-top: 2px; color: #666; font-size: 13px; }
+    .blue form, .green form, .red form, .gold form, .swiss form { padding: 8px 16px 20px; }
+    .blue label, .green label, .red label, .gold label, .swiss label { display: block; margin-top: 12px; font-size: 13px; font-weight: 600; }
+    .blue input, .green input, .red input, .gold input, .swiss input {
+      display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 0 12px;
+    }
+    .blue input { border: 1px solid #e5e5e5; border-radius: 10px; background: #fff; }
+    .blue .go, .green .go, .red .go, .gold .go, .swiss .go {
+      display: block; width: 100%; min-height: 44px; margin-top: 16px; border: 0; font-weight: 600;
+    }
+    .blue .go { border-radius: 10px; background: #0958d9; color: #fff; }
+    .off { color: #cf1322; font-style: normal; }
+
+    .green .frame { background: #ededed; }
+    .green .me { display: flex; gap: 12px; align-items: center; padding: 22px 16px 8px; }
+    .green .avatar {
+      width: 56px; height: 56px; border-radius: 8px; background: #07c160; color: #fff;
+      display: grid; place-items: center; font-size: 22px; font-weight: 600;
+    }
+    .green .me b { display: block; font-size: 20px; }
+    .green .me span { color: #666; font-size: 13px; }
+    .green .glabel { margin: 14px 16px 6px; color: #666; font-size: 13px; }
+    .green .gcard { margin: 0 10px; background: #fff; border-radius: 8px; overflow: hidden; }
+    .green .grow {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; min-height: 52px; padding: 0 16px; border: 0; border-bottom: 1px solid #f0f0f0;
+      background: #fff; text-align: left; font-size: 17px;
+    }
+    .green .grow:last-child { border-bottom: 0; }
+    .green .grow i {
+      width: 8px; height: 8px; border-top: 1.5px solid #c8c8c8; border-right: 1.5px solid #c8c8c8;
+      transform: rotate(45deg);
+    }
+    .green .bar { background: #ededed; }
+    .green .back { border: 0; background: transparent; font-size: 15px; }
+    .green .person { padding: 12px 16px; background: #fff; border-bottom: 1px solid #f0f0f0; }
+    .green form { background: #ededed; }
+    .green input { border: 0; border-radius: 8px; background: #fff; }
+    .green .go { border-radius: 8px; background: #07c160; color: #fff; }
+
+    .red .frame { background: #fff; }
+    .red .hello { padding: 22px 16px 14px; }
+    .red .hello h3 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .red .hello p { margin: 6px 0 0; color: #666; font-size: 13px; }
+    .red .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 18px; }
+    .red .card {
+      text-align: left; min-height: 96px; padding: 14px; border: 0; border-radius: 18px; background: #f6f6f6;
+    }
+    .red .card b { display: block; font-size: 16px; font-weight: 700; }
+    .red .card span { display: block; margin-top: 6px; color: #666; font-size: 12px; }
+    .red .card em { display: block; margin-top: 10px; color: #ff2442; font-style: normal; font-size: 12px; font-weight: 600; }
+    .red .person { margin: 0 16px 10px; padding: 14px; border-radius: 18px; background: #f6f6f6; }
+    .red .bar b { color: #111; }
+    .red .action, .red .back { color: #ff2442; }
+    .red input { border: 0; border-radius: 14px; background: #f6f6f6; }
+    .red .go { border-radius: 999px; background: #ff2442; color: #fff; }
+
+    .gold .frame { background: #0c1020; color: #f6f1e4; border-color: #1c2236; }
+    .gold .hello { padding: 28px 24px 8px; }
+    .gold .eyebrow { margin: 0; color: #e8c872; font-size: 12px; letter-spacing: 0.18em; }
+    .gold h3 {
+      margin: 8px 0 0; font-family: "Songti SC", "STSong", "SimSun", serif;
+      font-size: 40px; font-weight: 400; letter-spacing: -0.03em;
+    }
+    .gold .hello p { margin: 8px 0 0; color: #b7ab96; font-size: 14px; }
+    .gold .index { padding: 12px 24px 8px; }
+    .gold .line {
+      display: flex; gap: 16px; align-items: baseline; width: 100%;
+      padding: 13px 0; border: 0; border-bottom: 1px solid rgba(232, 200, 114, 0.28);
+      background: transparent; text-align: left; color: inherit;
+    }
+    .gold .num { width: 28px; color: #e8c872; font-variant-numeric: tabular-nums; font-size: 13px; }
+    .gold .line b { font-weight: 500; font-size: 16px; }
+    .gold .line span { margin-left: auto; color: #b7ab96; font-size: 13px; }
+    .gold .person { padding: 14px 0; border-bottom: 1px solid rgba(232, 200, 114, 0.28); }
+    .gold .person span { color: #b7ab96; font-size: 13px; }
+    .gold .pad { padding: 8px 24px 24px; }
+    .gold .bar { display: flex; justify-content: space-between; align-items: baseline; padding-top: 18px; }
+    .gold .bar b { font-family: "Songti SC", "STSong", "SimSun", serif; font-size: 32px; font-weight: 400; }
+    .gold .back { border: 0; background: transparent; color: #e8c872; }
+    .gold label { color: #b7ab96; font-weight: 500; }
+    .gold input { border: 0; border-bottom: 1px solid rgba(232, 200, 114, 0.45); border-radius: 0; background: transparent; color: #f6f1e4; padding: 0; }
+    .gold .go { border-radius: 0; background: #e8c872; color: #1a1408; }
+
+    .swiss .frame { background: #fff; border-radius: 0; border-color: #111; }
+    .swiss .hello { padding: 22px 22px 8px; }
+    .swiss .mark { width: 12px; height: 12px; background: #e10600; }
+    .swiss .brand { margin: 10px 0 0; font-size: 13px; letter-spacing: 0.14em; }
+    .swiss h3 { margin: 8px 0 0; font-size: 52px; line-height: 0.92; font-weight: 700; letter-spacing: -0.045em; }
+    .swiss .idx { display: grid; grid-template-columns: 1fr 1fr; padding: 18px 22px 8px; }
+    .swiss .idx button {
+      border: 0; border-top: 2px solid #111; background: #fff; text-align: left;
+      font-size: 22px; font-weight: 600; padding: 12px 12px 12px 0;
+    }
+    .swiss .table { padding: 6px 22px 0; }
+    .swiss .sw-head, .swiss .sw-row {
+      display: grid; grid-template-columns: 1.3fr 1fr 72px; gap: 8px; align-items: baseline;
+    }
+    .swiss .sw-head { color: #666; font-size: 12px; padding-bottom: 6px; }
+    .swiss .sw-row { border-top: 2px solid #111; padding: 14px 0; font-size: 18px; }
+    .swiss .pad { padding: 8px 22px 22px; }
+    .swiss .bar b { display: block; margin-top: 8px; font-size: 40px; line-height: 1; letter-spacing: -0.04em; }
+    .swiss .back { border: 0; background: transparent; padding: 0; font-size: 14px; }
+    .swiss label { font-size: 12px; letter-spacing: 0.04em; }
+    .swiss input { border: 0; border-bottom: 2px solid #111; border-radius: 0; padding: 0; background: transparent; }
+    .swiss .go { border-radius: 0; background: #111; color: #fff; }
+    .swiss .go:hover { background: #e10600; }
+    @media (max-width: 720px) {
+      .swiss h3 { font-size: 40px; }
+      .swiss .idx { grid-template-columns: 1fr; }
+      .swiss .idx button { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<svg width="0" height="0" hidden>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.6 19c1.2-2.8 3.4-4.2 6.4-4.2s5.2 1.4 6.4 4.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-badge" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.2l1 2.1 2.3.3-1.7 1.6.4 2.3L12 13.4 9.9 14.5l.4-2.3-1.7-1.6 2.3-.3z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-org" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="16" width="6" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14.5" y="16" width="6" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v4M6.5 16v-2h11V12" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M6 5.5h11.5V19H7.2A2.2 2.2 0 0 0 5 16.8V7.7A2.2 2.2 0 0 1 7.2 5.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6 5.5h.2A2 2 0 0 1 8.2 7.5V19" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M4 12.5V5h7.5L20 13.5 12.5 21z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="8.2" cy="8.2" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M5 8h14M5 16h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="9" cy="8" r="2" fill="#f5f6f8" stroke="currentColor" stroke-width="1.7"/><circle cx="15" cy="16" r="2" fill="#f5f6f8" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3.5V8h4.5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 8.5V18.5h17V8.5H11L9.2 6.5H3.5v2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.5V12l2.6 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2-4 3 8 2-4h7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4.2L19 9.2 14.8 5 4 15.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 7l4 4" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M11 12h9M17 12v2.5M14.2 12v2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-me" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 16.2c.8-1.5 2.1-2.2 4-2.2s3.2.7 4 2.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="page-intro">
+  <h1>五套界面</h1>
+  <p>每套都包含全部功能入口，并各放了一页用户列表和新建表单。姓名和记录是示意。</p>
+</div>
+
+<section class="sample blue">
+  <h2>1 海蓝</h2>
+  <p class="note">白底、同一蓝色、四列图标。接近常见的生活服务应用。</p>
+  <p class="screen-tag">首页</p>
+  <div class="frame">
+    <div class="hello"><h3>你好，林晓</h3><p>要办的事，从这里进。</p></div>
+    <h4>组织与账号</h4>
+    <div class="grid">
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-user"/></svg></span>用户</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-badge"/></svg></span>角色</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-org"/></svg></span>部门</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-menu"/></svg></span>菜单</button>
+    </div>
+    <h4>系统配置</h4>
+    <div class="grid">
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-book"/></svg></span>字典</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-tag"/></svg></span>字典数据</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-sliders"/></svg></span>参数</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-file"/></svg></span>文件</button>
+    </div>
+    <h4>任务与记录</h4>
+    <div class="grid">
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-folder"/></svg></span>文件分类</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-clock"/></svg></span>定时任务</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-pulse"/></svg></span>执行日志</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-edit"/></svg></span>操作日志</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-key"/></svg></span>登录日志</button>
+      <button class="cell" type="button"><span class="well"><svg class="ico"><use href="#i-me"/></svg></span>个人中心</button>
+    </div>
+  </div>
+  <p class="screen-tag">用户列表 · 新建</p>
+  <div class="frame">
+    <div class="bar"><button class="back" type="button">返回</button><b>用户</b><button class="action" type="button">新建</button></div>
+    <div class="sheet">
+      <div class="person"><b>林晓</b><span>产品部 · 普通角色 · 13800002618 · 正常</span></div>
+      <div class="person"><b>周启</b><span>研发部 · 管理员 · 13900001120 · <i class="off">停用</i></span></div>
+    </div>
+    <form>
+      <label>用户名<input placeholder="linxiao"></label>
+      <label>昵称<input placeholder="林晓"></label>
+      <label>手机号码<input placeholder="13800002618"></label>
+      <button class="go" type="button">保存</button>
+    </form>
+  </div>
+</section>
+
+<section class="sample green">
+  <h2>2 松绿</h2>
+  <p class="note">灰底白卡片、大字列表、绿色主按钮。首页就是分组清单。</p>
+  <p class="screen-tag">首页</p>
+  <div class="frame">
+    <div class="me"><div class="avatar">林</div><div><b>林晓</b><span>linxiao</span></div></div>
+    <p class="glabel">组织与账号</p>
+    <div class="gcard">
+      <button class="grow" type="button">用户<i></i></button>
+      <button class="grow" type="button">角色<i></i></button>
+      <button class="grow" type="button">部门<i></i></button>
+    </div>
+    <p class="glabel">系统配置</p>
+    <div class="gcard">
+      <button class="grow" type="button">菜单<i></i></button>
+      <button class="grow" type="button">字典<i></i></button>
+      <button class="grow" type="button">字典数据<i></i></button>
+      <button class="grow" type="button">参数<i></i></button>
+    </div>
+    <p class="glabel">文件</p>
+    <div class="gcard">
+      <button class="grow" type="button">文件<i></i></button>
+      <button class="grow" type="button">文件分类<i></i></button>
+    </div>
+    <p class="glabel">任务与记录</p>
+    <div class="gcard">
+      <button class="grow" type="button">定时任务<i></i></button>
+      <button class="grow" type="button">执行日志<i></i></button>
+      <button class="grow" type="button">操作日志<i></i></button>
+      <button class="grow" type="button">登录日志<i></i></button>
+    </div>
+    <p class="glabel">个人</p>
+    <div class="gcard" style="margin-bottom:16px">
+      <button class="grow" type="button">个人中心<i></i></button>
+    </div>
+  </div>
+  <p class="screen-tag">用户列表 · 新建</p>
+  <div class="frame">
+    <div class="bar"><button class="back" type="button">返回</button><b>用户</b><span></span></div>
+    <div class="person"><b>林晓</b><span>产品部 · 普通角色 · 正常</span></div>
+    <div class="person"><b>周启</b><span>研发部 · 管理员 · <i class="off">停用</i></span></div>
+    <form>
+      <label>用户名<input placeholder="linxiao"></label>
+      <label>昵称<input placeholder="林晓"></label>
+      <label>手机号码<input placeholder="13800002618"></label>
+      <button class="go" type="button">保存</button>
+    </form>
+  </div>
+</section>
+
+<section class="sample red">
+  <h2>3 朱红</h2>
+  <p class="note">大标题、双列灰卡片、红色只用于操作。更像内容社区的入口页。</p>
+  <p class="screen-tag">首页</p>
+  <div class="frame">
+    <div class="hello"><h3>林晓，开始吧</h3><p>十四项功能，点卡片进入。</p></div>
+    <div class="cards">
+      <button class="card" type="button"><b>用户</b><span>账号、部门、角色</span><em>进入</em></button>
+      <button class="card" type="button"><b>角色</b><span>编码和数据权限</span><em>进入</em></button>
+      <button class="card" type="button"><b>部门</b><span>层级和负责人</span><em>进入</em></button>
+      <button class="card" type="button"><b>菜单</b><span>目录、路由、权限</span><em>进入</em></button>
+      <button class="card" type="button"><b>字典</b><span>名称和字典类型</span><em>进入</em></button>
+      <button class="card" type="button"><b>字典数据</b><span>标签、值、排序</span><em>进入</em></button>
+      <button class="card" type="button"><b>参数</b><span>键名和参数值</span><em>进入</em></button>
+      <button class="card" type="button"><b>文件</b><span>名称、大小、上传人</span><em>进入</em></button>
+      <button class="card" type="button"><b>文件分类</b><span>后缀和大小上限</span><em>进入</em></button>
+      <button class="card" type="button"><b>定时任务</b><span>Bean、Cron、状态</span><em>进入</em></button>
+      <button class="card" type="button"><b>执行日志</b><span>来源、耗时、结果</span><em>进入</em></button>
+      <button class="card" type="button"><b>操作日志</b><span>操作人、地址、结果</span><em>进入</em></button>
+      <button class="card" type="button"><b>登录日志</b><span>地点、浏览器、结果</span><em>进入</em></button>
+      <button class="card" type="button"><b>个人中心</b><span>头像、手机、密码</span><em>进入</em></button>
+    </div>
+  </div>
+  <p class="screen-tag">用户列表 · 新建</p>
+  <div class="frame">
+    <div class="bar"><button class="back" type="button">返回</button><b>用户</b><button class="action" type="button">新建</button></div>
+    <div class="person"><b>林晓</b><span>产品部 · 普通角色 · 正常</span></div>
+    <div class="person"><b>周启</b><span>研发部 · 管理员 · <i class="off">停用</i></span></div>
+    <form>
+      <label>用户名<input placeholder="linxiao"></label>
+      <label>昵称<input placeholder="林晓"></label>
+      <label>手机号码<input placeholder="13800002618"></label>
+      <button class="go" type="button">保存</button>
+    </form>
+  </div>
+</section>
+
+<section class="sample gold">
+  <h2>4 夜金</h2>
+  <p class="note">深色底、宋体标题、金色细线。适合想要沉稳、不花哨的感觉。</p>
+  <p class="screen-tag tag-wide">首页</p>
+  <div class="frame wide">
+    <div class="hello"><p class="eyebrow">QUICK</p><h3>林晓</h3><p>全部功能按编号排列。</p></div>
+    <div class="index">
+      <button class="line" type="button"><span class="num">01</span><b>用户</b><span>账号</span></button>
+      <button class="line" type="button"><span class="num">02</span><b>角色</b><span>权限</span></button>
+      <button class="line" type="button"><span class="num">03</span><b>部门</b><span>组织</span></button>
+      <button class="line" type="button"><span class="num">04</span><b>菜单</b><span>路由</span></button>
+      <button class="line" type="button"><span class="num">05</span><b>字典</b><span>类型</span></button>
+      <button class="line" type="button"><span class="num">06</span><b>字典数据</b><span>标签</span></button>
+      <button class="line" type="button"><span class="num">07</span><b>参数</b><span>配置</span></button>
+      <button class="line" type="button"><span class="num">08</span><b>文件</b><span>上传</span></button>
+      <button class="line" type="button"><span class="num">09</span><b>文件分类</b><span>规则</span></button>
+      <button class="line" type="button"><span class="num">10</span><b>定时任务</b><span>调度</span></button>
+      <button class="line" type="button"><span class="num">11</span><b>执行日志</b><span>结果</span></button>
+      <button class="line" type="button"><span class="num">12</span><b>操作日志</b><span>审计</span></button>
+      <button class="line" type="button"><span class="num">13</span><b>登录日志</b><span>会话</span></button>
+      <button class="line" type="button"><span class="num">14</span><b>个人中心</b><span>本人</span></button>
+    </div>
+  </div>
+  <p class="screen-tag tag-wide">用户列表 · 新建</p>
+  <div class="frame wide">
+    <div class="pad">
+      <div class="bar"><button class="back" type="button">返回</button><b>用户</b></div>
+      <div class="person"><b>林晓</b><span>产品部 · 普通角色 · 正常</span></div>
+      <div class="person"><b>周启</b><span>研发部 · 管理员 · 停用</span></div>
+      <form>
+        <label>用户名<input placeholder="linxiao"></label>
+        <label>昵称<input placeholder="林晓"></label>
+        <label>手机号码<input placeholder="13800002618"></label>
+        <button class="go" type="button">保存</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="sample swiss">
+  <h2>5 黑白</h2>
+  <p class="note">超大标题、两列索引、粗线表格。颜色只留黑、白和一个红点。</p>
+  <p class="screen-tag tag-wide">首页</p>
+  <div class="frame wide">
+    <div class="hello"><div class="mark"></div><p class="brand">QUICK</p><h3>全部功能</h3></div>
+    <div class="idx">
+      <button type="button">用户</button>
+      <button type="button">角色</button>
+      <button type="button">部门</button>
+      <button type="button">菜单</button>
+      <button type="button">字典</button>
+      <button type="button">字典数据</button>
+      <button type="button">参数</button>
+      <button type="button">文件</button>
+      <button type="button">文件分类</button>
+      <button type="button">定时任务</button>
+      <button type="button">执行日志</button>
+      <button type="button">操作日志</button>
+      <button type="button">登录日志</button>
+      <button type="button">个人中心</button>
+    </div>
+  </div>
+  <p class="screen-tag tag-wide">用户列表 · 新建</p>
+  <div class="frame wide">
+    <div class="pad">
+      <button class="back" type="button">返回</button>
+      <div class="bar"><b>用户</b></div>
+      <div class="table">
+        <div class="sw-head"><span>姓名</span><span>部门</span><span>状态</span></div>
+        <div class="sw-row"><span>林晓</span><span>产品部</span><span>正常</span></div>
+        <div class="sw-row"><span>周启</span><span>研发部</span><span>停用</span></div>
+      </div>
+      <form>
+        <label>用户名<input placeholder="linxiao"></label>
+        <label>昵称<input placeholder="林晓"></label>
+        <label>手机号码<input placeholder="13800002618"></label>
+        <button class="go" type="button">保存</button>
+      </form>
+    </div>
+  </div>
+</section>
+</body>
+</html>
