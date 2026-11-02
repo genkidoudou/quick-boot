@@ -1,5 +1,7 @@
 package io.github.genkidoudou.system.internal.api.impl;
 
+import io.github.genkidoudou.common.api.PageInfo;
+import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.system.api.api.SysUserApi;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 import io.github.genkidoudou.system.internal.service.ISysRoleService;
@@ -47,5 +49,20 @@ public class SysUserApiImpl implements SysUserApi {
     @Override
     public List<SysRoleVo> listRoleListByUserId(Long userId) {
         return this.sysRoleService.listRoleByUserId(userId);
+    }
+
+    @Override
+    public List<SysUserVo> listByUserIds(List<Long> userIds) {
+        return this.sysUserService.listByUserIds(userIds);
+    }
+
+    @Override
+    public PageInfo<SysUserVo> page(PageRequest<SysUserVo> request, List<Long> userIds) {
+        SysUserVo param = request.getParam();
+        if (null == param) {
+            param = new SysUserVo();
+        }
+        param.setExcludeUserIds(userIds);
+        return sysUserService.pageVo(request);
     }
 }

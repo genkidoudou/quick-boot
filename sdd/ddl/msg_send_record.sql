@@ -1,0 +1,20 @@
+CREATE TABLE `msg_send_record` (
+  `id` bigint NOT NULL COMMENT '主键id',
+  `create_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除(0:正常,1:删除)',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '提交时的正文原文',
+  `source` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '来源(MSG_SEND_SOURCE:1管理端 2开放接口 3内部调用)',
+  `status` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '总状态(MSG_SEND_RECORD_STATUS:1成功 2部分成功 3失败)',
+  `api_key_id` bigint DEFAULT NULL COMMENT '调用所用 API Key，可空',
+  `user_id` bigint DEFAULT NULL COMMENT '操作/归属用户（开放调用时取 Key 的 user_id）',
+  PRIMARY KEY (`id`),
+  KEY `idx_msg_send_record_time` (`create_time`),
+  KEY `idx_msg_send_record_status` (`status`),
+  KEY `idx_msg_send_record_api_key` (`api_key_id`),
+  KEY `idx_msg_send_record_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息发送记录';

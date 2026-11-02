@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick Boot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f2f3f5;
+      --card: #fff;
+      --ink: #1d2129;
+      --muted: #4e5969;
+      --line: #e5e6eb;
+      --field: #86909c;
+      --primary: #165dff;
+      --primary-press: #0e42d2;
+      --soft: #e8f3ff;
+      --ready: #0e7a45;
+      --ready-bg: #e7f6ee;
+      --fault: #cb272d;
+      --fault-bg: #ffece8;
+      --font: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus { outline: none; }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    svg { display: block; }
+
+    .app { display: flex; height: 100%; min-height: 0; }
+    .rail {
+      width: 76px;
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 0;
+      background: var(--bg);
+      border-right: 1px solid var(--line);
+    }
+    .logo {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 8px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .logo:hover { background: var(--primary-press); }
+    .rail-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; align-items: center; }
+    .rail-btn {
+      width: 60px;
+      height: 56px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .rail-btn svg { width: 22px; height: 22px; }
+    .rail-btn:hover { background: #e5e6eb; color: var(--ink); }
+    .rail-btn.is-active { background: var(--soft); color: var(--primary); }
+    .rail-btn.is-active:hover { background: #d6e8ff; }
+    .rail-foot { position: relative; margin-top: auto; }
+    .who {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+    }
+    .who:hover { background: var(--primary-press); }
+    .menu {
+      position: absolute;
+      left: 44px;
+      bottom: 0;
+      min-width: 148px;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(29, 33, 41, 0.12);
+      z-index: 6;
+    }
+    .menu button {
+      display: block;
+      width: 100%;
+      height: 36px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      text-align: left;
+    }
+    .menu button:hover { background: var(--bg); }
+
+    .sub {
+      width: 232px;
+      flex: none;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--card);
+      border-right: 1px solid var(--line);
+    }
+    .sub-head { padding: 16px 16px 8px; }
+    .sub-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+    .find { display: block; padding: 0 12px 8px; }
+    .find input {
+      width: 100%;
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--field);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .sub-nav { flex: 1; overflow: auto; padding-bottom: 8px; }
+    .sub-label {
+      margin: 10px 16px 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .sub-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: calc(100% - 16px);
+      height: 40px;
+      margin: 0 8px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      text-align: left;
+    }
+    .sub-item svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+    .sub-item:hover { background: #f7f8fa; }
+    .sub-item.is-active { background: var(--soft); color: var(--primary); font-weight: 600; }
+    .sub-item.is-active svg { color: var(--primary); }
+    .empty-nav { margin: 12px 16px; color: var(--muted); }
+    .note { margin: 0; padding: 8px 16px 12px; color: var(--muted); font-size: 12px; }
+    .note a { color: var(--primary); font-weight: 600; }
+
+    .main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--card); }
+    .status { margin: 16px 24px 0; color: var(--ready); font-weight: 600; }
+    .status:empty { display: none; }
+    .stage { flex: 1; min-height: 0; overflow: auto; }
+    .page { padding: 20px 24px 32px; }
+    .page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+    .page-head h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .page-head p, .lead { margin: 0; color: var(--muted); }
+    .lead { margin-top: 6px; max-width: 40em; }
+    .spacer { margin-left: auto; }
+    .section { margin-top: 22px; }
+    .section h2 { margin: 0 0 8px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .tile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 64px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      text-align: left;
+      font-weight: 500;
+    }
+    .tile:hover { background: #f7f8fa; border-color: #c9cdd4; }
+    .tile-icon {
+      width: 32px;
+      height: 32px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--soft);
+      color: var(--primary);
+    }
+    .tile-icon svg { width: 18px; height: 18px; }
+
+    .btn {
+      height: 32px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      font-weight: 500;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-press); }
+    .btn-text { color: var(--primary); }
+    .btn-text:hover { background: var(--soft); }
+    .btn-danger { color: var(--fault); }
+    .btn-danger:hover { background: var(--fault-bg); }
+    .table-wrap { margin-top: 12px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; vertical-align: middle; }
+    th { color: var(--muted); font-weight: 500; background: #f7f8fa; }
+    td { border-bottom: 1px solid var(--line); }
+    tbody tr:hover { background: #f7f8fa; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .ok { background: var(--ready-bg); color: var(--ready); }
+    .off { background: #f2f3f5; color: var(--muted); }
+    .bad { background: var(--fault-bg); color: var(--fault); }
+
+    .gate {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 32px 16px;
+      background: var(--bg);
+    }
+    .card {
+      width: min(400px, 100%);
+      padding: 28px 24px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .card .logo { margin-bottom: 0; }
+    .card h1 { margin: 16px 0 6px; font-size: 22px; font-weight: 600; }
+    .card .lead { margin: 0 0 16px; }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .field span { font-weight: 500; }
+    .control {
+      height: 36px;
+      width: 100%;
+      padding: 0 10px;
+      border: 1px solid var(--field);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .go {
+      width: 100%;
+      height: 36px;
+      margin-top: 4px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 500;
+    }
+    .go:hover { background: var(--primary-press); }
+    .error-summary { margin: 0 0 12px; padding: 10px 12px; border-radius: 6px; background: var(--fault-bg); color: var(--fault); }
+    .error-summary p { margin: 0 0 4px; font-weight: 600; }
+    .error-summary ul { margin: 0; padding-left: 18px; }
+    .error-summary a { color: var(--fault); }
+    .field-error { margin: 4px 0 0; color: var(--fault); font-size: 13px; }
+    .check { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+    .check input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+    .modal { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: 16px; }
+    .modal__scrim { position: absolute; inset: 0; background: rgba(29, 33, 41, 0.45); }
+    .modal__panel { position: relative; width: min(420px, 100%); padding: 20px; background: #fff; border-radius: 8px; }
+    .modal__panel h2 { margin: 0 0 14px; font-size: 16px; }
+    .modal__actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+    @media (max-width: 800px) {
+      .app { flex-direction: column; }
+      .rail { width: 100%; height: auto; flex-direction: row; overflow: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px; }
+      .logo { margin: 0 8px 0 0; }
+      .rail-nav { flex-direction: row; width: auto; }
+      .rail-foot { margin-top: 0; margin-left: auto; }
+      .menu { left: auto; right: 0; bottom: auto; top: 48px; }
+      .sub { width: 100%; max-height: 38vh; border-right: 0; border-bottom: 1px solid var(--line); }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <nav class="rail" aria-label="产品">
+      <button type="button" class="logo" id="go-home" aria-label="回到首页">Q</button>
+      <div class="rail-nav" id="rail"></div>
+      <div class="rail-foot">
+        <button type="button" class="who" id="who" aria-expanded="false" aria-controls="user-menu" aria-label="管理员">管</button>
+        <div class="menu" id="user-menu" role="menu" hidden>
+          <button type="button" role="menuitem" id="go-profile">个人中心</button>
+          <button type="button" role="menuitem" id="logout">退出登录</button>
+        </div>
+      </div>
+    </nav>
+    <aside class="sub">
+      <div class="sub-head"><h2 id="area-title">开始</h2></div>
+      <label class="find">
+        <span class="sr">搜索功能</span>
+        <input id="menu-q" placeholder="搜索功能" autocomplete="off">
+      </label>
+      <div class="sub-nav" id="sub"></div>
+      <p class="note">静态标本，Vue 页面还没改。<a href="versions.html">其他 5 版</a></p>
+    </aside>
+    <main class="main">
+      <p class="status" id="status" role="status"></p>
+      <div class="stage" id="view"></div>
+    </main>
+  </div>
+
+  <div class="gate" id="gate" hidden>
+    <form class="card" id="login-form" novalidate>
+      <button type="button" class="logo" tabindex="-1" aria-hidden="true">Q</button>
+      <h1>欢迎回来</h1>
+      <p class="lead">登录后可以进入全部功能。</p>
+      <div class="error-summary" id="login-errors" role="alert" tabindex="-1" hidden>
+        <p>还不能进入</p>
+        <ul id="login-error-list"></ul>
+      </div>
+      <label class="field"><span>账号</span><input class="control" id="login-user" autocomplete="username" aria-describedby="login-user-error"><p class="field-error" id="login-user-error" hidden>请填写账号</p></label>
+      <label class="field"><span>密码</span><input class="control" id="login-pass" type="password" autocomplete="current-password" aria-describedby="login-pass-error"><p class="field-error" id="login-pass-error" hidden>请填写密码</p></label>
+      <label class="check"><input type="checkbox">记住这台设备</label>
+      <button class="go" type="submit">进入</button>
+    </form>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal__scrim" data-close></div>
+    <form class="modal__panel" id="add-form">
+      <h2 id="add-title">新增</h2>
+      <label class="field">
+        <span id="add-label">名称</span>
+        <input class="control" id="add-name" autocomplete="off">
+        <p class="field-error" id="add-error" hidden>请填写名称</p>
+      </label>
+      <div class="modal__actions">
+        <button type="button" class="btn" data-close>取消</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+
+  <style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style>
+  <script>
+    const PATHS = {
+      home: '<path d="M4 11 12 4l8 7"/><path d="M6 10.5V20h12V10.5"/>',
+      grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/>',
+      pulse: '<path d="M3 12h4l2.2-5 3.6 10L15 12h6"/>',
+      folder: '<path d="M3 7h6l2 2h10v10H3z"/>',
+      bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+      user: '<circle cx="12" cy="8" r="3"/><path d="M5.5 19.5c1.2-3 3.2-4.5 6.5-4.5s5.3 1.5 6.5 4.5"/>',
+      shield: '<path d="M12 3.5 5.5 6.2v5.6c0 3.7 2.6 6.2 6.5 7.7 3.9-1.5 6.5-4 6.5-7.7V6.2z"/>',
+      building: '<path d="M4 20V9l8-4 8 4v11"/><path d="M9 20v-5h6v5"/><path d="M9 11h2M13 11h2"/>',
+      list: '<path d="M8 7h12M8 12h12M8 17h8"/><path d="M4 7h.01M4 12h.01M4 17h.01"/>',
+      book: '<path d="M5 5.5h8a3.5 3.5 0 0 1 3.5 3.5V20H8a3 3 0 0 0-3 3z"/><path d="M5 5.5V20"/>',
+      sliders: '<path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2"/><circle cx="15" cy="16" r="2"/>',
+      clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+      file: '<path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5V8h4.5"/>',
+      tag: '<path d="M4 12.2V5h7.2L20 13.8 12.2 21.6z"/><circle cx="8.2" cy="8.2" r="1"/>',
+      inbox: '<path d="M4 13h4.2L10 16h4l1.8-3H20v7H4z"/><path d="M4 13 6.2 4.5h11.6L20 13"/>',
+      send: '<path d="M4 12 20 4.5 14 20l-2.2-6.2z"/>',
+      users: '<circle cx="9" cy="8" r="2.6"/><circle cx="16" cy="9" r="2"/><path d="M4 19c.8-2.6 2.6-4 5-4s4.2 1.4 5 4"/><path d="M15.5 15c1.6.1 3 .9 3.8 3"/>'
+    }
+    const ICONS = {
+      home: 'home', profile: 'user', user: 'user', role: 'shield', dept: 'building',
+      menu: 'list', dict: 'book', config: 'sliders', job: 'clock', jobLog: 'file',
+      oper: 'file', loginlog: 'file', file: 'file', classify: 'tag', inbox: 'inbox',
+      send: 'send', sendItem: 'list', group: 'users', channel: 'pulse'
+    }
+    const AREAS = [
+      { id: 'home', label: '首页', icon: 'home', title: '开始' },
+      { id: 'system', label: '系统', icon: 'grid', title: '系统管理' },
+      { id: 'monitor', label: '监控', icon: 'pulse', title: '系统监控' },
+      { id: 'files', label: '文件', icon: 'folder', title: '文件' },
+      { id: 'msg', label: '消息', icon: 'bell', title: '消息中心' }
+    ]
+    const GROUPS = [
+      { area: 'home', name: '开始', items: [{ id: 'home', label: '首页' }, { id: 'profile', label: '个人中心' }] },
+      { area: 'system', name: '系统管理', items: [
+        { id: 'user', label: '用户管理' }, { id: 'role', label: '角色管理' }, { id: 'dept', label: '部门管理' },
+        { id: 'menu', label: '菜单管理' }, { id: 'dict', label: '字典管理' }, { id: 'config', label: '参数设置' }
+      ]},
+      { area: 'monitor', name: '系统监控', items: [
+        { id: 'job', label: '定时任务' }, { id: 'jobLog', label: '调度日志' },
+        { id: 'oper', label: '操作日志' }, { id: 'loginlog', label: '登录日志' }
+      ]},
+      { area: 'files', name: '文件', items: [
+        { id: 'file', label: '文件管理' }, { id: 'classify', label: '文件分类' }
+      ]},
+      { area: 'msg', name: '消息中心', items: [
+        { id: 'inbox', label: '收件箱' }, { id: 'send', label: '发送记录' }, { id: 'sendItem', label: '发送明细' },
+        { id: 'group', label: '消息群组' }, { id: 'channel', label: '发送渠道' }
+      ]}
+    ]
+    const PAGES = {
+      home: { title: '工作台', kind: 'home' },
+      profile: { title: '个人中心', kind: 'profile' },
+      user: { title: '用户管理', add: '用户名', columns: ['用户名', '昵称', '部门', '角色', '状态'], rows: [
+        ['admin', '系统管理员', '研发中心', '超级管理员', '正常'],
+        ['auditor', '审计账号', '审计部', '审计员', '正常'],
+        ['ops', '运维账号', '运维组', '运维', '停用'],
+        ['editor', '内容账号', '市场部', '普通角色', '正常']
+      ]},
+      role: { title: '角色管理', add: '角色名', columns: ['角色名', '权限字符', '状态'], rows: [
+        ['超级管理员', 'admin', '正常'], ['审计员', 'auditor', '正常'], ['运维', 'ops', '停用']
+      ]},
+      dept: { title: '部门管理', add: '部门名', columns: ['部门', '上级', '状态'], rows: [
+        ['研发中心', '总公司', '正常'], ['审计部', '总公司', '正常'], ['运维组', '研发中心', '正常'], ['市场部', '总公司', '正常']
+      ]},
+      menu: { title: '菜单管理', add: '菜单名', columns: ['菜单', '上级', '路径'], rows: [
+        ['用户管理', '系统管理', 'system/user'], ['收件箱', '消息中心', 'msg/inbox'], ['定时任务', '系统监控', 'job/job']
+      ]},
+      dict: { title: '字典管理', add: '字典名', columns: ['字典', '类型', '状态'], rows: [
+        ['用户状态', 'sys_normal_disable', '正常'], ['通知类型', 'msg_type', '正常']
+      ]},
+      config: { title: '参数设置', add: '参数名', columns: ['参数', '键', '值'], rows: [
+        ['主框架页', 'sys.index.skinName', 'skin-blue'], ['初始密码', 'sys.user.initPassword', '123456']
+      ]},
+      job: { title: '定时任务', add: '任务名', columns: ['任务', '表达式', '状态'], rows: [
+        ['清理日志', '0 0 1 * * ?', '正常'], ['消息重试', '0 0/5 * * * ?', '正常'], ['统计汇总', '0 0 2 * * ?', '停用']
+      ]},
+      jobLog: { title: '调度日志', columns: ['任务', '结果', '时间'], rows: [
+        ['清理日志', '成功', '今天 01:00'], ['消息重试', '失败', '今天 10:05']
+      ]},
+      oper: { title: '操作日志', columns: ['操作', '模块', '结果'], rows: [
+        ['新增用户', '用户管理', '成功'], ['修改角色', '角色管理', '成功']
+      ]},
+      loginlog: { title: '登录日志', columns: ['账号', '结果', '时间'], rows: [
+        ['admin', '成功', '刚刚'], ['ops', '失败', '昨天']
+      ]},
+      file: { title: '文件管理', add: '文件名', columns: ['文件', '分类', '大小'], rows: [
+        ['说明.pdf', '文档', '1.2 MB'], ['封面.png', '图片', '340 KB']
+      ]},
+      classify: { title: '文件分类', add: '分类名', columns: ['分类', '数量'], rows: [
+        ['图片', '18'], ['文档', '6']
+      ]},
+      inbox: { title: '收件箱', columns: ['标题', '类型', '时间'], rows: [
+        ['登录环境有变化', '系统', '刚刚'], ['还有 2 件事没完成', '待办', '1 小时前']
+      ]},
+      send: { title: '发送记录', columns: ['主题', '渠道', '状态'], rows: [
+        ['验证码', '短信', '成功'], ['待办提醒', '站内信', '成功']
+      ]},
+      sendItem: { title: '发送明细', columns: ['接收人', '渠道', '状态'], rows: [
+        ['admin', '站内信', '成功'], ['ops', '短信', '失败']
+      ]},
+      group: { title: '消息群组', add: '群组名', columns: ['群组', '人数'], rows: [
+        ['全体成员', '128'], ['运维组', '6']
+      ]},
+      channel: { title: '发送渠道', add: '渠道名', columns: ['渠道', '状态'], rows: [
+        ['站内信', '正常'], ['短信', '正常'], ['邮件', '停用']
+      ]}
+    }
+
+    const AREA_OF = {}
+    GROUPS.forEach((group) => group.items.forEach((item) => { AREA_OF[item.id] = group.area }))
+
+    const rail = document.getElementById('rail')
+    const sub = document.getElementById('sub')
+    const view = document.getElementById('view')
+    const status = document.getElementById('status')
+    let current = 'home'
+    let area = 'home'
+
+    function icon(name) {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (PATHS[name] || PATHS.file) + '</svg>'
+    }
+    function esc(value) {
+      return String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]))
+    }
+    function pill(text) {
+      if (text === '正常' || text === '成功') return '<span class="pill ok">' + text + '</span>'
+      if (text === '停用') return '<span class="pill off">' + text + '</span>'
+      if (text === '失败') return '<span class="pill bad">' + text + '</span>'
+      return null
+    }
+
+    function renderRail() {
+      rail.replaceChildren()
+      AREAS.forEach((item) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'rail-btn' + (item.id === area ? ' is-active' : '')
+        button.innerHTML = icon(item.icon) + '<span>' + item.label + '</span>'
+        button.setAttribute('aria-pressed', item.id === area ? 'true' : 'false')
+        button.addEventListener('click', () => selectArea(item.id))
+        rail.append(button)
+      })
+    }
+
+    function renderSub() {
+      const q = document.getElementById('menu-q').value.trim()
+      const areaMeta = AREAS.find((item) => item.id === area)
+      document.getElementById('area-title').textContent = q ? '搜索结果' : areaMeta.title
+      sub.replaceChildren()
+      const groups = q
+        ? GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => item.label.includes(q) || group.name.includes(q)) })).filter((group) => group.items.length)
+        : GROUPS.filter((group) => group.area === area)
+      if (!groups.length) {
+        const p = document.createElement('p')
+        p.className = 'empty-nav'
+        p.textContent = '没有这个功能。换个词再搜。'
+        sub.append(p)
+        return
+      }
+      groups.forEach((group) => {
+        if (q) {
+          const label = document.createElement('div')
+          label.className = 'sub-label'
+          label.textContent = group.name
+          sub.append(label)
+        }
+        group.items.forEach((item) => {
+          const button = document.createElement('button')
+          button.type = 'button'
+          button.className = 'sub-item' + (item.id === current ? ' is-active' : '')
+          button.innerHTML = icon(ICONS[item.id]) + '<span>' + item.label + '</span>'
+          if (item.id === current) button.setAttribute('aria-current', 'page')
+          button.addEventListener('click', () => openPage(item.id))
+          sub.append(button)
+        })
+      })
+    }
+
+    function selectArea(id) {
+      area = id
+      const group = GROUPS.find((item) => item.area === id)
+      if (!group.items.some((item) => item.id === current)) openPage(group.items[0].id)
+      else { renderRail(); renderSub() }
+    }
+
+    function openPage(id) {
+      current = id
+      area = AREA_OF[id]
+      status.textContent = ''
+      renderRail()
+      renderSub()
+      const page = PAGES[id]
+      if (page.kind === 'home') return renderHome()
+      if (page.kind === 'profile') return renderProfile()
+      renderList(page)
+    }
+
+    function renderHome() {
+      const sections = GROUPS.filter((group) => group.area !== 'home').map((group) => {
+        const tiles = group.items.map((item) => '<button type="button" class="tile" data-open="' + item.id + '"><span class="tile-icon">' + icon(ICONS[item.id]) + '</span>' + item.label + '</button>').join('')
+        return '<section class="section"><h2>' + group.name + '</h2><div class="grid">' + tiles + '</div></section>'
+      }).join('')
+      view.innerHTML = '<div class="page"><div class="page-head"><h1>工作台</h1></div><p class="lead">左边按产品切换，中间是这个产品里的功能。也可以直接搜索。</p>' + sections + '</div>'
+      view.querySelectorAll('[data-open]').forEach((button) => {
+        button.addEventListener('click', () => openPage(button.dataset.open))
+      })
+    }
+
+    function renderProfile() {
+      view.innerHTML = '<div class="page"><div class="page-head"><h1>个人中心</h1></div><p class="lead">管理员。退出后会回到登录。</p></div>'
+    }
+
+    function renderList(page) {
+      const head = page.columns.map((name) => '<th scope="col">' + esc(name) + '</th>').join('')
+      const body = page.rows.map((row, index) => {
+        const cells = row.map((cell) => '<td>' + (pill(cell) || esc(cell)) + '</td>').join('')
+        const actions = page.add ? '<td><button type="button" class="btn btn-text" data-edit="' + index + '">修改</button><button type="button" class="btn btn-danger" data-remove="' + index + '">删除</button></td>' : ''
+        return '<tr>' + cells + actions + '</tr>'
+      }).join('')
+      const actionHead = page.add ? '<th scope="col">操作</th>' : ''
+      const addBtn = page.add ? '<button type="button" class="btn btn-primary" id="add-btn">新增</button>' : ''
+      view.innerHTML = '<div class="page"><div class="page-head"><h1>' + esc(page.title) + '</h1><p>' + page.rows.length + ' 条</p><div class="spacer"></div>' + addBtn + '</div><div class="table-wrap"><table><thead><tr>' + head + actionHead + '</tr></thead><tbody>' + body + '</tbody></table></div></div>'
+      const add = document.getElementById('add-btn')
+      if (add) add.addEventListener('click', openAdd)
+      view.querySelectorAll('[data-remove]').forEach((button) => {
+        button.addEventListener('click', () => {
+          page.rows.splice(Number(button.dataset.remove), 1)
+          status.textContent = '已删除'
+          renderList(page)
+        })
+      })
+    }
+
+    function openAdd() {
+      const page = PAGES[current]
+      document.getElementById('add-title').textContent = '新增' + page.title.replace('管理', '')
+      document.getElementById('add-label').textContent = page.add
+      document.getElementById('add-name').value = ''
+      document.getElementById('add-error').hidden = true
+      document.getElementById('modal').hidden = false
+      document.getElementById('add-name').focus()
+    }
+
+    document.getElementById('add-form').addEventListener('submit', (event) => {
+      event.preventDefault()
+      const input = document.getElementById('add-name')
+      const name = input.value.trim()
+      if (!name) {
+        document.getElementById('add-error').hidden = false
+        input.focus()
+        return
+      }
+      const page = PAGES[current]
+      const row = page.columns.map((_, index) => index === 0 ? name : (page.columns[index] === '状态' ? '正常' : '—'))
+      page.rows.unshift(row)
+      document.getElementById('modal').hidden = true
+      status.textContent = '已新增 ' + name
+      renderList(page)
+    })
+    document.getElementById('modal').addEventListener('click', (event) => {
+      if (event.target.closest('[data-close]')) document.getElementById('modal').hidden = true
+    })
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') document.getElementById('modal').hidden = true
+    })
+
+    document.getElementById('menu-q').addEventListener('input', renderSub)
+    document.getElementById('go-home').addEventListener('click', () => openPage('home'))
+    document.getElementById('go-profile').addEventListener('click', () => {
+      document.getElementById('user-menu').hidden = true
+      openPage('profile')
+    })
+    const who = document.getElementById('who')
+    const userMenu = document.getElementById('user-menu')
+    who.addEventListener('click', () => {
+      userMenu.hidden = !userMenu.hidden
+      who.setAttribute('aria-expanded', userMenu.hidden ? 'false' : 'true')
+    })
+    document.getElementById('logout').addEventListener('click', () => {
+      userMenu.hidden = true
+      document.getElementById('app').hidden = true
+      document.getElementById('gate').hidden = false
+    })
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.rail-foot')) {
+        userMenu.hidden = true
+        who.setAttribute('aria-expanded', 'false')
+      }
+    })
+    document.getElementById('login-form').addEventListener('submit', (event) => {
+      event.preventDefault()
+      const user = document.getElementById('login-user')
+      const pass = document.getElementById('login-pass')
+      const summary = document.getElementById('login-errors')
+      const list = document.getElementById('login-error-list')
+      const misses = []
+      ;[['login-user', user, '请填写账号'], ['login-pass', pass, '请填写密码']].forEach(([id, field, text]) => {
+        field.removeAttribute('aria-invalid')
+        document.getElementById(id + '-error').hidden = true
+        if (!field.value.trim()) misses.push([id, text])
+      })
+      if (misses.length) {
+        list.replaceChildren()
+        misses.forEach(([id, text]) => {
+          document.getElementById(id).setAttribute('aria-invalid', 'true')
+          document.getElementById(id + '-error').hidden = false
+          const li = document.createElement('li')
+          const a = document.createElement('a')
+          a.href = '#' + id
+          a.textContent = text
+          li.append(a)
+          list.append(li)
+        })
+        summary.hidden = false
+        summary.focus()
+        return
+      }
+      summary.hidden = true
+      document.getElementById('gate').hidden = true
+      document.getElementById('app').hidden = false
+      openPage('home')
+      status.textContent = '已进入'
+    })
+
+    openPage('home')
+  </script>
+</body>
+</html>

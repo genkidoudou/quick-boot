@@ -1,0 +1,22 @@
+CREATE TABLE `msg_group_member` (
+  `id` bigint NOT NULL COMMENT '主键id',
+  `create_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除(0:正常,1:删除)',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+  `group_id` bigint NOT NULL COMMENT '群组id',
+  `member_type` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '成员类型(MSG_GROUP_MEMBER_TYPE:1用户 2部门 3外部人)',
+  `user_id` bigint DEFAULT NULL COMMENT '用户id(sys_user.id)，type=1',
+  `dept_id` bigint DEFAULT NULL COMMENT '部门id(sys_dept.id)，type=2',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人名称，type=3',
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人手机号，type=3',
+  `email` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人邮箱，type=3',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_msg_group_member_user` (`group_id`,`member_type`,`user_id`),
+  UNIQUE KEY `uk_msg_group_member_dept` (`group_id`,`member_type`,`dept_id`),
+  KEY `idx_msg_group_member_gid` (`group_id`),
+  KEY `idx_msg_group_member_uid` (`user_id`),
+  KEY `idx_msg_group_member_did` (`dept_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组成员';

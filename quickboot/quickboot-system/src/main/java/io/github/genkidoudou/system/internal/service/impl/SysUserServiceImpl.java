@@ -59,7 +59,9 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
 
     private final FileAccessService fileAccessService;
 
-    /** 头像上传使用的文件分类编码。 */
+    /**
+     * 头像上传使用的文件分类编码。
+     */
     private static final String AVATAR_CLASSIFY = "avatar";
 
 
@@ -83,6 +85,7 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
                 .eq(StrUtil.isNotBlank(param.getUserType()), SysUser::getUserType, param.getUserType())
                 .eq(StrUtil.isNotBlank(param.getSex()), SysUser::getSex, param.getSex())
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysUser::getStatus, param.getStatus());
+        query.notIn(CollectionUtil.isNotEmpty(param.getExcludeUserIds()), SysUser::getId, param.getExcludeUserIds());
     }
 
     @DataPermission(tables = "sys_user", userField = "id")
@@ -343,6 +346,16 @@ public class SysUserServiceImpl extends BaseVoServiceImpl<SysUserMapper, SysUser
         param.setAvatar(result.getRelativePath());
         super.updateById(param);
         return getProfile(userId);
+    }
+
+    @Override
+    public List<SysUserVo> listByUserIds(List<Long> userIds) {
+        if (CollectionUtil.isEmpty(userIds)) {
+            return new ArrayList<>();
+        }
+        return super.listVo(new LambdaQueryWrapper<SysUser>()
+                .in(SysUser::getId, userIds)
+                .orderByAsc(SysUser::getUserName));
     }
 
     /**

@@ -60,6 +60,13 @@ public interface ISysDeptService {
     List<SysDeptVo> listByIds(List<Long> deptIds);
 
     /**
+     * 全部部门，按排序。
+     *
+     * @return 部门列表
+     */
+    List<SysDeptVo> listAll();
+
+    /**
      * 查询指定部门和所有的下级部门
      *
      * @param deptId 部门id

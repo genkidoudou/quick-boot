@@ -1,5 +1,7 @@
 package io.github.genkidoudou.system.api.api;
 
+import io.github.genkidoudou.common.api.PageInfo;
+import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.system.api.vo.SysRoleVo;
 import io.github.genkidoudou.system.api.vo.SysUserVo;
 
@@ -46,4 +48,23 @@ public interface SysUserApi {
      * @since 2026/10/17
      */
     List<SysRoleVo> listRoleListByUserId(Long userId);
+
+    /**
+     * 根据用户id集合查询
+     *
+     * @param userIds id集合
+     * @return
+     * @since 2026/11/1
+     */
+    List<SysUserVo> listByUserIds(List<Long> userIds);
+
+    /**
+     * 分页查询
+     *
+     * @param request 分页参数
+     * @param userIds 排除的用户id集合
+     * @return
+     * @since 2026/11/1
+     */
+    PageInfo<SysUserVo> page(PageRequest<SysUserVo> request, List<Long> userIds);
 }

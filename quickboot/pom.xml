@@ -13,6 +13,7 @@
         <module>quickboot-core</module>
         <module>quickboot-system</module>
         <module>quickboot-job</module>
+        <module>quickboot-msg</module>
         <module>quickboot-web</module>
     </modules>
 

@@ -16,7 +16,7 @@
         <el-radio-button
             v-if="props.radioStyle === 'button'"
             :label="item.value"
-            :disabled="item.disabled"
+            :disabled="item.disabled || undefined"
         >
           {{ item.label }}
         </el-radio-button>
@@ -24,7 +24,7 @@
             v-else
             :label="item.value"
             :border="props.radioStyle === 'border'"
-            :disabled="item.disabled"
+            :disabled="item.disabled || undefined"
         >
           {{ item.label }}
         </el-radio>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>统一发送</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --board: #e7eef2;
+      --ink: #1a2b33;
+      --quiet: #5c6e78;
+      --line: #c9d5dc;
+      --ok: #0d6b4f;
+      --bad: #9d342c;
+      --mark: #1d4e89;
+      --serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+      --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: "Sarasa Mono SC", "Cascadia Mono", "Consolas", monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--board);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    main {
+      width: min(880px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 36px 0 80px;
+    }
+    h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -0.02em; }
+    h1 { margin: 0 0 12px; font-size: 34px; line-height: 1.25; }
+    h2 { margin: 0 0 8px; font-size: 26px; line-height: 1.3; }
+    p { margin: 0; }
+    a { color: var(--mark); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; }
+    .lead { max-width: 36em; color: var(--quiet); }
+    .jump { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 22px 0 0; padding: 0; list-style: none; }
+    .jump a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+
+    section { margin-top: 40px; }
+    .say { max-width: 40em; margin: 0 0 14px; color: var(--quiet); }
+    .call {
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .sheet { margin: 14px 0 18px; padding-left: 16px; border-left: 3px solid var(--mark); }
+    .sheet dt { margin-top: 10px; color: var(--quiet); font-size: 13px; }
+    .sheet dt:first-child { margin-top: 0; }
+    .sheet dd { margin: 2px 0 0; white-space: pre-line; }
+    .path { font-family: var(--mono); font-size: 13px; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+    th, td { padding: 9px 8px 9px 0; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--line); }
+    th { color: var(--quiet); font-size: 13px; font-weight: 500; }
+    td.who { width: 6em; }
+    td.addr { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+    td.state { width: 5.5em; font-weight: 600; white-space: nowrap; }
+    td.ok { color: var(--ok); }
+    td.bad { color: var(--bad); }
+    .why { display: block; margin-top: 2px; color: var(--quiet); font-family: var(--sans); font-size: 13px; }
+    caption { caption-side: bottom; padding-top: 8px; color: var(--quiet); text-align: left; }
+
+    .ledger { padding-left: 16px; border-left: 3px solid var(--line); }
+    .members { margin: 8px 0 0; padding: 0; list-style: none; }
+    .members li { display: grid; grid-template-columns: 6em 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .members b { font-weight: 500; }
+    .members span { font-family: var(--mono); font-size: 13px; }
+    .rejects { margin: 0; padding: 0 0 0 16px; list-style: none; border-left: 3px solid var(--line); }
+    .rejects li { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .rejects .call { margin: 0 0 4px; }
+    .rejects b { color: var(--bad); font-weight: 600; }
+
+    @media (max-width: 720px) {
+      .ledger thead { display: none; }
+      .ledger tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 12px;
+        padding: 10px 0 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      .ledger td { width: auto; border-bottom: 0; padding: 0; }
+      .ledger td.who { grid-column: 1; grid-row: 1; }
+      .ledger td.state { grid-column: 2; grid-row: 1; justify-self: end; }
+      .ledger td.addr { grid-column: 1 / -1; grid-row: 2; margin-top: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>统一发送</h1>
+    <p class="lead">一次调用只打一条通道。传入最终地址，或传入一个群组。回来的要么是整单拒绝，要么是按地址排列的回执。</p>
+    <ul class="jump">
+      <li><a href="#mail">邮件</a></li>
+      <li><a href="#sms">短信</a></li>
+      <li><a href="#inbox">站内信</a></li>
+      <li><a href="#wecom">企业微信应用</a></li>
+      <li><a href="#robot">机器人</a></li>
+      <li><a href="#reject">整单拒绝</a></li>
+    </ul>
+
+    <section>
+      <h2>这一条消息</h2>
+      <dl class="sheet">
+        <dt>标题</dt>
+        <dd>请假已通过</dd>
+        <dt>正文</dt>
+        <dd>王敏 11 月 3 日的年假已通过。</dd>
+        <dt>链接</dt>
+        <dd class="path">/leave/2041</dd>
+      </dl>
+      <p class="say">下面每条通道都发这一条。适配器自己决定标题、正文和链接怎么出现。</p>
+    </section>
+
+    <section>
+      <h2>群组 g-hr-mail</h2>
+      <p class="say">类型是邮件。里面只放最终地址，不绑在某一条邮件通道上。短信通道不能用它。</p>
+      <ul class="members">
+        <li><b>王敏</b><span>wangmin@corp.example</span></li>
+        <li><b>人事部邮箱</b><span>hr-dept@corp.example</span></li>
+        <li><b>外部顾问</b><span>guest@partner.example</span></li>
+      </ul>
+    </section>
+
+    <section id="mail">
+      <h2>邮件 mail-office</h2>
+      <p class="say">两种调用得到同一张回执。地址列表和群组 ID 不能同时传。</p>
+      <p class="call">send("mail-office", ["wangmin@corp.example", "hr-dept@corp.example", "guest@partner.example"], 消息)</p>
+      <p class="call">send("mail-office", "g-hr-mail", 消息)</p>
+      <dl class="sheet">
+        <dt>主题</dt>
+        <dd>请假已通过</dd>
+        <dt>正文</dt>
+        <dd>王敏 11 月 3 日的年假已通过。
+/leave/2041</dd>
+      </dl>
+      <div class="ledger">
+        <table>
+          <thead><tr><th>谁</th><th>地址</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="who">王敏</td>
+              <td class="addr">wangmin@corp.example</td>
+              <td class="state ok">已送达</td>
+            </tr>
+            <tr>
+              <td class="who">人事部邮箱</td>
+              <td class="addr">hr-dept@corp.example</td>
+              <td class="state ok">已送达</td>
+            </tr>
+            <tr>
+              <td class="who">外部顾问</td>
+              <td class="addr">guest@partner.example<span class="why">对方服务器拒收</span></td>
+              <td class="state bad">拒收</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="sms">
+      <h2>短信 sms-notice</h2>
+      <p class="call">send("sms-notice", ["13800001111", "abc"], 消息)</p>
+      <dl class="sheet">
+        <dt>正文</dt>
+        <dd>王敏 11 月 3 日的年假已通过。
+/leave/2041</dd>
+      </dl>
+      <p class="say">标题不进入短信。abc 格式不对，不会发给供应商。</p>
+      <div class="ledger">
+        <table>
+          <thead><tr><th>谁</th><th>地址</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="who">王敏</td>
+              <td class="addr">13800001111</td>
+              <td class="state ok">已送达</td>
+            </tr>
+            <tr>
+              <td class="who">外部顾问</td>
+              <td class="addr">abc<span class="why">地址格式不正确</span></td>
+              <td class="state bad">未送达</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="inbox">
+      <h2>站内信 inbox</h2>
+      <p class="call">send("inbox", ["U10086", "U10087"], 消息)</p>
+      <dl class="sheet">
+        <dt>标题</dt>
+        <dd>请假已通过</dd>
+        <dt>正文</dt>
+        <dd>王敏 11 月 3 日的年假已通过。</dd>
+        <dt>链接</dt>
+        <dd class="path">/leave/2041</dd>
+      </dl>
+      <div class="ledger">
+        <table>
+          <thead><tr><th>谁</th><th>地址</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="who">王敏</td>
+              <td class="addr">U10086</td>
+              <td class="state ok">已送达</td>
+            </tr>
+            <tr>
+              <td class="who">李四</td>
+              <td class="addr">U10087</td>
+              <td class="state ok">已送达</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="wecom">
+      <h2>企业微信应用 wecom-hr</h2>
+      <p class="call">send("wecom-hr", ["ZhangSan", "LiSi"], 消息)</p>
+      <dl class="sheet">
+        <dt>文本</dt>
+        <dd>请假已通过
+
+王敏 11 月 3 日的年假已通过。
+
+/leave/2041</dd>
+      </dl>
+      <div class="ledger">
+        <table>
+          <thead><tr><th>谁</th><th>地址</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="who">王敏</td>
+              <td class="addr">ZhangSan</td>
+              <td class="state ok">已送达</td>
+            </tr>
+            <tr>
+              <td class="who">李四</td>
+              <td class="addr">LiSi<span class="why">不在应用可见范围</span></td>
+              <td class="state bad">未送达</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="robot">
+      <h2>机器人</h2>
+      <p class="say">不传地址，也不传群组。回执只有一行，地址是通道 ID。企业微信机器人的报文与钉钉相同。IYUU 把标题和正文分成通知标题、通知内容。</p>
+      <p class="call">send("ding-ops", 消息)</p>
+      <dl class="sheet">
+        <dt>标题</dt>
+        <dd>请假已通过</dd>
+        <dt>正文</dt>
+        <dd>王敏 11 月 3 日的年假已通过。
+/leave/2041</dd>
+      </dl>
+      <div class="ledger">
+        <table>
+          <caption>企业微信机器人 wecom-bot、IYUU iyuu-ops 的回执也是这种一行。</caption>
+          <thead><tr><th>通道</th><th>地址</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="who">钉钉机器人</td>
+              <td class="addr">ding-ops</td>
+              <td class="state ok">已送达</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="reject">
+      <h2>整单拒绝</h2>
+      <p class="say">投递还没开始。没有按地址的回执。</p>
+      <ul class="rejects">
+        <li><p class="call">send("mail-off", …)</p><b>通道不存在</b></li>
+        <li><p class="call">send("mail-paused", …)</p><b>通道已停用</b></li>
+        <li><p class="call">标题是空白</p><b>标题或正文为空</b></li>
+        <li><p class="call">地址列表和 g-hr-mail 一起传</p><b>地址列表和群组不能同时传入</b></li>
+        <li><p class="call">send("mail-office", 消息)</p><b>缺少收件人</b></li>
+        <li><p class="call">send("ding-ops", ["ZhangSan"], 消息)</p><b>机器人不能带收件人</b></li>
+        <li><p class="call">send("sms-notice", "g-hr-mail", 消息)</p><b>群组类型与通道不符</b></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

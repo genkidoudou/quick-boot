@@ -1,6 +1,6 @@
 -- ============================================================
 -- 消息中心 · 经典后台（方案 A）
--- 渠道 INBOX/WEBHOOK/BEAN；群组=用户+部门+内嵌外部人
+-- 渠道 INBOX/WEBHOOK/BEAN；一个群组只含一种成员（用户、部门或外部人）
 -- 开放调用：用户级 sys_api_key（非 OAuth 客户端）；消息渠道白名单见 msg_api_key_channel
 -- ============================================================
 
@@ -18,13 +18,14 @@ CREATE TABLE `msg_channel` (
   `channel_type` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '渠道类型(MSG_CHANNEL_TYPE:1站内信 2Webhook 3Bean)',
   `webhook_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Webhook URL（仅 WEBHOOK）',
   `bean_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Spring Bean 名称（仅 BEAN）',
+  `template_content` text COLLATE utf8mb4_unicode_ci COMMENT '模板内容。空或空白则直接用发送正文；不为空则按该模板生成此渠道的发送内容',
   `status` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT '1' COMMENT '状态(COMMON_STATUS)',
   PRIMARY KEY (`id`),
   KEY `idx_msg_channel_type` (`channel_type`),
   KEY `idx_msg_channel_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息渠道';
 
--- 2. 消息群组
+-- 2. 消息群组（一组只有一种成员，类型建组时确定）
 DROP TABLE IF EXISTS `msg_group`;
 CREATE TABLE `msg_group` (
   `id` bigint NOT NULL COMMENT '主键id',
@@ -35,11 +36,12 @@ CREATE TABLE `msg_group` (
   `del_flag` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除(0:正常,1:删除)',
   `remark` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '群组名称',
+  `member_type` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '成员类型(MSG_GROUP_MEMBER_TYPE:1用户 2部门 3外部人)',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息群组';
 
--- 3. 群组成员（用户 / 部门 / 内嵌外部人；无独立联系人表）
--- member_type=1 填 user_id；=2 填 dept_id；=3 填 name，且 phone/email 至少一项
+-- 3. 群组成员（无独立联系人表；类型以所属群组为准）
+-- 用户组填 ref_id=用户id；部门组填 ref_id=部门id；外部人组 ref_id 为空，填 name，且 phone/email 至少一项
 DROP TABLE IF EXISTS `msg_group_user`;
 DROP TABLE IF EXISTS `msg_group_dept`;
 DROP TABLE IF EXISTS `msg_group_external`;
@@ -52,18 +54,13 @@ CREATE TABLE `msg_group_member` (
   `update_time` datetime DEFAULT NULL COMMENT '修改时间',
   `remark` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `group_id` bigint NOT NULL COMMENT '群组id',
-  `member_type` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '成员类型(MSG_GROUP_MEMBER_TYPE:1用户 2部门 3外部人)',
-  `user_id` bigint DEFAULT NULL COMMENT '用户id(sys_user.id)，type=1',
-  `dept_id` bigint DEFAULT NULL COMMENT '部门id(sys_dept.id)，type=2',
-  `name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人名称，type=3',
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人手机号，type=3',
-  `email` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人邮箱，type=3',
+  `ref_id` bigint DEFAULT NULL COMMENT '引用id。用户组为 sys_user.id，部门组为 sys_dept.id，外部人组为空',
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人名称，仅外部人组',
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人手机号，仅外部人组',
+  `email` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人邮箱，仅外部人组',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_msg_group_member_user` (`group_id`, `member_type`, `user_id`),
-  UNIQUE KEY `uk_msg_group_member_dept` (`group_id`, `member_type`, `dept_id`),
-  KEY `idx_msg_group_member_gid` (`group_id`),
-  KEY `idx_msg_group_member_uid` (`user_id`),
-  KEY `idx_msg_group_member_did` (`dept_id`)
+  UNIQUE KEY `uk_msg_group_member_ref` (`group_id`, `ref_id`),
+  KEY `idx_msg_group_member_ref` (`ref_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组成员';
 
 -- 4. 用户级 API Key（平台能力；归属 sys_user，与 OAuth 客户端区分）
@@ -104,7 +101,11 @@ CREATE TABLE `msg_api_key_channel` (
   KEY `idx_msg_api_key_channel_cid` (`channel_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API Key消息渠道白名单';
 
--- 6. 发送记录（主）
+-- 6. 发送记录（订单主表）
+-- 主表正文是提交时的原文。某个对象在某个渠道实际发出的内容写在明细上，不同人可以不同。
+DROP TABLE IF EXISTS `msg_send_recipient`;
+DROP TABLE IF EXISTS `msg_send_target`;
+DROP TABLE IF EXISTS `msg_send_record_item`;
 DROP TABLE IF EXISTS `msg_send_record`;
 CREATE TABLE `msg_send_record` (
   `id` bigint NOT NULL COMMENT '主键id',
@@ -112,19 +113,23 @@ CREATE TABLE `msg_send_record` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `remark` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标题',
-  `content` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '内容',
-  `recipient_summary` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '接收人摘要',
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '提交时的正文原文',
   `source` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '来源(MSG_SEND_SOURCE:1管理端 2开放接口 3内部调用)',
+  `status` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '总状态(MSG_SEND_RECORD_STATUS:1成功 2部分成功 3失败)',
   `api_key_id` bigint DEFAULT NULL COMMENT '调用所用 API Key，可空',
   `user_id` bigint DEFAULT NULL COMMENT '操作/归属用户（开放调用时取 Key 的 user_id）',
-  `request_json` text COLLATE utf8mb4_unicode_ci COMMENT '请求快照JSON（渠道/群组/用户等）',
   PRIMARY KEY (`id`),
   KEY `idx_msg_send_record_time` (`create_time`),
+  KEY `idx_msg_send_record_status` (`status`),
   KEY `idx_msg_send_record_api_key` (`api_key_id`),
   KEY `idx_msg_send_record_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息发送记录';
 
--- 7. 发送记录 · 按渠道结果
+-- 7. 发送明细（订单明细）
+-- 一行 = 一个对象走一个渠道。部门不拆人，群组不拆成员。
+-- target_type=1 填 user_id；=2 填 dept_id；=3 填 name，且 phone/email 至少一项；=4 填 group_id。
+-- 渠道模板为空：content 与主表原文相同。模板不为空：content 是按该对象渲染后的内容。
+-- 同一条记录可以有多行相同渠道（对象不同）。地址和 Bean 名称以 msg_channel 为准。
 DROP TABLE IF EXISTS `msg_send_record_item`;
 CREATE TABLE `msg_send_record_item` (
   `id` bigint NOT NULL COMMENT '主键id',
@@ -133,12 +138,22 @@ CREATE TABLE `msg_send_record_item` (
   `remark` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `record_id` bigint NOT NULL COMMENT '发送记录id',
   `channel_id` bigint NOT NULL COMMENT '渠道id',
-  `status` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果(MSG_SEND_STATUS:SUCCESS/FAIL/SKIPPED)',
-  `detail` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '结果说明',
+  `target_type` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '对象类型(MSG_SEND_TARGET_TYPE:1用户 2部门 3外部人 4群组)',
+  `group_id` bigint DEFAULT NULL COMMENT '群组id（msg_group.id），type=4',
+  `user_id` bigint DEFAULT NULL COMMENT '用户id(sys_user.id)，type=1',
+  `dept_id` bigint DEFAULT NULL COMMENT '部门id(sys_dept.id)，type=2',
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人名称，type=3',
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人手机号，type=3',
+  `email` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人邮箱，type=3',
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '该对象在该渠道实际发出的内容',
+  `status` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果(MSG_SEND_ITEM_STATUS:1成功 2失败)',
+  `detail` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '失败原因',
   PRIMARY KEY (`id`),
   KEY `idx_msg_send_record_item_rid` (`record_id`),
-  KEY `idx_msg_send_record_item_cid` (`channel_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='发送记录渠道明细';
+  KEY `idx_msg_send_record_item_cid` (`channel_id`),
+  KEY `idx_msg_send_record_item_uid` (`user_id`),
+  KEY `idx_msg_send_record_item_gid` (`group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息发送明细';
 
 -- 8. 站内信收件箱
 DROP TABLE IF EXISTS `msg_inbox`;
@@ -164,9 +179,11 @@ CREATE TABLE `msg_inbox` (
 -- ------------------------------------------------------------
 -- 字典说明（未自动插入，按需写入 sys_dict_*）
 -- MSG_CHANNEL_TYPE:       1=站内信 2=Webhook 3=Bean
--- MSG_GROUP_MEMBER_TYPE:  1=用户 2=部门 3=外部人
+-- MSG_GROUP_MEMBER_TYPE:  1=用户 2=部门 3=外部人（写在 msg_group.member_type）
 -- MSG_SEND_SOURCE:        1=管理端 2=开放接口 3=内部调用
--- MSG_SEND_STATUS:        SUCCESS / FAIL / SKIPPED
+-- MSG_SEND_RECORD_STATUS: 1=成功 2=部分成功 3=失败
+-- MSG_SEND_ITEM_STATUS:   1=成功 2=失败
+-- MSG_SEND_TARGET_TYPE:   1=用户 2=部门 3=外部人 4=群组
 -- ------------------------------------------------------------
 
 -- 内置站内信渠道示例（id 按雪花/序列自行替换）

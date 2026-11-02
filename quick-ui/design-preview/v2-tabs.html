@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick Boot · 顶栏</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#1d2129; --muted:#4e5969; --line:#e5e6eb; --field:#86909c; --primary:#087443; --press:#066338; --soft:#e7f6ee; --bg:#f6f7f9; --font:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; }
+    * { box-sizing:border-box; } [hidden]{display:none !important;} html,body{height:100%;}
+    body{margin:0;color:var(--ink);background:var(--bg);font-family:var(--font);font-size:14px;line-height:1.5;}
+    button,input{font:inherit;color:inherit;} button{cursor:pointer;}
+    :focus{outline:none;} :focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+    svg{display:block;}
+    .app{min-height:100%;display:flex;flex-direction:column;background:#fff;}
+    .top{display:flex;align-items:center;gap:8px;height:60px;padding:0 20px;border-bottom:1px solid var(--line);}
+    .logo{width:32px;height:32px;border:0;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;}
+    .brand{font-size:16px;font-weight:700;margin-right:12px;}
+    .tabs{display:flex;gap:4px;min-width:0;}
+    .tab{height:36px;padding:0 14px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-weight:500;}
+    .tab:hover{background:var(--bg);color:var(--ink);}
+    .tab.is-active{background:var(--soft);color:var(--primary);font-weight:600;}
+    .spacer{margin-left:auto;}
+    .find input{width:200px;height:36px;padding:0 12px;border:1px solid var(--field);border-radius:8px;background:#fff;}
+    .user{position:relative;}
+    .who{width:36px;height:36px;border:0;border-radius:50%;background:var(--primary);color:#fff;font-weight:600;}
+    .menu{position:absolute;right:0;top:44px;min-width:140px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(29,33,41,.12);z-index:5;}
+    .menu button{display:block;width:100%;height:36px;padding:0 10px;border:0;border-radius:6px;background:transparent;text-align:left;}
+    .menu button:hover{background:var(--bg);}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--line);}
+    .chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;}
+    .chip svg{width:16px;height:16px;}
+    .chip.is-active{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;}
+    .chip-label{color:var(--muted);font-size:12px;font-weight:600;margin-right:2px;}
+    .empty{margin:0;color:var(--muted);}
+    .status{margin:0;padding:12px 24px 0;color:var(--primary);font-weight:600;} .status:empty{display:none;}
+    #view{flex:1;}
+    .page{padding:8px 24px 32px;}
+    .page-head{display:flex;align-items:center;gap:12px;min-height:56px;}
+    .page-head h1,.page h1{margin:0;font-size:22px;font-weight:600;}
+    .page-head p,.lead{margin:0;color:var(--muted);} .lead{margin-top:8px;}
+    .table-wrap{overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{padding:12px;text-align:left;vertical-align:middle;}
+    th{color:var(--muted);font-weight:500;background:#f7f8fa;}
+    td{border-bottom:1px solid var(--line);}
+    .btn{height:32px;padding:0 12px;border:0;border-radius:6px;background:transparent;font-weight:500;}
+    .btn-primary{background:var(--primary);color:#fff;} .btn-primary:hover{background:var(--press);}
+    .btn-text{color:var(--primary);} .btn-text:hover{background:var(--soft);}
+    .btn-danger{color:#cb272d;} .btn-danger:hover{background:#ffece8;}
+    .pill{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;font-size:12px;font-weight:500;}
+    .ok{background:var(--soft);color:var(--primary);} .off{background:#f2f3f5;color:var(--muted);} .bad{background:#ffece8;color:#cb272d;}
+    .switch{position:fixed;right:16px;bottom:12px;color:var(--muted);font-size:12px;z-index:4;}
+    .gate{min-height:100%;display:grid;place-items:center;padding:32px 16px;background:var(--bg);}
+    .card{width:min(400px,100%);padding:28px 24px;background:#fff;border:1px solid var(--line);border-radius:8px;}
+    .card h1{margin:16px 0 6px;font-size:22px;} .card .lead{margin:0 0 16px;}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;} .field span{font-weight:500;}
+    .control{height:36px;width:100%;padding:0 10px;border:1px solid var(--field);border-radius:6px;}
+    .go{width:100%;height:36px;border:0;border-radius:6px;background:var(--primary);color:#fff;font-weight:500;}
+    .error-summary{margin:0 0 12px;padding:10px 12px;border-radius:6px;background:#ffece8;color:#cb272d;}
+    .error-summary p{margin:0 0 4px;font-weight:600;} .error-summary ul{margin:0;padding-left:18px;} .error-summary a{color:#cb272d;}
+    .field-error{margin:4px 0 0;color:#cb272d;font-size:13px;}
+    .check{display:flex;align-items:center;gap:8px;min-height:32px;} .check input{accent-color:var(--primary);}
+    .modal{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:16px;}
+    .modal__scrim{position:absolute;inset:0;background:rgba(29,33,41,.45);}
+    .modal__panel{position:relative;width:min(420px,100%);padding:20px;background:#fff;border-radius:8px;}
+    .modal__panel h2{margin:0 0 14px;font-size:16px;}
+    .modal__actions{display:flex;justify-content:flex-end;gap:8px;}
+    @media (max-width:800px){ .top{flex-wrap:wrap;height:auto;padding:10px;} .find input{width:140px;} .tabs{order:5;width:100%;overflow:auto;} }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <button type="button" class="logo" id="go-home" aria-label="回到首页">Q</button>
+      <span class="brand">Quick Boot</span>
+      <nav class="tabs" id="tabs" aria-label="产品"></nav>
+      <div class="spacer"></div>
+      <label class="find"><span class="sr">搜索功能</span><input id="menu-q" placeholder="搜索功能" autocomplete="off"></label>
+      <div class="user">
+        <button type="button" class="who" id="who" aria-expanded="false" aria-controls="user-menu" aria-label="管理员">管</button>
+        <div class="menu" id="user-menu" role="menu" hidden>
+          <button type="button" role="menuitem" id="go-profile">个人中心</button>
+          <button type="button" role="menuitem" id="logout">退出登录</button>
+        </div>
+      </div>
+    </header>
+    <div class="chips" id="chips"></div>
+    <p class="status" id="status" role="status"></p>
+    <div id="view"></div>
+  </div>
+  <a class="switch" href="versions.html">全部版本</a>
+  <div class="gate" id="gate" hidden>
+    <form class="card" id="login-form" novalidate>
+      <div class="logo" aria-hidden="true" style="display:grid;place-items:center">Q</div>
+      <h1>欢迎回来</h1>
+      <p class="lead">登录后可以进入全部功能。</p>
+      <div class="error-summary" id="login-errors" role="alert" tabindex="-1" hidden><p>还不能进入</p><ul id="login-error-list"></ul></div>
+      <label class="field"><span>账号</span><input class="control" id="login-user" autocomplete="username" aria-describedby="login-user-error"><p class="field-error" id="login-user-error" hidden>请填写账号</p></label>
+      <label class="field"><span>密码</span><input class="control" id="login-pass" type="password" autocomplete="current-password" aria-describedby="login-pass-error"><p class="field-error" id="login-pass-error" hidden>请填写密码</p></label>
+      <label class="check"><input type="checkbox">记住这台设备</label>
+      <button class="go" type="submit">进入</button>
+    </form>
+  </div>
+  <div class="modal" id="modal" hidden>
+    <div class="modal__scrim" data-close></div>
+    <form class="modal__panel" id="add-form">
+      <h2 id="add-title">新增</h2>
+      <label class="field"><span id="add-label">名称</span><input class="control" id="add-name" autocomplete="off"><p class="field-error" id="add-error" hidden>请填写名称</p></label>
+      <div class="modal__actions"><button type="button" class="btn" data-close>取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+    </form>
+  </div>
+  <style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style>
+  <script src="shared.js"></script>
+  <script>
+    function render() {
+      const area = QB.area()
+      const q = QB.query()
+      document.getElementById('tabs').innerHTML = QB.AREAS.map((item) => '<button type="button" class="tab' + (!q && item.id === area ? ' is-active' : '') + '" data-area="' + item.id + '">' + item.label + '</button>').join('')
+      const groups = QB.groupsFor(q ? null : area)
+      document.getElementById('chips').innerHTML = groups.length ? groups.map((group) => (q ? '<span class="chip-label">' + group.name + '</span>' : '') + group.items.map((item) => '<button type="button" class="chip' + (item.id === QB.state.current ? ' is-active' : '') + '" data-open="' + item.id + '">' + QB.icon(item.id) + item.label + '</button>').join('')).join('') : '<p class="empty">没有这个功能。换个词再搜。</p>'
+      const page = QB.page()
+      const view = document.getElementById('view')
+      if (page.kind === 'home') view.innerHTML = '<div class="page"><h1>工作台</h1><p class="lead">产品在顶栏。点一个标签，功能就出现在下面这一排。</p></div>'
+      else if (page.kind === 'profile') view.innerHTML = '<div class="page"><h1>个人中心</h1><p class="lead">管理员。退出后会回到登录。</p></div>'
+      else view.innerHTML = '<div class="page">' + QB.listHTML() + '</div>'
+    }
+    QB.on(render); QB.bind(); render()
+  </script>
+</body>
+</html>

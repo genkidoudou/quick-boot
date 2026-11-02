@@ -114,4 +114,13 @@ public interface ISysUserService {
      */
     SysUserVo updateAvatar(Long userId, org.springframework.web.multipart.MultipartFile file);
 
+    /**
+     * 根据用户id集合查询
+     *
+     * @param userIds id集合
+     * @return
+     * @since 2026/11/1
+     */
+    List<SysUserVo> listByUserIds(List<Long> userIds);
+
 }

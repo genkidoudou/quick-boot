@@ -204,6 +204,13 @@ public class SysDeptServiceImpl extends BaseVoServiceImpl<SysDeptMapper, SysDept
     }
 
     @Override
+    public List<SysDeptVo> listAll() {
+        LambdaQueryWrapper<SysDept> query = new LambdaQueryWrapper<>();
+        query.orderByAsc(SysDept::getOrderNum);
+        return listVo(query);
+    }
+
+    @Override
     public List<SysDeptVo> listByIds(List<Long> deptIds) {
         if (CollectionUtil.isEmpty(deptIds)) {
             return new ArrayList<>();

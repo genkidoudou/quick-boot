@@ -1,5 +1,7 @@
 package io.github.genkidoudou.system.api.api;
 
+import io.github.genkidoudou.system.api.vo.SysDeptOptionVo;
+
 import java.util.List;
 import java.util.Map;
 
@@ -30,4 +32,11 @@ public interface SysDeptApi {
      * @since 2026/10/17
      */
     List<Long> listByRoleId(List<Long> roleIds);
+
+    /**
+     * 全部部门，按排序返回，供组装部门树。
+     *
+     * @return 部门简要信息
+     */
+    List<SysDeptOptionVo> listAll();
 }

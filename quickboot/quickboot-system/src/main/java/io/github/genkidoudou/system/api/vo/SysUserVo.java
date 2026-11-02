@@ -140,4 +140,11 @@ public class SysUserVo extends BaseEntity implements Serializable {
      */
 
     private Date passwordExpireTime;
+
+    /**
+     * 排除的用户id
+     *
+     * @since 2026/11/1
+     */
+    private List<Long> excludeUserIds;
 }
