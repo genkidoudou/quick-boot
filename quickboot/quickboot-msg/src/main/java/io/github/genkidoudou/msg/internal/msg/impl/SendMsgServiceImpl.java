@@ -17,23 +17,11 @@ import java.util.stream.Collectors;
 @Component
 public class SendMsgServiceImpl implements SendMsgService {
 
-    private final IMsgInboxService msgInboxService;
+
 
     @Override
     public boolean sendInbox(MsgTemplate.SendMessage sendMessage, Long channelId) {
-        List<String> userIds =
-                sendMessage.address();
-        List<MsgInbox> msgInboxes = new ArrayList<>();
-        for (Long userId : userIds.stream().map(Long::valueOf).toList()) {
-            // 发送站内信
-            MsgInbox msgInbox = new MsgInbox();
-            msgInbox.setUserId(userId);
-            msgInbox.setTitle(sendMessage.title());
-            msgInbox.setContent(sendMessage.body());
-            msgInbox.setChannelId(channelId);
-            msgInboxes.add(msgInbox);
-        }
-        msgInboxService.saveBatch(msgInboxes);
+
         return false;
     }
 

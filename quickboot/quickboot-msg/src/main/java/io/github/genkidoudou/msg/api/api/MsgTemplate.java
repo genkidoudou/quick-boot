@@ -1,5 +1,8 @@
 package io.github.genkidoudou.msg.api.api;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 import java.util.List;
 
 /**
@@ -35,8 +38,22 @@ public interface MsgTemplate {
      * @return
      * @since 2026/11/2
      */
-    public record SendMessage(String title, String body, List<String> address) {
+    public record SendMessage(String title, String body, List<String> address, MsgType msgType) {
 
     }
+
+    @Getter
+    @AllArgsConstructor
+    enum MsgType {
+//        text、link、markdown、actionCard、feedCard
+
+        TEXT("text"),
+        LINK("link"),
+        MARKDOWN("markdown"),
+        ACTION_CARD("actionCard"),
+        FEED_CARD("feedCard");;
+        private String msgType;
+    }
+
 
 }
