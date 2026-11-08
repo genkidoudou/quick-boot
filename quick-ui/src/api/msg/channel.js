@@ -57,6 +57,18 @@ export function updateChannel(data) {
 }
 
 /**
+ * 按渠道测试发送。
+ * @param {{ channelId: string|number, title: string, body: string, address?: string[], msgType?: string }} data
+ */
+export function testChannel(data) {
+  return request({
+    url: `${BASE}/test`,
+    method: 'post',
+    data
+  })
+}
+
+/**
  * 批量删除。
  * @param {Array<string|number>} ids
  */

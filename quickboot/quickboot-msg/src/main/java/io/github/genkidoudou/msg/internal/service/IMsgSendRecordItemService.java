@@ -5,6 +5,7 @@ import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.msg.internal.entity.MsgSendRecordItem;
 import io.github.genkidoudou.msg.internal.vo.MsgSendRecordItemVo;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -50,4 +51,12 @@ public interface IMsgSendRecordItemService {
      * @param ids 主键列表
      */
     void removeByIds(List<Long> ids);
+
+    /**
+     * 按发送记录主键查出全部明细。
+     *
+     * @param recordIds 发送记录主键
+     * @return 明细，无记录时为空列表
+     */
+    List<MsgSendRecordItem> listByRecordIds(Collection<Long> recordIds);
 }

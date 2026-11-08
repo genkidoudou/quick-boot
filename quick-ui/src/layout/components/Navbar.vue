@@ -18,6 +18,7 @@
       <template v-if="appStore.device !== 'mobile'">
         <screenfull id="screenfull" class="right-menu-item hover-effect" />
       </template>
+      <inbox-bell />
       <div class="avatar-container">
         <el-dropdown trigger="click" class="right-menu-item hover-effect" @command="handleCommand">
           <div class="avatar-wrapper">
@@ -54,6 +55,7 @@ import Hamburger from '@/components/Hamburger/index.vue'
 import Screenfull from '@/components/Screenfull/index.vue'
 import TopNav from './TopNav/index.vue'
 import TopBar from './TopBar/index.vue'
+import InboxBell from './InboxBell.vue'
 import Logo from './Sidebar/Logo.vue'
 import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'

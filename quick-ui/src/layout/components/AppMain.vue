@@ -26,9 +26,13 @@ const route = useRoute()
 const tagsViewStore = useTagsViewStore()
 const pageError = ref('')
 
-onErrorCaptured((err) => {
+onErrorCaptured((err, _instance, info) => {
+  console.error('[AppMain]', info, err)
+  // 点击等事件里的接口失败已经由请求层弹出提示，不能把整页换成错误文本
+  if (info === 'native event handler' || info === 'component event handler') {
+    return false
+  }
   pageError.value = err?.stack || err?.message || String(err)
-  console.error('[AppMain]', err)
   return false
 })
 

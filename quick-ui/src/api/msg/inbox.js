@@ -13,12 +13,47 @@ export function pageInbox(data) {
   return request({
     url: `${BASE}/page`,
     method: 'post',
-    data: {
-      current: Number(data?.current ?? 1),
-      size: Number(data?.size ?? 10),
-      param: omitBlank(data?.param)
-    }
+    data: pageBody(data)
   })
+}
+
+/**
+ * 当前登录人的收件箱。
+ * @param {{ current?: number, size?: number, param?: Record<string, any> }} data PageRequest
+ */
+export function pageMineInbox(data) {
+  return request({
+    url: `${BASE}/mine/page`,
+    method: 'post',
+    data: pageBody(data)
+  })
+}
+
+/** 当前登录人的未读数量。 */
+export function unreadInboxCount() {
+  return request({
+    url: `${BASE}/unread-count`,
+    method: 'get'
+  })
+}
+
+/**
+ * 标为已读。
+ * @param {string|number} id
+ */
+export function readInbox(id) {
+  return request({
+    url: `${BASE}/read/${id}`,
+    method: 'post'
+  })
+}
+
+function pageBody(data) {
+  return {
+    current: Number(data?.current ?? 1),
+    size: Number(data?.size ?? 10),
+    param: omitBlank(data?.param)
+  }
 }
 
 /**

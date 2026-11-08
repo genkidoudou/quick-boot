@@ -60,4 +60,18 @@ public interface IMsgInboxService {
      */
     void saveBatch(List<MsgInbox> msgInboxes);
 
+    /**
+     * 当前登录人的未读条数。
+     *
+     * @return 未读数量
+     */
+    long unreadCount();
+
+    /**
+     * 把当前登录人的一封站内信标为已读。
+     *
+     * @param id 站内信主键
+     */
+    void markRead(Long id);
+
 }

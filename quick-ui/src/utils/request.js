@@ -212,7 +212,7 @@ service.interceptors.response.use(async (res) => {
             return Promise.reject(new Error(msg))
         } else if (code !== 200) {
             ElMessage.error({message: msg, type: 'error'})
-            return Promise.reject('error')
+            return Promise.reject(new Error(msg))
         } else {
             return Promise.resolve(res.data)
         }

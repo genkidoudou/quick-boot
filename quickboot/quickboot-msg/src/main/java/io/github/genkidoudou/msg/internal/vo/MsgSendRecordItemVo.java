@@ -34,6 +34,9 @@ public class MsgSendRecordItemVo extends BaseEntity implements Serializable {
     @NotNull(message = "渠道不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private Long channelId;
 
+    /** 渠道名称，列表展示用。 */
+    private String channelName;
+
     /** 对象类型（MSG_SEND_TARGET_TYPE）。 */
     @NotBlank(message = "对象类型不能为空", groups = {AddGroup.class, UpdateGroup.class})
     @Size(max = 3, message = "对象类型不能超过3个字符", groups = {AddGroup.class, UpdateGroup.class})

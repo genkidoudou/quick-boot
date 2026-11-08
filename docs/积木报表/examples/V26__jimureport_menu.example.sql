@@ -1,0 +1,51 @@
+-- =============================================================================
+-- 积木菜单种子示例（文档用）
+-- 真实落地时：
+--   1) 先把官方 jimureport.mysql5.7.create.sql + BI 初始化脚本做成 Flyway
+--      例如 V26__jimureport_schema.sql / V27__jimubi_schema.sql
+--   2) 再单独用一条迁移插入 sys_menu（本文件示意）
+-- 主键请换成你们环境的雪花 ID；parent_id 挂到合适目录下。
+-- =============================================================================
+
+-- 报表设计工作台（iframe 内链）
+-- path: 前端路由 path（可自定义）
+-- component: 若依/本项目外链 iframe 组件路径，按你们 permission 路由约定填写
+-- query / is_frame: 以现有菜单表字段为准（常见 is_frame='0' 表示系统内 iframe，'1' 新开页）
+-- meta.link 最终要能指向 /jmreport/list ，IframeToggle 会自动追加 ?token=
+
+-- INSERT INTO sys_menu (
+--   id, menu_name, parent_id, order_num, path, component, query,
+--   is_frame, menu_type, visible, status, perms, icon,
+--   create_by, create_time, update_by, update_time, remark, del_flag
+-- ) VALUES (
+--   3000000000000000001, '报表中心', 0, 90, 'report', NULL, NULL,
+--   '1', 'M', '0', '0', NULL, 'chart',
+--   '1', NOW(), '1', NOW(), '积木报表目录', '0'
+-- );
+
+-- INSERT INTO sys_menu (
+--   id, menu_name, parent_id, order_num, path, component, query,
+--   is_frame, menu_type, visible, status, perms, icon,
+--   create_by, create_time, update_by, update_time, remark, del_flag
+-- ) VALUES (
+--   3000000000000000002, '报表设计', 3000000000000000001, 1, 'jmureport',
+--   'InnerLink', '{"link":"/jmreport/list"}',
+--   '0', 'C', '0', '0', 'report:jimu:design', 'build',
+--   '1', NOW(), '1', NOW(), '积木报表工作台', '0'
+-- );
+
+-- INSERT INTO sys_menu (
+--   id, menu_name, parent_id, order_num, path, component, query,
+--   is_frame, menu_type, visible, status, perms, icon,
+--   create_by, create_time, update_by, update_time, remark, del_flag
+-- ) VALUES (
+--   3000000000000000003, 'BI设计', 3000000000000000001, 2, 'jimubi',
+--   'InnerLink', '{"link":"/drag/list"}',
+--   '0', 'C', '0', '0', 'report:jimubi:design', 'dashboard',
+--   '1', NOW(), '1', NOW(), '积木BI工作台', '0'
+-- );
+
+-- 说明：
+-- 1. component/query/is_frame 的实际约定请对照现有「外链 iframe」菜单数据，不要盲抄。
+-- 2. 也可在系统管理 → 菜单管理 手工新增，验证后再固化到 Flyway。
+-- 3. 单个报表预览菜单：path 用目录接口返回的 path（如 /jmreport/view/{id}）。

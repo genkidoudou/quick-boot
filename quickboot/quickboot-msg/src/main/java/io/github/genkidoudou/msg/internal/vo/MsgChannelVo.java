@@ -64,4 +64,17 @@ public class MsgChannelVo extends BaseEntity implements Serializable {
      */
     @Size(max = 3, message = "状态不能超过3个字符", groups = {AddGroup.class, UpdateGroup.class})
     private String status;
+
+    /**
+     * Webhook 请求方式：GET-FORM、POST-FORM、POST-JSON。
+     */
+    @Size(max = 32, message = "Webhook请求方式不能超过32个字符", groups = {AddGroup.class, UpdateGroup.class})
+    private String webhookMethod;
+
+    /**
+     * Webhook 成功规则。空则 HTTP 2xx 即成功。
+     * 否则为 JSON 字段=期望值，例如 errcode=0、data.success=true。
+     */
+    @Size(max = 255, message = "成功规则不能超过255个字符", groups = {AddGroup.class, UpdateGroup.class})
+    private String webhookSuccess;
 }

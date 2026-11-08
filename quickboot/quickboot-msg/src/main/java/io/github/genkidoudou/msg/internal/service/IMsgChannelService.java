@@ -50,4 +50,12 @@ public interface IMsgChannelService {
      * @param ids 主键列表
      */
     void removeByIds(List<Long> ids);
+
+    /**
+     * 按主键批量查询渠道。
+     *
+     * @param ids 渠道主键
+     * @return 渠道，无记录时为空列表
+     */
+    List<MsgChannelVo> listVoByIds(List<Long> ids);
 }

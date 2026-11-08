@@ -7,7 +7,9 @@ import io.github.genkidoudou.common.api.R;
 import io.github.genkidoudou.common.idempotency.Idempotent;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
+import io.github.genkidoudou.msg.api.api.MsgTemplate;
 import io.github.genkidoudou.msg.internal.service.IMsgChannelService;
+import io.github.genkidoudou.msg.internal.vo.MsgChannelTestVo;
 import io.github.genkidoudou.msg.internal.vo.MsgChannelVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -29,6 +31,8 @@ import java.util.List;
 public class MsgChannelController {
 
     private final IMsgChannelService msgChannelService;
+
+    private final MsgTemplate msgTemplate;
 
     /**
      * 分页查询。
@@ -78,6 +82,22 @@ public class MsgChannelController {
     public R<Void> update(@RequestBody @Validated(UpdateGroup.class) MsgChannelVo body) {
         msgChannelService.updateVoById(body);
         return R.ok();
+    }
+
+    /**
+     * 按渠道测试发送。走统一入口 {@link MsgTemplate#send}。
+     *
+     * @param body 标题、正文、地址和消息类型
+     * @return 发送实现返回的结果
+     */
+    @SaCheckPermission("msg:channel:edit")
+    @PostMapping("test")
+    public R<Boolean> test(@RequestBody @Validated MsgChannelTestVo body) {
+        List<String> address = body.getAddress() == null ? List.of() : body.getAddress();
+        MsgTemplate.MsgType msgType = body.getMsgType() == null ? MsgTemplate.MsgType.TEXT : body.getMsgType();
+        boolean sent = msgTemplate.send(body.getChannelId(),
+                new MsgTemplate.SendMessage(body.getTitle(), body.getBody(), address, msgType));
+        return R.ok(sent);
     }
 
     /**

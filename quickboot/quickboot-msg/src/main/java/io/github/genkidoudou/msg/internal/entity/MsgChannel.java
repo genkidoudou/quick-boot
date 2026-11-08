@@ -31,14 +31,23 @@ public class MsgChannel extends BaseEntity implements Serializable {
     /** 渠道类型（MSG_CHANNEL_TYPE）。 */
     private String channelType;
 
-    /** Webhook URL，仅 Webhook 渠道使用。 */
+    /** Webhook URL。Webhook 渠道，以及需要回调地址的 Bean 渠道（如钉钉机器人）使用。 */
     private String webhookUrl;
+
+    /** Webhook 请求方式：GET-FORM、POST-FORM、POST-JSON。仅 Webhook 渠道使用。 */
+    private String webhookMethod;
 
     /** Spring Bean 名称，仅 Bean 渠道使用。 */
     private String beanName;
 
     /** 模板内容。空或空白则发送时直接用正文。 */
     private String templateContent;
+
+    /**
+     * Webhook 成功规则。空则 HTTP 2xx 即成功。
+     * 否则为 JSON 字段=期望值，例如 errcode=0、data.success=true。
+     */
+    private String webhookSuccess;
 
     /** 状态（COMMON_STATUS）。 */
     private String status;

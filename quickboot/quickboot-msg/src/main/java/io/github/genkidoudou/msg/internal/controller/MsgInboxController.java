@@ -31,6 +31,38 @@ public class MsgInboxController {
     private final IMsgInboxService msgInboxService;
 
     /**
+     * 当前登录人的未读数量。登录即可访问。
+     *
+     * @return 未读条数
+     */
+    @GetMapping("unread-count")
+    public R<Long> unreadCount() {
+        return R.ok(msgInboxService.unreadCount());
+    }
+
+    /**
+     * 当前登录人的收件箱。登录即可访问。
+     *
+     * @param pageRequest 分页与查询条件
+     * @return 分页结果
+     */
+    @PostMapping("mine/page")
+    public R<PageInfo<MsgInboxVo>> mine(@RequestBody PageRequest<MsgInboxVo> pageRequest) {
+        return R.ok(msgInboxService.pageVo(pageRequest));
+    }
+
+    /**
+     * 把当前登录人的一封站内信标为已读。
+     *
+     * @param id 主键
+     */
+    @PostMapping("read/{id}")
+    public R<Void> read(@PathVariable Long id) {
+        msgInboxService.markRead(id);
+        return R.ok();
+    }
+
+    /**
      * 分页查询。
      *
      * @param pageRequest 分页与查询条件

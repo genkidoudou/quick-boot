@@ -1,0 +1,37 @@
+# =============================================================================
+# 积木报表 / JimuBI 配置片段示例
+# 合并进 quickboot-web/src/main/resources/application.yml（或 application-dev.yml）
+# 本文件仅作文档示例，不会被 Spring 自动加载。
+# =============================================================================
+
+jeecg:
+  jmreport:
+    # 本地开发可先关闭签名校验；生产建议按官方文档开启并配套前端
+    # 具体键名以 2.5.6.1 官方配置为准，落地前请对照 help.jimureport.com/config/
+    # pageOffice / print / export 等按需再开
+
+    # —— AI（本阶段明确不做）——
+    # ai:
+    #   base-url: https://api.deepseek.com
+    #   api-key: sk-xxxxxxxx
+    #   model: deepseek-v4-pro
+    #   temperature: 0
+    #   max-tokens: 16384
+    #   # 警告：true 会让 AI 直接执行 DDL/DML，生产严禁开启
+    #   autoTableEnabled: false
+
+# 以下项你们仓库里大多已存在，对接时只需核对，不要重复粘贴冲突配置：
+#
+# spring.flyway.placeholder-replacement: false
+#   → 积木演示/模板 JSON 含 ${...}，必须关占位符替换
+#
+# spring.datasource.druid.filter.wall.config:
+#   select-where-alway-true-check: false
+#   condition-and-alway-true-allow: true
+#   → MiniDao 动态 SQL 常用 where 1=1
+#
+# sa-token:
+#   token-name: Authorization
+#   token-prefix: "Bearer"
+#   is-read-header: true
+#   → iframe 额外用 ?token= 查询参数；JmReportTokenServiceI 里要把 query token 灌进 Sa-Token 上下文

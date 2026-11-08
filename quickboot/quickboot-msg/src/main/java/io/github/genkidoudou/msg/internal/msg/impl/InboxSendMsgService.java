@@ -35,6 +35,7 @@ public class InboxSendMsgService implements SendMsgService {
             msgInbox.setUserId(userId);
             msgInbox.setTitle(sendMessage.title());
             msgInbox.setContent(sendMessage.body());
+            msgInbox.setReadFlag("0");
             msgInbox.setChannelId(msgChannelVo.getId());
             msgInboxes.add(msgInbox);
         }

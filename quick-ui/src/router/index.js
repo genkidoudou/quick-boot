@@ -47,6 +47,12 @@ export const constantRoutes = [
         component: () => import('@/views/system/user/profile/index'),
         name: 'Profile',
         meta: { title: '个人中心', icon: 'user' }
+      },
+      {
+        path: 'messages',
+        component: () => import('@/views/msg/mine/index.vue'),
+        name: 'MyMessages',
+        meta: { title: '我的消息', icon: 'message' }
       }
     ]
   },

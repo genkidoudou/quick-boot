@@ -1,5 +1,7 @@
 package io.github.genkidoudou.msg.internal.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.github.genkidoudou.common.exception.ErrorCodes;
@@ -85,5 +87,13 @@ public class MsgChannelServiceImpl extends BaseVoServiceImpl<MsgChannelMapper, M
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+    }
+
+    @Override
+    public List<MsgChannelVo> listVoByIds(List<Long> ids) {
+        if (CollectionUtil.isEmpty(ids)) {
+            return List.of();
+        }
+        return BeanUtil.copyToList(super.listByIds(ids), MsgChannelVo.class);
     }
 }

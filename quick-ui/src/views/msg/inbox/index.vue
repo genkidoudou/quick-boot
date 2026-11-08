@@ -107,7 +107,6 @@ const tableColumns = computed(() => [
 ])
 
 const searchColumns = computed(() => [
-  {prop: 'userId', label: '收件用户', type: 'input'},
   {prop: 'title', label: '标题', type: 'input'},
   {prop: 'readFlag', label: '已读', type: 'select', dataList: READ_FLAG.value},
   {prop: 'channelId', label: '渠道', type: 'input'},

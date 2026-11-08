@@ -49,4 +49,10 @@ public class MsgSendRecordVo extends BaseEntity implements Serializable {
 
     /** 操作或归属用户。 */
     private Long userId;
+
+    /** 本次发送的渠道名称，列表展示用。 */
+    private String channelName;
+
+    /** 收件人展示名，多个用顿号分隔。 */
+    private String receiverNames;
 }

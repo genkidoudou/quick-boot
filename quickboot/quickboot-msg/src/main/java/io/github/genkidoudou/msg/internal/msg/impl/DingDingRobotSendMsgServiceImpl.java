@@ -32,8 +32,8 @@ import java.util.Map;
  */
 @Slf4j
 @RequiredArgsConstructor
-@Component("dingDingSendMsgService")
-public class DingDingSendMsgServiceImpl implements SendMsgService {
+@Component("dingDingRobotSendMsgServiceImpl")
+public class DingDingRobotSendMsgServiceImpl implements SendMsgService {
     @Override
     public boolean send(MsgTemplate.SendMessage sendMessage, MsgChannelVo msgChannelVo) {
 

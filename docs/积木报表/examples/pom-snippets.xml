@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  积木报表 / JimuBI Maven 片段示例（文档用，勿整文件替换现有 pom）。
+
+  目标版本：与官方快速集成文档一致 → 2.5.6.1
+  仓库：父 POM 已配置 https://maven.jeecg.org/nexus/content/repositories/jeecg
+-->
+
+<!-- ========== 1) 父 POM properties：把现有 2.5.0 升到 2.5.6.1 ========== -->
+<!--
+        <jimureport.version>2.5.6.1</jimureport.version>
+        <jimubi.version>2.5.6.1</jimubi.version>
+        <jimureport-echarts.version>2.3.0</jimureport-echarts.version>
+-->
+
+<!-- ========== 2) 父 POM dependencyManagement：已有坐标，一般只需改 version 属性 ========== -->
+<!--
+            <dependency>
+                <groupId>org.jeecgframework.jimureport</groupId>
+                <artifactId>jimureport-spring-boot4-starter</artifactId>
+                <version>${jimureport.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jeecgframework.jimureport</groupId>
+                <artifactId>jimubi-spring-boot4-starter</artifactId>
+                <version>${jimubi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jeecgframework.jimureport</groupId>
+                <artifactId>jimureport-echarts-starter</artifactId>
+                <version>${jimureport-echarts.version}</version>
+            </dependency>
+-->
+
+<!-- ========== 3) quickboot-web/pom.xml：真正引入（本阶段建议放 web，验证后再拆模块） ========== -->
+<!--
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimureport-spring-boot4-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimubi-spring-boot4-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimureport-echarts-starter</artifactId>
+        </dependency>
+-->
+
+<!--
+  注意：
+  1. 报表与 BI 必须同升到 2.5.6.x，签名方案同源，版本错配会验签失败。
+  2. 若编译出现传递依赖冲突（fastjson / poi / spring），再用 exclusions 精确排除，不要盲删。
+  3. 官方 2.5.6.1 含安全补丁（API 数据集 302 跳转绕过内网等），不要停留在 2.5.0。
+-->
