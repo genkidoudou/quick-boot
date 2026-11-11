@@ -15,6 +15,7 @@
         <module>quickboot-job</module>
         <module>quickboot-msg</module>
         <module>quickboot-web</module>
+        <module>quickboot-report</module>
     </modules>
 
 
@@ -57,8 +58,8 @@
              与 H2 DATABASE_TO_LOWER 组合会误抛 NoRecordFoundException；2.5.2 已修复 -->
         <quartz.version>2.5.2</quartz.version>
 
-        <jimureport.version>2.5.0</jimureport.version>
-        <jimubi.version>2.5.0</jimubi.version>
+        <jimureport.version>2.5.6.1</jimureport.version>
+        <jimubi.version>2.5.6.1</jimubi.version>
         <jimureport-echarts.version>2.3.0</jimureport-echarts.version>
 
     </properties>

@@ -1,21 +1,14 @@
 package io.github.genkidoudou.web.satoken;
 
-import cn.dev33.satoken.interceptor.SaInterceptor;
-import cn.dev33.satoken.strategy.SaStrategy;
-import jakarta.annotation.PostConstruct;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+/**
+ * 原 Sa-Token 拦截注册已迁移到 common 自动配置：
+ * {@link io.github.genkidoudou.satoken.SaTokenWebMvcAutoConfiguration}。
+ * <p>
+ * 匿名路径请配置 {@code sa-token.ignore-url}（支持 {@code /**}、{@code /api/**}）。
+ * 本类保留为空壳，避免旧引用找不到类型；不再注册拦截器。
+ */
+public final class SaTokenConfigure {
 
-import java.util.List;
-
-@Configuration
-public class SaTokenConfigure implements WebMvcConfigurer {
-
-
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new SaInterceptor()).addPathPatterns("/**");
+    private SaTokenConfigure() {
     }
 }

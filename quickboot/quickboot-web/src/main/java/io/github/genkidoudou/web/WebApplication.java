@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "io.github.genkidoudou.system",
         "io.github.genkidoudou.job",
         "io.github.genkidoudou.msg",
+        "io.github.genkidoudou.report",
         "io.github.genkidoudou.web"
 })
 @MapperScan({

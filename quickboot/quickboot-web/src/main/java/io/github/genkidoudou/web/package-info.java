@@ -1,6 +1,6 @@
 /**
  * Web 启动与接入层 Modulith 应用模块。
- * <p>可依赖 common / core / system / job / msg；禁止引用各业务模块 {@code internal.**}（见 ModulithArchitectureTest）。
+ * <p>可依赖 common / core / system / job / msg / report；禁止引用各业务模块 {@code internal.**}（见 ModulithArchitectureTest）。
  */
 @org.springframework.modulith.ApplicationModule(
   displayName = "web",
@@ -9,7 +9,8 @@
     "core",
     "system",
     "job",
-    "msg"
+    "msg",
+    "report"
   }
 )
 package io.github.genkidoudou.web;

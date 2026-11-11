@@ -1,5 +1,9 @@
 package io.github.genkidoudou.system.api.api;
 
+import io.github.genkidoudou.common.api.PageInfo;
+import io.github.genkidoudou.common.api.PageRequest;
+import io.github.genkidoudou.system.api.vo.SysRoleVo;
+
 import java.util.List;
 
 /**
@@ -14,4 +18,12 @@ public interface SysRoleApi {
      * @return 部门 id 列表
      */
     List<Long> listDeptIdsByRoleIds(List<Long> roleIds);
+
+    /**
+     * 角色分页。
+     *
+     * @param request 分页与筛选
+     * @return 分页结果
+     */
+    PageInfo<SysRoleVo> page(PageRequest<SysRoleVo> request);
 }

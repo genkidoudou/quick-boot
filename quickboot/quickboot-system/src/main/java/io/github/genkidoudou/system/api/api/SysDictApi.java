@@ -1,6 +1,9 @@
 package io.github.genkidoudou.system.api.api;
 
+import io.github.genkidoudou.common.api.PageInfo;
+import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.common.DictVo;
+import io.github.genkidoudou.system.api.vo.SysDictTypeVo;
 
 import java.util.List;
 
@@ -42,5 +45,12 @@ public interface SysDictApi {
      */
     DictVo getByDictLabel(String dictType, String dictLabel);
 
+    /**
+     * 字典类型分页。
+     *
+     * @param request 分页与筛选（dictName / dictType / status）
+     * @return 分页结果
+     */
+    PageInfo<SysDictTypeVo> pageDictType(PageRequest<SysDictTypeVo> request);
 
 }
