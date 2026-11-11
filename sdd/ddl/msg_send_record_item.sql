@@ -18,6 +18,7 @@ CREATE TABLE `msg_send_record_item` (
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '该对象在该渠道实际发出的内容',
   `status` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果(MSG_SEND_ITEM_STATUS:1成功 2失败)',
   `detail` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '失败原因',
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消息标题',
   PRIMARY KEY (`id`),
   KEY `idx_msg_send_record_item_rid` (`record_id`),
   KEY `idx_msg_send_record_item_cid` (`channel_id`),

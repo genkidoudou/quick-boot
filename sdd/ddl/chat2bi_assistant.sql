@@ -1,0 +1,21 @@
+CREATE TABLE `chat2bi_assistant` (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '助理名称',
+  `avatar` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '头像emoji',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '描述',
+  `welcome` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '欢迎语',
+  `domain_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '绑定数据域id(主域,向后兼容)',
+  `domain_ids` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '绑定的全部数据域id列表JSON数组["id1","id2"],按问智能路由,domain_id为主域',
+  `show_sql` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '是否展示SQL 1/是,0/否',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '状态 online/已上线,draft/草稿,offline/已下线',
+  `questions_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '推荐问题JSON ["...",...]',
+  `sort_no` int DEFAULT NULL COMMENT '排序号',
+  `perm_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '访问权限配置JSON {grantRoles,grantUsers}',
+  `create_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `tenant_id` int DEFAULT '0' COMMENT '多租户标识',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_c2b_assistant_domain` (`domain_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='Chat2BI 对话助理';

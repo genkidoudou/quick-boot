@@ -1,6 +1,6 @@
 [
   {
-    "id": 1901000000000000000,
+    "id": "1901000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -18,7 +18,7 @@
     "status": "0"
   },
   {
-    "id": 1901000000000000300,
+    "id": "1901000000000000201",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -36,7 +36,7 @@
     "status": "0"
   },
   {
-    "id": 1901000000000000300,
+    "id": "1901000000000000202",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -54,7 +54,7 @@
     "status": "0"
   },
   {
-    "id": 1901000000000000300,
+    "id": "1901000000000000301",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -72,7 +72,7 @@
     "status": "0"
   },
   {
-    "id": 1901000000000000300,
+    "id": "1901000000000000302",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -90,7 +90,7 @@
     "status": "0"
   },
   {
-    "id": 1902000000000000000,
+    "id": "1902000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -108,7 +108,7 @@
     "status": "0"
   },
   {
-    "id": 1902000000000000000,
+    "id": "1902000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -126,11 +126,11 @@
     "status": "0"
   },
   {
-    "id": 1903000000000000000,
+    "id": "1903000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
-    "update_time": "2026-10-13T13:23:18.000Z",
+    "update_time": "2026-10-13 21:23:18",
     "del_flag": "0",
     "remark": "",
     "digest": null,
@@ -144,11 +144,11 @@
     "status": "0"
   },
   {
-    "id": 1903000000000000000,
+    "id": "1903000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
-    "update_time": "2026-10-13T13:23:23.000Z",
+    "update_time": "2026-10-13 21:23:23",
     "del_flag": "0",
     "remark": "",
     "digest": null,
@@ -162,7 +162,7 @@
     "status": "0"
   },
   {
-    "id": 1904000000000000000,
+    "id": "1904000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -180,7 +180,7 @@
     "status": "0"
   },
   {
-    "id": 1904000000000000000,
+    "id": "1904000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -198,7 +198,7 @@
     "status": "0"
   },
   {
-    "id": 1904000000000000000,
+    "id": "1904000000000000103",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -216,7 +216,7 @@
     "status": "0"
   },
   {
-    "id": 1905000000000000000,
+    "id": "1905000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -234,7 +234,7 @@
     "status": "0"
   },
   {
-    "id": 1905000000000000000,
+    "id": "1905000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -252,7 +252,7 @@
     "status": "0"
   },
   {
-    "id": 1905000000000000000,
+    "id": "1905000000000000103",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -270,7 +270,7 @@
     "status": "0"
   },
   {
-    "id": 1905000000000000000,
+    "id": "1905000000000000104",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -288,7 +288,7 @@
     "status": "0"
   },
   {
-    "id": 1905000000000000000,
+    "id": "1905000000000000105",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -306,7 +306,7 @@
     "status": "0"
   },
   {
-    "id": 1909000000000000000,
+    "id": "1909000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -324,7 +324,7 @@
     "status": "0"
   },
   {
-    "id": 1909000000000000000,
+    "id": "1909000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -342,7 +342,7 @@
     "status": "0"
   },
   {
-    "id": 1910000000000000000,
+    "id": "1910000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -360,7 +360,7 @@
     "status": "0"
   },
   {
-    "id": 1910000000000000000,
+    "id": "1910000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -378,7 +378,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -396,7 +396,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -414,7 +414,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000103",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -432,7 +432,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000104",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -450,7 +450,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000105",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -468,7 +468,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000106",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -486,7 +486,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000107",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -504,7 +504,7 @@
     "status": "0"
   },
   {
-    "id": 1913000000000000000,
+    "id": "1913000000000000108",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -522,7 +522,7 @@
     "status": "0"
   },
   {
-    "id": 1916000000000000000,
+    "id": "1916000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -540,7 +540,7 @@
     "status": "0"
   },
   {
-    "id": 1916000000000000000,
+    "id": "1916000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -558,7 +558,7 @@
     "status": "0"
   },
   {
-    "id": 1916000000000000000,
+    "id": "1916000000000000103",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -576,7 +576,61 @@
     "status": "0"
   },
   {
-    "id": 1917000000000000000,
+    "id": "1916000000000000201",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "JOB_GROUP",
+    "dict_label": "默认",
+    "dict_value": "DEFAULT",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": null,
+    "is_default": "1",
+    "status": "0"
+  },
+  {
+    "id": "1916000000000000202",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "JOB_GROUP",
+    "dict_label": "系统",
+    "dict_value": "SYSTEM",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": null,
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1916000000000000203",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "JOB_GROUP",
+    "dict_label": "业务",
+    "dict_value": "BIZ",
+    "dict_sort": 3,
+    "css_class": null,
+    "list_class": null,
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1917000000000000101",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -594,7 +648,7 @@
     "status": "0"
   },
   {
-    "id": 1917000000000000000,
+    "id": "1917000000000000102",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -612,7 +666,7 @@
     "status": "0"
   },
   {
-    "id": 1917000000000000000,
+    "id": "1917000000000000103",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -630,7 +684,7 @@
     "status": "0"
   },
   {
-    "id": 1917000000000000000,
+    "id": "1917000000000000104",
     "create_by": null,
     "create_time": null,
     "update_by": null,
@@ -648,11 +702,335 @@
     "status": "0"
   },
   {
-    "id": 2106736147995656200,
+    "id": "1922100000000000101",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_CHANNEL_TYPE",
+    "dict_label": "站内信",
+    "dict_value": "1",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": "primary",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000102",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_CHANNEL_TYPE",
+    "dict_label": "Webhook",
+    "dict_value": "2",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": "info",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000103",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_CHANNEL_TYPE",
+    "dict_label": "Bean",
+    "dict_value": "3",
+    "dict_sort": 3,
+    "css_class": null,
+    "list_class": "warning",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000201",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_SOURCE",
+    "dict_label": "管理端",
+    "dict_value": "1",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": "primary",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000202",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_SOURCE",
+    "dict_label": "开放接口",
+    "dict_value": "2",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": "info",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000203",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_SOURCE",
+    "dict_label": "内部调用",
+    "dict_value": "3",
+    "dict_sort": 3,
+    "css_class": null,
+    "list_class": "warning",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000301",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_RECORD_STATUS",
+    "dict_label": "成功",
+    "dict_value": "1",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": "success",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000302",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_RECORD_STATUS",
+    "dict_label": "部分成功",
+    "dict_value": "2",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": "warning",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000303",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_RECORD_STATUS",
+    "dict_label": "失败",
+    "dict_value": "3",
+    "dict_sort": 3,
+    "css_class": null,
+    "list_class": "danger",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000401",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_ITEM_STATUS",
+    "dict_label": "成功",
+    "dict_value": "1",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": "success",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000402",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_ITEM_STATUS",
+    "dict_label": "失败",
+    "dict_value": "2",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": "danger",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000501",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_TARGET_TYPE",
+    "dict_label": "用户",
+    "dict_value": "1",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": "primary",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000502",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_TARGET_TYPE",
+    "dict_label": "部门",
+    "dict_value": "2",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": "info",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000503",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_TARGET_TYPE",
+    "dict_label": "外部人",
+    "dict_value": "3",
+    "dict_sort": 3,
+    "css_class": null,
+    "list_class": "warning",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000504",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_SEND_TARGET_TYPE",
+    "dict_label": "群组",
+    "dict_value": "4",
+    "dict_sort": 4,
+    "css_class": null,
+    "list_class": "success",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000601",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_GROUP_MEMBER_TYPE",
+    "dict_label": "用户",
+    "dict_value": "1",
+    "dict_sort": 1,
+    "css_class": null,
+    "list_class": "primary",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000602",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_GROUP_MEMBER_TYPE",
+    "dict_label": "部门",
+    "dict_value": "2",
+    "dict_sort": 2,
+    "css_class": null,
+    "list_class": "info",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "1922100000000000603",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_type": "MSG_GROUP_MEMBER_TYPE",
+    "dict_label": "外部人",
+    "dict_value": "3",
+    "dict_sort": 3,
+    "css_class": null,
+    "list_class": "warning",
+    "is_default": "0",
+    "status": "0"
+  },
+  {
+    "id": "2106736147995656194",
     "create_by": "1",
-    "create_time": "2026-10-04T13:20:14.000Z",
+    "create_time": "2026-10-04 21:20:14",
     "update_by": "1",
-    "update_time": "2026-10-04T13:21:02.000Z",
+    "update_time": "2026-10-04 21:21:02",
     "del_flag": "1",
     "remark": null,
     "digest": null,
@@ -666,11 +1044,11 @@
     "status": "0"
   },
   {
-    "id": 2106745243549307000,
+    "id": "2106745243549306881",
     "create_by": "1",
-    "create_time": "2026-10-04T13:56:22.000Z",
+    "create_time": "2026-10-04 21:56:22",
     "update_by": "1",
-    "update_time": "2026-10-04T13:56:22.000Z",
+    "update_time": "2026-10-04 21:56:22",
     "del_flag": "0",
     "remark": null,
     "digest": null,
@@ -684,11 +1062,11 @@
     "status": "0"
   },
   {
-    "id": 2106745293599936500,
+    "id": "2106745293599936513",
     "create_by": "1",
-    "create_time": "2026-10-04T13:56:34.000Z",
+    "create_time": "2026-10-04 21:56:34",
     "update_by": "1",
-    "update_time": "2026-10-04T13:56:34.000Z",
+    "update_time": "2026-10-04 21:56:34",
     "del_flag": "0",
     "remark": null,
     "digest": null,
@@ -702,11 +1080,11 @@
     "status": "0"
   },
   {
-    "id": 2106772507821469700,
+    "id": "2106772507821469697",
     "create_by": "1",
-    "create_time": "2026-10-04T15:44:42.000Z",
+    "create_time": "2026-10-04 23:44:42",
     "update_by": "1",
-    "update_time": "2026-10-04T15:44:42.000Z",
+    "update_time": "2026-10-04 23:44:42",
     "del_flag": "0",
     "remark": null,
     "digest": null,
@@ -720,11 +1098,11 @@
     "status": "0"
   },
   {
-    "id": 2106772507821469700,
+    "id": "2106772507821469698",
     "create_by": "1",
-    "create_time": "2026-10-04T15:44:42.000Z",
+    "create_time": "2026-10-04 23:44:42",
     "update_by": "1",
-    "update_time": "2026-10-04T15:44:42.000Z",
+    "update_time": "2026-10-04 23:44:42",
     "del_flag": "0",
     "remark": null,
     "digest": null,

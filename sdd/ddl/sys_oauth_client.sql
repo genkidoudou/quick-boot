@@ -10,6 +10,8 @@ CREATE TABLE `sys_oauth_client` (
   `client_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '客户端id',
   `client_secret` varchar(512) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '客户端密钥',
   `client_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '客户端名称',
+  `client_type` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public' COMMENT 'public|confidential；SPA/H5 用 public',
+  `grant_types` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'password' COMMENT '允许的 grant_type，逗号分隔，如 password,sms',
   `api_path_patterns` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '/**' COMMENT '允许访问的接口',
   `token_timeout` int DEFAULT NULL COMMENT 'token有效时间',
   `check_captcha` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT '1' COMMENT '是否校验验证码(COMMON_IS)',

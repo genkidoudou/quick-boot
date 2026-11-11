@@ -14,8 +14,6 @@ CREATE TABLE `msg_group_member` (
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人手机号，type=3',
   `email` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部人邮箱，type=3',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_msg_group_member_user` (`group_id`,`member_type`,`user_id`),
-  UNIQUE KEY `uk_msg_group_member_dept` (`group_id`,`member_type`,`dept_id`),
   KEY `idx_msg_group_member_gid` (`group_id`),
   KEY `idx_msg_group_member_uid` (`user_id`),
   KEY `idx_msg_group_member_did` (`dept_id`)
