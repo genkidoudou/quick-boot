@@ -1,5 +1,6 @@
 package io.github.genkidoudou.web.controller;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
@@ -75,6 +76,7 @@ public class LoginController {
 
     private final QcFileProperties qcFileProperties;
 
+    @SaIgnore
     @PostMapping("/login")
     public R login(HttpServletRequest request) {
         LoginUser loginUser = null;

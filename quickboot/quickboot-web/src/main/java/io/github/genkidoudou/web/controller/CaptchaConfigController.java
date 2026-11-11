@@ -1,5 +1,6 @@
 package io.github.genkidoudou.web.controller;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import io.github.genkidoudou.common.captcha.CaptchaProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +15,7 @@ import java.util.Map;
 /**
  * 登录页验证码开关（不受 {@code qc.captcha.enabled} 条件装配影响，关闭时也返回 false）。
  */
+@SaIgnore
 @Tag(name = "验证码配置")
 @RestController
 @RequestMapping("/api/captcha")

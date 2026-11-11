@@ -57,30 +57,23 @@ public class JmReportTokenServiceImpl implements JmReportTokenServiceI {
     private final SysRoleApi sysRoleApi;
 
     /**
-     * 取 token：Sa 上下文 → query token → X-Access-Token → Authorization Bearer。
+     * 取 token。积木后续 AJAX 多用 {@code X-Access-Token}，优先读请求再回落 Sa 上下文。
      */
     @Override
     public String getToken(HttpServletRequest request) {
-        String token = null;
-        try {
-            token = StpUtil.getTokenValue();
-        } catch (Exception ignored) {
-            // 上下文未初始化时忽略
-        }
-        if (StrUtil.isNotBlank(token) || request == null) {
-            return token;
-        }
-        token = request.getParameter("token");
-
+        String token = resolveTokenFromRequest(request);
         if (StrUtil.isBlank(token)) {
-            String auth = request.getHeader("Authorization");
-            if (StrUtil.startWithIgnoreCase(auth, "Bearer ")) {
-                token = auth.substring(7).trim();
+            try {
+                token = StpUtil.getTokenValue();
+            } catch (Exception ignored) {
+                // 上下文未初始化时忽略
             }
         }
+        token = stripBearerPrefix(token);
         if (StrUtil.isNotBlank(token)) {
             StpUtil.setTokenValue(token);
-            log.debug("[jimu] init token from request, path={}", request.getRequestURI());
+            log.debug("[jimu] init token from request, path={}",
+                    request != null ? request.getRequestURI() : "-");
         }
         return token;
     }
@@ -88,7 +81,7 @@ public class JmReportTokenServiceImpl implements JmReportTokenServiceI {
     @Override
     public String getToken() {
         try {
-            return StpUtil.getTokenValue();
+            return stripBearerPrefix(StpUtil.getTokenValue());
         } catch (Exception e) {
             return null;
         }
@@ -96,19 +89,51 @@ public class JmReportTokenServiceImpl implements JmReportTokenServiceI {
 
     @Override
     public Boolean verifyToken(String token) {
+        token = stripBearerPrefix(token);
         if (StrUtil.isBlank(token)) {
             return false;
         }
         try {
-            if (StrUtil.isBlank(StpUtil.getTokenValue())) {
-                StpUtil.setTokenValue(token);
-            }
+            // 积木传入的 token 为准，避免上下文残留错误值
+            StpUtil.setTokenValue(token);
             StpUtil.checkLogin();
             return true;
         } catch (Exception e) {
             log.warn("[jimu] verifyToken failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    /** query token → X-Access-Token → Authorization Bearer */
+    private static String resolveTokenFromRequest(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String token = request.getParameter("token");
+        if (StrUtil.isBlank(token)) {
+            token = request.getHeader("X-Access-Token");
+        }
+        if (StrUtil.isBlank(token)) {
+            token = request.getHeader("token");
+        }
+        if (StrUtil.isBlank(token)) {
+            String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (StrUtil.startWithIgnoreCase(auth, "Bearer ")) {
+                token = auth.substring(7).trim();
+            }
+        }
+        return token;
+    }
+
+    private static String stripBearerPrefix(String token) {
+        if (StrUtil.isBlank(token)) {
+            return token;
+        }
+        String t = token.trim();
+        if (StrUtil.startWithIgnoreCase(t, "Bearer ")) {
+            return t.substring(7).trim();
+        }
+        return t;
     }
 
     @Override

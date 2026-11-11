@@ -90,6 +90,42 @@
           </el-form-item>
         </el-col>
       </el-row>
+      <template v-if="form.menuType === 'C'">
+        <el-form-item>
+          <template #label>
+            <C7FormLabel text="积木绑定" :tip="MENU_TIPS.jimuBind"/>
+          </template>
+          <el-radio-group v-model="jimuBindType" @change="onJimuBindTypeChange">
+            <el-radio value="">不绑定</el-radio>
+            <el-radio value="report">积木报表</el-radio>
+            <el-radio value="bi">BI页面</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="jimuBindType">
+          <template #label>
+            <C7FormLabel
+                :text="jimuBindType === 'bi' ? '选择BI' : '选择报表'"
+                :tip="MENU_TIPS.jimuSelect"
+            />
+          </template>
+          <el-select
+              v-model="jimuSelectedId"
+              filterable
+              clearable
+              style="width: 100%"
+              :loading="jimuCatalogLoading"
+              :placeholder="jimuBindType === 'bi' ? '选择已设计的BI页面' : '选择已设计的报表'"
+              @change="onJimuCatalogSelect"
+          >
+            <el-option
+                v-for="item in jimuCatalogOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+      </template>
       <el-row v-if="form.menuType !== 'F'" :gutter="16">
         <el-col :span="12">
           <el-form-item prop="icon">
@@ -116,7 +152,10 @@
             <template #label>
               <C7FormLabel text="路由地址" :tip="MENU_TIPS.path"/>
             </template>
-            <el-input v-model="form.path" placeholder="如 menu 或 https://example.com"/>
+            <el-input
+                v-model="form.path"
+                :placeholder="jimuBindType ? '由积木绑定自动填充预览地址' : '如 menu 或 https://example.com'"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -220,16 +259,18 @@
 /**
  * 菜单新增/修改：目录 / 菜单 / 按钮，对齐 SysMenuVo。
  */
-import {computed, reactive, ref} from 'vue'
+import {computed, reactive, ref, watch} from 'vue'
 import {ElMessage} from 'element-plus'
 import {Search} from '@element-plus/icons-vue'
 import {addMenu, batchAddMenu, getMenu, parseMenuController, treeselectMenu, updateMenu} from '@/api/system/menu'
+import {listJimuBiPages, listJimuReports} from '@/api/report/jimu'
 import {useDict} from '@/utils/dict'
 import IconSelect from '@/components/IconSelect/index.vue'
 
 defineOptions({name: 'SysMenuForm'})
 
 const ROOT = '0'
+const JIMU_BASE = String(import.meta.env.VITE_JIMU_BASE_URL || 'http://localhost:9993').replace(/\/+$/, '')
 
 const MENU_TIPS = {
   parentId: '选择上级菜单；顶级选「主类目」。',
@@ -238,17 +279,19 @@ const MENU_TIPS = {
   buttonName: '权限树中显示的按钮名称。',
   orderNum: '显示顺序，数字越小越靠前。',
   icon: '侧栏菜单图标，从图标库选择 SVG 名称。',
-  path: '侧栏路由 path。外链时可填 http(s) 地址。',
+  path: '侧栏路由 path。积木预览请用完整 http(s) 地址，是否外链选「否」。',
   component: 'views 下组件路径，如 system/user/index；顶级目录一般为 Layout。',
   routeName: 'Vue Router 的 name，建议英文驼峰；用于标签页与缓存。',
   query: '路由 query，例如 {"id":1}。',
   perms: '可添加多个权限标识，保存时用英文逗号拼接入库。',
-  isFrame: '选「是」表示访问外部地址，路由地址填完整 URL。',
+  isFrame: '积木内嵌预览必须选「否」；选「是」为新标签打开且不会自动带 token。',
   isCache: '选缓存则 keep-alive 生效，需路由名称与页面组件 name 一致。',
   visible: '选隐藏则不出现在侧栏，路由仍可能被直接访问。',
   menuStatus: '选停用则菜单不可用，侧栏不展示。',
   buttonStatus: '选停用则按钮权限不可用。',
-  remark: '仅管理端备注，不影响路由与权限。'
+  remark: '仅管理端备注，不影响路由与权限。',
+  jimuBind: '绑定已设计的积木报表或 BI 页面，自动填充预览地址与内嵌设置。',
+  jimuSelect: '列表来自积木库表；选中后写入路由地址，是否外链自动为「否」。'
 }
 
 const {COMMON_STATUS, MENU_TYPE, sys_show_hide} = useDict('COMMON_STATUS', 'MENU_TYPE', 'sys_show_hide')
@@ -265,6 +308,10 @@ const permsList = ref([''])
 const controllerSource = ref('')
 const quickParseOpen = ref([])
 const parsedButtons = ref([])
+const jimuBindType = ref('')
+const jimuSelectedId = ref('')
+const jimuCatalogLoading = ref(false)
+const jimuCatalogOptions = ref([])
 const showQuickParse = computed(() => !form.id && !lockMenuType.value)
 const menuTypeOptions = computed(() => {
   const list = MENU_TYPE.value || []
@@ -319,8 +366,95 @@ function resetForm() {
   controllerSource.value = ''
   quickParseOpen.value = []
   parsedButtons.value = []
+  jimuBindType.value = ''
+  jimuSelectedId.value = ''
+  jimuCatalogOptions.value = []
   formRef.value?.clearValidate?.()
 }
+
+function resolveJimuUrl(item) {
+  if (!item) {
+    return ''
+  }
+  if (item.url && /^https?:\/\//i.test(item.url)) {
+    return item.url
+  }
+  const path = String(item.path || '')
+  if (/^https?:\/\//i.test(path)) {
+    return path
+  }
+  return JIMU_BASE + (path.startsWith('/') ? path : `/${path}`)
+}
+
+function detectJimuBindFromPath(path) {
+  const raw = String(path || '')
+  const reportMatch = raw.match(/\/jmreport\/view\/([^/?#]+)/)
+  if (reportMatch) {
+    return {type: 'report', id: reportMatch[1]}
+  }
+  const biMatch = raw.match(/\/drag\/share\/view\/([^/?#]+)/)
+  if (biMatch) {
+    return {type: 'bi', id: biMatch[1]}
+  }
+  return {type: '', id: ''}
+}
+
+async function loadJimuCatalog(type) {
+  jimuCatalogOptions.value = []
+  if (!type) {
+    return
+  }
+  jimuCatalogLoading.value = true
+  try {
+    const res = type === 'bi' ? await listJimuBiPages() : await listJimuReports()
+    jimuCatalogOptions.value = res.data || []
+  } catch (e) {
+    jimuCatalogOptions.value = []
+    ElMessage.error('加载积木目录失败')
+  } finally {
+    jimuCatalogLoading.value = false
+  }
+}
+
+async function onJimuBindTypeChange(type) {
+  jimuSelectedId.value = ''
+  await loadJimuCatalog(type)
+}
+
+function onJimuCatalogSelect(id) {
+  if (!id) {
+    return
+  }
+  const item = jimuCatalogOptions.value.find((row) => String(row.id) === String(id))
+  if (!item) {
+    return
+  }
+  form.path = resolveJimuUrl(item)
+  form.isFrame = '0'
+  if (!String(form.menuName || '').trim()) {
+    form.menuName = item.name || ''
+  }
+  const permPrefix = jimuBindType.value === 'bi' ? 'report:jimubi:view:' : 'report:jimu:view:'
+  const viewPerm = permPrefix + item.id
+  if (!permsList.value.some((p) => String(p).trim() === viewPerm)) {
+    if (permsList.value.length === 1 && !String(permsList.value[0] || '').trim()) {
+      permsList.value = [viewPerm]
+    } else {
+      permsList.value.push(viewPerm)
+    }
+  }
+}
+
+watch(
+    () => form.menuType,
+    (type) => {
+      if (type !== 'C') {
+        jimuBindType.value = ''
+        jimuSelectedId.value = ''
+        jimuCatalogOptions.value = []
+      }
+    }
+)
 
 function splitPerms(raw) {
   return String(raw || '')
@@ -396,7 +530,7 @@ function loadTree() {
   })
 }
 
-function fillForm(row) {
+async function fillForm(row) {
   Object.assign(form, emptyForm(), {
     id: row.id ?? row.menuId,
     parentId: row.parentId == null ? ROOT : row.parentId,
@@ -417,6 +551,12 @@ function fillForm(row) {
   })
   const parsed = splitPerms(row.perms)
   permsList.value = parsed.length ? parsed : ['']
+  const detected = detectJimuBindFromPath(form.path)
+  jimuBindType.value = detected.type
+  jimuSelectedId.value = detected.id
+  if (detected.type) {
+    await loadJimuCatalog(detected.type)
+  }
 }
 
 /**
@@ -432,9 +572,9 @@ async function getPayload(payload = {}) {
   const id = payload.menuId ?? payload.id
   if (id != null && id !== '') {
     const res = await getMenu(id)
-    fillForm(res.data || {})
-            return
-          }
+    await fillForm(res.data || {})
+    return
+  }
   applyParentMenuType(payload.parentMenuType)
 }
 

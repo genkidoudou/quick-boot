@@ -4,6 +4,7 @@ import cloud.tianai.captcha.application.ImageCaptchaApplication;
 import cloud.tianai.captcha.application.vo.ImageCaptchaVO;
 import cloud.tianai.captcha.common.response.ApiResponse;
 import cloud.tianai.captcha.validator.common.model.dto.ImageCaptchaTrack;
+import cn.dev33.satoken.annotation.SaIgnore;
 import io.github.genkidoudou.common.captcha.CaptchaProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +23,7 @@ import java.util.Collections;
  * @author genkidoudou
  * @since 1.0.0
  */
+@SaIgnore
 @Tag(name = "验证码")
 @RestController
 @RequestMapping("/api/captcha")

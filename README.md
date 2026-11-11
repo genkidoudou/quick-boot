@@ -14,11 +14,14 @@
 ## 特性
 
 - **模块化单体**：Spring Modulith 划分 `common` / `core` / `system` / `job` / `web`，边界清晰、可演进
-- **权限与安全**：Sa-Token、RBAC 菜单按钮权限、数据权限、验证码等常见能力
-- **系统管理**：用户、角色、部门、菜单、字典、参数、文件、操作/登录日志等
+- **权限与安全**：Sa-Token、RBAC 菜单按钮权限、数据权限、验证码；管理端 `v-hasPermi` / `v-hasRole` 与后端双校验
+- **系统管理**：用户、角色、部门、菜单、字典、参数、文件与文件分类、操作/登录日志等
+- **消息中心**：渠道、人群、收件箱、发送记录与明细；顶栏未读铃铛与「我的消息」
+- **积木报表 / BI**：菜单可绑定已设计报表或 BI 页，内嵌预览（InnerLink / iframe）
 - **定时任务**：Quartz JDBC 集群；支持 Bean / Shell / Python；执行租约与文件过程日志
 - **Schema 即代码**：Flyway 版本化迁移；`sdd/` 保留 DDL 与字典规范
-- **前后端分离**：`quick-ui`（Vite + Element Plus）；可选 `quick-h5`（H5 / 小程序）
+- **前后端分离**：`quick-ui`（Vite + Element Plus + C7 业务组件）；可选 `quick-h5`（H5 / 小程序）
+- **可观测（可选）**：管理端 Lite RUM 请求链路上报（由环境变量开关）
 
 ## 在线演示
 
@@ -29,7 +32,7 @@
 | 端 | 技术 |
 |----|------|
 | 后端 | Java 17、Spring Boot 4、Spring Modulith、MyBatis-Plus、Sa-Token、Flyway、Redis、Druid、Quartz |
-| 管理端 | Vue 3、Vite、Element Plus、Pinia、pnpm |
+| 管理端 | Vue 3、Vite、Element Plus、Pinia、Vue Router（动态路由）、Axios、pnpm；开发默认端口 **8800**；可选 Vitest |
 | 移动端 | uni-app（Vue 3 + Vite），详见 [quick-h5/README.md](./quick-h5/README.md) |
 
 ## 仓库结构
@@ -43,12 +46,16 @@ quick-boot/
 │   ├── quickboot-job/      # 定时任务
 │   └── quickboot-web/      # 启动入口与 Flyway
 ├── quick-ui/               # 管理端前端
+│   ├── src/views/          # 页面（system / job / msg 等）
+│   ├── src/api/            # 接口封装
+│   ├── src/packages/       # C7* 业务组件
+│   └── src/layout/         # 布局、顶栏铃铛、InnerLink 等
 ├── quick-h5/               # 多端客户端（可选）
 ├── sdd/                    # DDL / 字典规范产物
 └── docs/                   # 设计与补充文档
 ```
 
-默认后端端口：**9993**。
+默认后端端口：**9993**；管理端开发端口：**8800**（`/dev-api` 代理到后端）。
 
 ## 环境要求
 
@@ -113,6 +120,16 @@ pnpm install
 pnpm dev
 ```
 
+浏览器访问 `http://localhost:8800`。开发代理：`VITE_APP_BASE_API=/dev-api` → `http://localhost:9993`。
+
+按需核对 `quick-ui/.env.development`（示例可提交；生产密钥勿入库）：
+
+| 变量 | 说明 |
+|------|------|
+| `VITE_JIMU_BASE_URL` | 积木报表/BI 根地址，需与后端 `qc.jimu.public-base-url` 一致 |
+| `VITE_OAUTH_CLIENT_ID` / `VITE_OAUTH_CLIENT_SECRET` | 登录前无 JWT 请求的 OAuth 客户端（与 `sys_oauth_client` 种子一致） |
+| `VITE_APP_LITE_RUM_*` | Lite RUM 开关与上报参数 |
+
 生产构建：
 
 ```bash
@@ -127,10 +144,13 @@ pnpm build:prod
 
 | 模块 | 说明 |
 |------|------|
-| 系统管理 | 用户、角色、部门、菜单、字典、参数配置、文件 |
+| 系统管理 | 用户、角色、部门、菜单、字典、参数配置、文件、文件分类 |
+| 消息中心 | 渠道、人群、收件箱、发送记录/明细；顶栏未读与「我的消息」 |
+| 报表 / BI | 菜单绑定积木报表或 BI 页，管理端内嵌预览 |
 | 审计 | 操作日志、登录日志 |
 | 定时任务 | 任务管理、执行日志、过程日志增量查看 |
-| 认证授权 | 登录、会话、按钮级权限（前后端双校验） |
+| 认证授权 | 登录、会话、强制改密；按钮级权限（前后端双校验） |
+| 管理端壳层 | 动态路由、TagsView、侧栏/顶栏、InnerLink/iframe、个人中心 |
 
 ## 定时任务说明
 
@@ -156,7 +176,8 @@ pnpm build:prod
 1. **数据库变更**必须通过 Flyway；`sdd/ddl`、`sdd/dict` 作为规范参考同步更新。
 2. 后端遵循 Modulith 模块边界，避免跨模块违规依赖。
 3. 新增接口权限：后端 `@SaCheckPermission` 与前端 `v-hasPermi`、菜单 SQL 保持一致。
-4. 提交前尽量完成本地编译与关键路径自测；勿提交本机密钥与大数据文件。
+4. 积木菜单预览地址依赖 `VITE_JIMU_BASE_URL`（及后端公开基址）；改端口或反向代理时两边一起改。
+5. 提交前尽量完成本地编译与关键路径自测；勿提交本机密钥与大数据文件。
 
 ## 参与贡献
 

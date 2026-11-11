@@ -1,0 +1,16 @@
+# ========== 改造后环境变量示例 ==========
+# quick-ui / quick-h5 均可参照；删除 SECRET。
+
+# 应用标识（对应 sys_oauth_client.client_id）
+VITE_CLIENT_ID=quick-ui
+# 兼容旧名（二选一即可，实现时读其中一个）
+# VITE_OAUTH_CLIENT_ID=quick-ui
+
+# ---- 删除以下项（不再使用）----
+# VITE_OAUTH_CLIENT_SECRET=quick-ui-secret
+
+# 后端 API
+VITE_APP_BASE_API=/dev-api
+
+# （可选）Lite RUM 与客户端无关，保持原样
+# VITE_APP_LITE_RUM_ENABLED=true

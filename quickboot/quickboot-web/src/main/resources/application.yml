@@ -173,9 +173,14 @@ sa-token:
   jwt-secret-key: abcdefghijklmnopqrstuvwxyz
   # 是否输出操作日志
   is-log: true
-  # 未登录可访问路径（Ant：/**、/api/**）；由 quickboot-common SaTokenWebMvcAutoConfiguration 读取
+  # 未登录可访问路径（Ant）；由 quickboot-common SaTokenWebMvcAutoConfiguration 读取
+  # 积木路径放行后仍由 JmReportTokenServiceImpl 校验登录与设计权限
   ignore-url:
-
+    - /login
+    - /api/captcha/**
+    - /jmreport/**
+    - /drag/**
+    - /jimubi/**
 
 
 ##  验证码配置
@@ -216,4 +221,7 @@ qc:
       print: true
   idempotency:
     ttl-seconds: 5
+  # 积木报表 / BI：菜单 iframe 用的后端根地址（无尾斜杠）
+  jimu:
+    public-base-url: http://localhost:9993
 ## 日志
