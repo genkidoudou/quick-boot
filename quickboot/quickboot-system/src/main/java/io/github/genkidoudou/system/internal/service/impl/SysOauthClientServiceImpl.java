@@ -1,7 +1,10 @@
 package io.github.genkidoudou.system.internal.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.github.genkidoudou.common.api.PageInfo;
+import io.github.genkidoudou.common.api.PageRequest;
 import io.github.genkidoudou.common.exception.ErrorCodes;
 import io.github.genkidoudou.common.exception.WarningException;
 import io.github.genkidoudou.common.mybatisplus.BaseVoServiceImpl;
@@ -40,7 +43,22 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
     }
 
     /**
-     * 按主键查详情；不存在时抛出业务异常。
+     * 分页；列表不回传明文密钥。
+     *
+     * @param pageRequest 分页参数
+     * @return 分页结果
+     */
+    @Override
+    public PageInfo<SysOauthClientVo> pageVo(PageRequest<SysOauthClientVo> pageRequest) {
+        PageInfo<SysOauthClientVo> page = super.pageVo(pageRequest);
+        if (page != null && page.getRecords() != null) {
+            page.getRecords().forEach(this::maskSecret);
+        }
+        return page;
+    }
+
+    /**
+     * 按主键查详情；不存在时抛出业务异常；不回传明文密钥。
      *
      * @param id 主键
      * @return 详情
@@ -51,11 +69,12 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
         if (vo == null) {
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "OAuth客户端不存在");
         }
+        maskSecret(vo);
         return vo;
     }
 
     /**
-     * 新增；带事务。
+     * 新增；密钥为空时自动生成。返回实体含明文密钥，供调用方一次性展示。
      *
      * @param vo 视图对象
      * @return 持久化后的实体
@@ -63,6 +82,9 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SysOauthClient saveVo(SysOauthClientVo vo) {
+        if (vo != null && StrUtil.isBlank(vo.getClientSecret())) {
+            vo.setClientSecret(IdUtil.fastSimpleUUID());
+        }
         return super.saveVo(vo);
     }
 
@@ -89,5 +111,11 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+    }
+
+    private void maskSecret(SysOauthClientVo vo) {
+        if (vo != null) {
+            vo.setClientSecret(null);
+        }
     }
 }

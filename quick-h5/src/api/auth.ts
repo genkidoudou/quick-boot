@@ -15,7 +15,7 @@ export type AuthMe = {
   permissions?: string[]
 }
 
-/** 用户名密码登录，不带 Bearer，使用 Client Basic */
+/** 用户名密码登录，不带 Bearer */
 export function login(username: string, password: string) {
   return request<LoginToken>({
     url: '/login',

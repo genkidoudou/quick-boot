@@ -33,9 +33,8 @@ public class SysOauthClientVo extends BaseEntity implements Serializable {
     private String clientId;
 
     /**
-     * 客户端密钥。新增必填；修改时留空表示不改。
+     * 客户端密钥。新增由服务端自动生成，请求体可不传；修改时留空表示不改。
      */
-    @NotBlank(message = "客户端密钥不能为空", groups = AddGroup.class)
     private String clientSecret;
 
     /** 客户端名称。 */

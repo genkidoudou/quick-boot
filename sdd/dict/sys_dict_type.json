@@ -271,5 +271,18 @@
     "dict_name": "测试",
     "dict_type": "CS",
     "status": "0"
+  },
+  {
+    "id": "1927000000000000001",
+    "create_by": null,
+    "create_time": null,
+    "update_by": null,
+    "update_time": null,
+    "del_flag": "0",
+    "remark": null,
+    "digest": null,
+    "dict_name": "授权类型",
+    "dict_type": "GRANT_TYPES",
+    "status": "0"
   }
 ]

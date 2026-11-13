@@ -127,7 +127,6 @@ pnpm dev
 | 变量 | 说明 |
 |------|------|
 | `VITE_JIMU_BASE_URL` | 积木报表/BI 根地址，需与后端 `qc.jimu.public-base-url` 一致 |
-| `VITE_OAUTH_CLIENT_ID` / `VITE_OAUTH_CLIENT_SECRET` | 登录前无 JWT 请求的 OAuth 客户端（与 `sys_oauth_client` 种子一致） |
 | `VITE_APP_LITE_RUM_*` | Lite RUM 开关与上报参数 |
 
 生产构建：

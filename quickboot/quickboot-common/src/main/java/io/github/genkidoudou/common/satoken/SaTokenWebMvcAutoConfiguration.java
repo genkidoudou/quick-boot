@@ -1,4 +1,4 @@
-package io.github.genkidoudou.satoken;
+package io.github.genkidoudou.common.satoken;
 
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.router.SaRouter;

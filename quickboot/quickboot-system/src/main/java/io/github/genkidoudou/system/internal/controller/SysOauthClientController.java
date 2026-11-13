@@ -7,9 +7,11 @@ import io.github.genkidoudou.common.api.R;
 import io.github.genkidoudou.common.idempotency.Idempotent;
 import io.github.genkidoudou.common.validation.group.AddGroup;
 import io.github.genkidoudou.common.validation.group.UpdateGroup;
+import io.github.genkidoudou.system.internal.entity.SysOauthClient;
 import io.github.genkidoudou.system.internal.service.ISysOauthClientService;
 import io.github.genkidoudou.system.internal.vo.SysOauthClientVo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,16 +57,19 @@ public class SysOauthClientController {
     }
 
     /**
-     * 新增。
+     * 新增。密钥由服务端生成，响应中一次性返回明文 {@code clientSecret}。
      *
      * @param body 表单数据
+     * @return 新建结果（含明文密钥）
      */
     @SaCheckPermission("system:oauthClient:add")
     @Idempotent(ttlSeconds = 10, key = "#userId")
     @PostMapping("add")
-    public R<Void> add(@RequestBody @Validated(AddGroup.class) SysOauthClientVo body) {
-        sysOauthClientService.saveVo(body);
-        return R.ok();
+    public R<SysOauthClientVo> add(@RequestBody @Validated(AddGroup.class) SysOauthClientVo body) {
+        SysOauthClient entity = sysOauthClientService.saveVo(body);
+        SysOauthClientVo created = new SysOauthClientVo();
+        BeanUtils.copyProperties(entity, created);
+        return R.ok(created);
     }
 
     /**

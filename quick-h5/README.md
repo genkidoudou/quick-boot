@@ -5,14 +5,12 @@ uni-app（Vue3 + Vite + uView Pro）多端客户端，对接 quickboot 后端登
 ## 前置
 
 1. 后端已启动（默认 `http://127.0.0.1:9993`）
-2. Flyway 已包含 `quick-h5` OAuth client（`V19__oauth_client_quick_h5.sql`）
-3. 开发凭据（见 `.env.development`）：
+2. 开发凭据（见 `.env.development`）：
    - H5：`VITE_APP_BASE_API=/dev-api`（Vite 代理到 9993，避免 CORS）
    - 非 H5：`VITE_APP_BASE_API_NATIVE=http://127.0.0.1:9993`
-   - `VITE_OAUTH_CLIENT_ID=quick-h5` / `VITE_OAUTH_CLIENT_SECRET=quick-h5-secret`
-4. 测试账号与管理端相同（如 `admin` / `admin123`）
-5. 后端 dev 已开启 `qc.security.firewall.cors`（直连跨域时可用）
-6. Lite RUM（可选）：`VITE_APP_LITE_RUM_ENABLED=true`，`VITE_APP_LITE_RUM_APP_ID=quick-h5`；上报 `/monitor/liteTrace/rum/ingest`，与管理端共用控制台（按 appId 区分）
+3. 测试账号与管理端相同（如 `admin` / `admin123`）
+4. 后端 dev 已开启 `qc.security.firewall.cors`（直连跨域时可用）
+5. Lite RUM（可选）：`VITE_APP_LITE_RUM_ENABLED=true`，`VITE_APP_LITE_RUM_APP_ID=quick-h5`；上报 `/monitor/liteTrace/rum/ingest`，与管理端共用控制台（按 appId 区分）
 
 ## 安装与运行
 

@@ -1,7 +1,7 @@
 /**
- * uni.request 封装：统一 baseUrl、鉴权、R<T> 解包、401 跳转与 Lite RUM 埋点。
+ * uni.request 封装：统一 baseUrl、Bearer 鉴权、R<T> 解包、401 跳转与 Lite RUM 埋点。
  */
-import { buildObfuscatedBasicAuthorization } from '@/utils/oauthClientBasic'
+
 import { getLiteRum } from '@/monitor/liteRum'
 
 /** 后端统一响应体 R<T> */
@@ -11,7 +11,7 @@ type RequestOptions = {
   url: string
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   data?: unknown
-  /** false 时不带 Bearer，改用 Client Basic（登录等） */
+  /** false 时不带 Bearer（登录等匿名接口） */
   auth?: boolean
 }
 
@@ -53,7 +53,7 @@ function newClientTraceId() {
 /**
  * 发起 API 请求并返回解包后的 data。
  * - H5 与原生端 baseUrl 环境变量不同
- * - auth 为 false 或无 token 时使用混淆 Basic（登录等匿名接口）
+ * - 仅在 auth 未关闭且有 token 时注入 Bearer
  * - HTTP/biz 非 200 或 401 时 reject；401 会清 token 并 reLaunch 登录页
  */
 export function request<T>(options: RequestOptions): Promise<T> {
@@ -67,15 +67,8 @@ export function request<T>(options: RequestOptions): Promise<T> {
     'Content-Type': 'application/json;charset=utf-8',
   }
   const token = getStoredToken()
-  // 已登录：Bearer；否则（含 auth:false）尝试 Client Basic
   if (auth && token) {
     header.Authorization = `Bearer ${token}`
-  }
-  else {
-    const basic = buildObfuscatedBasicAuthorization()
-    if (basic) {
-      header.Authorization = basic
-    }
   }
 
   const pathOnly = String(options.url || '').split('?')[0]
@@ -114,7 +107,6 @@ export function request<T>(options: RequestOptions): Promise<T> {
           })
         }
         if (status === 401 || body?.code === 401) {
-          // 登录失效：清 token 并强制回登录页
           clearStoredToken()
           uni.reLaunch({ url: '/pages/login/login' })
           reject(new Error(body?.msg || '未登录或登录已过期'))
@@ -124,7 +116,6 @@ export function request<T>(options: RequestOptions): Promise<T> {
           reject(new Error(`HTTP ${status}`))
           return
         }
-        // 业务码非 200 视为失败（与 quickboot R<T> 约定一致）
         if (body && typeof body.code === 'number' && body.code !== 200) {
           reject(new Error(body.msg || `业务错误 ${body.code}`))
           return

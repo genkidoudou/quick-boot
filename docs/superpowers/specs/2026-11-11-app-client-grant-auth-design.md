@@ -2,7 +2,7 @@
 
 日期：2026-11-11  
 状态：已确认  
-关联示例：`docs/认证与客户端/grant-auth-改造示例/`
+关联示例：已移除；请求签名示例见 `docs/认证与客户端/hmac-anti-replay-示例/` 与 `2026-11-12-request-hmac-anti-replay-design.md`
 
 ## 1. 目标
 
@@ -22,7 +22,7 @@
 | 登录方式控制 | 字段 **`grant_types`**（不用 `allow_*` 布尔，不用 scope） |
 | 验证码 | 保留 **`check_captcha`**（验证码不是 grant_type） |
 | 客户端类型 | 新增 **`client_type`**：`public` \| `confidential` |
-| 前端 secret | 删除；public 客户端不校验 secret |
+| 前端 secret | 登录鉴权不依赖 secret；**请求 HMAC 验签**需前端持有 secret（见 2026-11-12 设计，弱约束） |
 | 开放调用 | 继续 **`sys_api_key`**，不走登录 grant |
 | OAuth2 AS | 本期不做；无明确第三方接入需求前不预实现 |
 

@@ -2,7 +2,6 @@
  * quick-h5 Lite RUM：uni storage + uni.request transport；PV 走页面栈 / 路由拦截。
  */
 import { LiteRum, clearSessionId, getOrCreateSessionId } from '@quickboot/lite-rum'
-import { buildObfuscatedBasicAuthorization } from '@/utils/oauthClientBasic'
 
 type RumInstance = InstanceType<typeof LiteRum>
 
@@ -52,8 +51,7 @@ function buildRumAuthHeaders(): Record<string, string> {
   if (token) {
     return { Authorization: `Bearer ${token}` }
   }
-  const basic = buildObfuscatedBasicAuthorization()
-  return basic ? { Authorization: basic } : {}
+  return {}
 }
 
 function resolveBaseApi() {

@@ -1,4 +1,4 @@
-package io.github.genkidoudou.satoken;
+package io.github.genkidoudou.common.satoken;
 
 import lombok.Getter;
 import lombok.Setter;

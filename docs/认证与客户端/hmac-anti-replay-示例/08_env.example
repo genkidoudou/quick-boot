@@ -1,0 +1,5 @@
+VITE_APP_BASE_API=/dev-api
+VITE_CLIENT_ID=quick-ui
+# 仅当 VITE_SIGN_REQUIRE_HMAC=true 时需要
+# VITE_CLIENT_SECRET=与库表一致的密钥
+# VITE_SIGN_REQUIRE_HMAC=false

@@ -1,5 +1,6 @@
 package io.github.genkidoudou.satoken;
 
+import io.github.genkidoudou.common.satoken.SaTokenIgnoreProperties;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

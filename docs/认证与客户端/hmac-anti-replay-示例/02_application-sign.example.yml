@@ -1,0 +1,9 @@
+qc:
+  sign:
+    enable: false          # 前端加好 sign 后再改 true
+    require-hmac: false    # false 允许 1 段仅 clientId
+    header-name: sign
+    skew-ms: 300000
+    nonce-ttl-seconds: 600
+    ignore-urls:
+      - /actuator/health

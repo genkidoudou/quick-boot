@@ -1240,5 +1240,83 @@
         "status": "0"
       }
     ]
+  },
+  "GRANT_TYPES": {
+    "dictName": "授权类型",
+    "status": "0",
+    "items": [
+      {
+        "id": "1927000000000000101",
+        "create_by": null,
+        "create_time": null,
+        "update_by": null,
+        "update_time": null,
+        "del_flag": "0",
+        "remark": null,
+        "digest": null,
+        "dict_type": "GRANT_TYPES",
+        "dict_label": "密码登录",
+        "dict_value": "password",
+        "dict_sort": 1,
+        "css_class": null,
+        "list_class": null,
+        "is_default": "1",
+        "status": "0"
+      },
+      {
+        "id": "1927000000000000102",
+        "create_by": null,
+        "create_time": null,
+        "update_by": null,
+        "update_time": null,
+        "del_flag": "0",
+        "remark": null,
+        "digest": null,
+        "dict_type": "GRANT_TYPES",
+        "dict_label": "短信登录",
+        "dict_value": "sms",
+        "dict_sort": 2,
+        "css_class": null,
+        "list_class": null,
+        "is_default": "0",
+        "status": "0"
+      },
+      {
+        "id": "1927000000000000103",
+        "create_by": null,
+        "create_time": null,
+        "update_by": null,
+        "update_time": null,
+        "del_flag": "0",
+        "remark": null,
+        "digest": null,
+        "dict_type": "GRANT_TYPES",
+        "dict_label": "刷新令牌",
+        "dict_value": "refresh_token",
+        "dict_sort": 3,
+        "css_class": null,
+        "list_class": null,
+        "is_default": "0",
+        "status": "0"
+      },
+      {
+        "id": "1927000000000000104",
+        "create_by": null,
+        "create_time": null,
+        "update_by": null,
+        "update_time": null,
+        "del_flag": "0",
+        "remark": null,
+        "digest": null,
+        "dict_type": "GRANT_TYPES",
+        "dict_label": "客户端凭证",
+        "dict_value": "client_credentials",
+        "dict_sort": 4,
+        "css_class": null,
+        "list_class": null,
+        "is_default": "0",
+        "status": "0"
+      }
+    ]
   }
 }
