@@ -1,5 +1,6 @@
 package io.github.genkidoudou.system.internal.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -38,7 +39,7 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
         query.like(StrUtil.isNotBlank(param.getClientId()), SysOauthClient::getClientId, param.getClientId())
                 .like(StrUtil.isNotBlank(param.getClientName()), SysOauthClient::getClientName, param.getClientName())
                 .eq(StrUtil.isNotBlank(param.getClientType()), SysOauthClient::getClientType, param.getClientType())
-                .eq(StrUtil.isNotBlank(param.getCheckCaptcha()), SysOauthClient::getCheckCaptcha, param.getCheckCaptcha())
+                .like(StrUtil.isNotBlank(param.getGrantTypes()), SysOauthClient::getGrantTypes, param.getGrantTypes())
                 .eq(StrUtil.isNotBlank(param.getStatus()), SysOauthClient::getStatus, param.getStatus());
     }
 
@@ -70,6 +71,21 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
             throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "OAuth客户端不存在");
         }
         maskSecret(vo);
+        return vo;
+    }
+
+    /**
+     * 查看凭证；回传明文密钥。
+     *
+     * @param id 主键
+     * @return 含密钥的视图
+     */
+    @Override
+    public SysOauthClientVo getCredentialById(Long id) {
+        SysOauthClientVo vo = super.getVoById(id);
+        if (vo == null) {
+            throw WarningException.literal(ErrorCodes.Common.INVALID_PARAM, "OAuth客户端不存在");
+        }
         return vo;
     }
 
@@ -111,6 +127,15 @@ public class SysOauthClientServiceImpl extends BaseVoServiceImpl<SysOauthClientM
     @Override
     public void removeByIds(List<Long> ids) {
         deleteByIds(ids);
+    }
+
+    @Override
+    public SysOauthClient getByClientId(String clientId) {
+        if (StrUtil.isBlank(clientId)) {
+            return null;
+        }
+        return super.getOne(new LambdaQueryWrapper<SysOauthClient>()
+                .eq(SysOauthClient::getClientId, clientId), false);
     }
 
     private void maskSecret(SysOauthClientVo vo) {

@@ -49,6 +49,6 @@ public class HmacSha256SignAlgorithm implements SignAlgorithm {
     public boolean verify(String sign, String secret, String payload) {
         String actual = sign(secret, payload);
         // 忽略大小写
-        return actual.toLowerCase().equals(sign.toUpperCase());
+        return actual.toLowerCase().equals(sign.toLowerCase());
     }
 }

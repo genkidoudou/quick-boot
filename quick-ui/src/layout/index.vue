@@ -96,6 +96,7 @@ function setLayout() {
 <style lang="scss" scoped>
 .app-wrapper {
   position: relative;
+  z-index: 1;
   height: 100%;
   width: 100%;
 
@@ -120,12 +121,12 @@ function setLayout() {
   top: 0;
   right: 0;
   z-index: 9;
-  width: calc(100% - 210px);
+  width: calc(100% - 244px);
   transition: width 0.28s;
 }
 
 .hideSidebar .fixed-header {
-  width: calc(100% - 54px);
+  width: calc(100% - 96px);
 }
 
 .sidebarHide .fixed-header {

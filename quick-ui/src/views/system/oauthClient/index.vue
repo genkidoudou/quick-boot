@@ -1,5 +1,15 @@
 <template>
-  <div class="app-container">
+  <div class="app-container qb-workbench">
+    <div class="qb-banner-card oauth-summary">
+      <div class="qb-banner-card__head">
+        <h2 class="oauth-summary__title">OAuth 客户端</h2>
+        <p class="oauth-summary__desc">管理客户端凭证、授权类型与请求签名开关</p>
+      </div>
+      <div class="qb-banner-card__dock">
+        <span class="qb-badge-soft is-info">认证</span>
+        <span class="qb-badge-soft">签名校验</span>
+      </div>
+    </div>
     <C7JsonTable
       ref="tableRef"
       :list-function="pageOauthClient"
@@ -16,6 +26,15 @@
       @edit-click="(row) => formDialogRef?.open(row)"
     >
       <template #actions="{ row }">
+        <el-button
+          link
+          type="primary"
+          :icon="View"
+          v-hasPermi="['system:oauthClient:query']"
+          @click="openCredential(row)"
+        >
+          查看
+        </el-button>
         <el-button
           link
           type="primary"
@@ -36,6 +55,29 @@
         </el-button>
       </template>
     </C7JsonTable>
+
+    <C7Dialog v-model="credentialOpen" title="查看凭证" width="560px" :footer="false">
+      <el-form label-width="96px" v-loading="credentialLoading">
+        <el-form-item label="客户端名称">
+          <span>{{ credential.clientName || '-' }}</span>
+        </el-form-item>
+        <el-form-item label="客户端ID">
+          <div class="credential-row">
+            <el-input :model-value="credential.clientId" readonly/>
+            <el-button type="primary" @click="copyText(credential.clientId, '客户端ID')">复制</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="客户端密钥">
+          <div class="credential-row">
+            <el-input :model-value="credential.clientSecret" readonly show-password type="password"/>
+            <el-button type="primary" @click="copyText(credential.clientSecret, '客户端密钥')">复制</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="warning" plain @click="copyBoth">一键复制 ID + 密钥</el-button>
+        </el-form-item>
+      </el-form>
+    </C7Dialog>
 
     <C7FormDialog
       ref="formDialogRef"
@@ -82,15 +124,25 @@
             multiple
             collapse-tags
             collapse-tags-tooltip
-            placeholder="请选择授权类型"
+            placeholder="授权方式 + 安全策略（统一写入 grant_types）"
             style="width: 100%"
           >
-            <el-option
-              v-for="item in GRANT_TYPES"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+            <el-option-group label="授权方式">
+              <el-option
+                v-for="item in authOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-option-group>
+            <el-option-group label="安全策略">
+              <el-option
+                v-for="item in securityOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-option-group>
           </el-select>
         </el-form-item>
         <el-form-item prop="apiPathList">
@@ -118,12 +170,6 @@
           </template>
           <el-input-number v-model="form.tokenTimeout" :min="0" :controls="true" placeholder="秒"/>
         </el-form-item>
-        <el-form-item prop="checkCaptcha">
-          <template #label>
-            <C7FormLabel text="校验验证码" :tip="FIELD_TIPS.checkCaptcha"/>
-          </template>
-          <c7-radio :data-list="COMMON_IS" v-model="form.checkCaptcha"/>
-        </el-form-item>
         <el-form-item prop="status">
           <template #label>
             <C7FormLabel text="状态" :tip="FIELD_TIPS.status"/>
@@ -143,15 +189,16 @@
 
 <script setup>
 /**
- * OAuth 客户端管理：列表 / 新增 / 修改 / 删除（对齐后端 SysOauthClient）。
- * 密钥仅新增时由后端生成并弹窗展示一次；授权类型、接口路径在前端多选/多条后拼成逗号字段。
+ * OAuth 客户端管理。
+ * 授权方式与安全策略统一写入 grant_types（如 password,sms,captcha,sign），后端用 contains 判断。
  */
 import { computed, reactive, ref } from 'vue'
-import { Delete, Edit } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { Delete, Edit, View } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useDict } from '@/utils/dict'
 import {
   addOauthClient,
+  getOauthClientCredential,
   pageOauthClient,
   removeOauthClient,
   updateOauthClient
@@ -159,22 +206,35 @@ import {
 
 defineOptions({ name: 'SysOauthClient' })
 
-const { COMMON_STATUS, COMMON_IS, GRANT_TYPES } = useDict('COMMON_STATUS', 'COMMON_IS', 'GRANT_TYPES')
+const { COMMON_STATUS, GRANT_TYPES } = useDict('COMMON_STATUS', 'GRANT_TYPES')
 
-/** 字段说明（C7FormLabel tip） */
+/** 安全策略约定值（与字典 GRANT_TYPES 中 captcha/sign 一致） */
+const SECURITY_VALUES = new Set(['captcha', 'sign'])
+const SECURITY_FALLBACK = [
+  { label: '校验验证码', value: 'captcha' },
+  { label: '校验签名', value: 'sign' }
+]
+
+const authOptions = computed(() =>
+  (GRANT_TYPES.value || []).filter((i) => !SECURITY_VALUES.has(i.value))
+)
+const securityOptions = computed(() => {
+  const fromDict = (GRANT_TYPES.value || []).filter((i) => SECURITY_VALUES.has(i.value))
+  return fromDict.length ? fromDict : SECURITY_FALLBACK
+})
+
+/** 字段说明 */
 const FIELD_TIPS = {
   clientId: '应用唯一标识，对应登录请求中的 clientId；创建后不可改。',
   clientName: '管理端展示名称，便于区分 quick-ui / quick-h5 等端。',
   clientType: 'public=浏览器/H5 等公开端（不依赖 secret）；confidential=可保管密钥的服务端应用。',
-  grantTypes: '该客户端允许的登录/换票方式（字典 GRANT_TYPES），多选后以逗号存库。',
+  grantTypes: '统一写入 grant_types。含 captcha 则登录要验证码；含 sign 则请求要 HMAC。扩展只需加字典项。',
   apiPathPatterns: '允许访问的接口 Ant 路径，可添加多条，保存时用英文逗号拼接。',
   tokenTimeout: '该端登录后 Sa-Token 有效时长（秒）；留空则使用全局默认。',
-  checkCaptcha: '为「是」时，password/sms 等登录须先通过行为验证码。',
   status: '停用后该客户端不可再用于登录。',
   remark: '可选备注，仅管理查看。'
 }
 
-/** 客户端类型：表注释为 public|confidential，非系统字典。 */
 const CLIENT_TYPE_OPTIONS = [
   { label: 'public（公开）', value: 'public' },
   { label: 'confidential（机密）', value: 'confidential' }
@@ -185,22 +245,42 @@ const formDialogRef = ref(null)
 const formRef = ref(null)
 const open = ref(false)
 const form = reactive(emptyForm())
-/** 新增成功后一次性展示的明文密钥 */
 const createdSecret = ref('')
 
 const title = computed(() => (form.id ? '修改OAuth客户端' : '新增OAuth客户端'))
+
+const grantLabelMap = computed(() => {
+  const map = {}
+  for (const item of [...authOptions.value, ...securityOptions.value]) {
+    map[item.value] = item.label
+  }
+  return map
+})
 
 const tableColumns = computed(() => [
   { prop: 'clientId', label: '客户端ID', minWidth: 140, showOverflowTooltip: true },
   { prop: 'clientName', label: '客户端名称', minWidth: 140, showOverflowTooltip: true },
   { prop: 'clientType', label: '类型', width: 120, showOverflowTooltip: true },
-  { prop: 'grantTypes', label: '授权类型', minWidth: 160, showOverflowTooltip: true },
+  {
+    prop: 'grantTypes',
+    label: '授权类型',
+    minWidth: 200,
+    showOverflowTooltip: true,
+    formatter: (row) => formatGrantTypes(row.grantTypes)
+  },
   { prop: 'apiPathPatterns', label: '接口路径', minWidth: 140, showOverflowTooltip: true },
   { prop: 'tokenTimeout', label: 'Token时长', width: 110 },
-  { prop: 'checkCaptcha', label: '校验验证码', columnType: 'tag', dictList: COMMON_IS.value || [], width: 110 },
   { prop: 'status', label: '状态', columnType: 'tag', dictList: COMMON_STATUS.value || [], width: 100 },
-  { prop: 'actions', label: '操作', columnType: 'slot', width: 160, fixed: 'right', align: 'center' }
+  { prop: 'actions', label: '操作', columnType: 'slot', width: 220, fixed: 'right', align: 'center' }
 ])
+
+const credentialOpen = ref(false)
+const credentialLoading = ref(false)
+const credential = reactive({
+  clientName: '',
+  clientId: '',
+  clientSecret: ''
+})
 
 const searchColumns = computed(() => [
   { prop: 'clientId', label: '客户端ID', type: 'input' },
@@ -211,7 +291,6 @@ const searchColumns = computed(() => [
     type: 'select',
     dataList: CLIENT_TYPE_OPTIONS
   },
-  { prop: 'checkCaptcha', label: '校验验证码', type: 'select', dataList: COMMON_IS.value || [] },
   { prop: 'status', label: '状态', type: 'select', dataList: COMMON_STATUS.value || [] }
 ])
 
@@ -219,7 +298,20 @@ const rules = computed(() => ({
   clientId: [{ required: true, message: '客户端ID不能为空', trigger: 'blur' }],
   clientName: [{ required: true, message: '客户端名称不能为空', trigger: 'blur' }],
   clientType: [{ required: true, message: '客户端类型不能为空', trigger: 'change' }],
-  grantTypeList: [{ type: 'array', required: true, min: 1, message: '请至少选择一种授权类型', trigger: 'change' }],
+  grantTypeList: [
+    {
+      validator: (_rule, value, callback) => {
+        const list = (value || []).map(String)
+        const grants = list.filter((v) => !SECURITY_VALUES.has(v))
+        if (!grants.length) {
+          callback(new Error('请至少选择一种授权方式（密码/短信等）'))
+          return
+        }
+        callback()
+      },
+      trigger: 'change'
+    }
+  ],
   apiPathList: [
     {
       validator: (_rule, value, callback) => {
@@ -244,13 +336,11 @@ function emptyForm() {
     grantTypeList: ['password'],
     apiPathList: ['/**'],
     tokenTimeout: undefined,
-    checkCaptcha: '1',
     status: '0',
     remark: ''
   }
 }
 
-/** 逗号串 → 数组 */
 function splitCsv(raw, fallback = []) {
   if (raw == null || String(raw).trim() === '') {
     return [...fallback]
@@ -259,6 +349,69 @@ function splitCsv(raw, fallback = []) {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
+}
+
+function formatGrantTypes(raw) {
+  return splitCsv(raw)
+    .map((v) => grantLabelMap.value[v] || v)
+    .join('、') || '-'
+}
+
+/** 打开凭证查看 */
+async function openCredential(row) {
+  if (!row?.id) {
+    return
+  }
+  credential.clientName = row.clientName || ''
+  credential.clientId = row.clientId || ''
+  credential.clientSecret = ''
+  credentialOpen.value = true
+  credentialLoading.value = true
+  try {
+    const res = await getOauthClientCredential(row.id)
+    const data = res?.data ?? res
+    credential.clientName = data?.clientName ?? row.clientName ?? ''
+    credential.clientId = data?.clientId ?? row.clientId ?? ''
+    credential.clientSecret = data?.clientSecret ?? ''
+  } catch (e) {
+    credentialOpen.value = false
+    throw e
+  } finally {
+    credentialLoading.value = false
+  }
+}
+
+async function copyText(text, label = '内容') {
+  const value = String(text || '')
+  if (!value) {
+    ElMessage.warning(`${label}为空`)
+    return
+  }
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+    } else {
+      const ta = document.createElement('textarea')
+      ta.value = value
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    ElMessage.success(`已复制${label}`)
+  } catch {
+    ElMessage.error('复制失败，请手动选择复制')
+  }
+}
+
+function copyBoth() {
+  const id = credential.clientId || ''
+  const secret = credential.clientSecret || ''
+  if (!id && !secret) {
+    ElMessage.warning('凭证为空')
+    return
+  }
+  return copyText(`clientId=${id}\nclientSecret=${secret}`, '凭证')
 }
 
 function addApiPath() {
@@ -285,7 +438,6 @@ function getPayload(row) {
       grantTypeList: splitCsv(row.grantTypes, ['password']),
       apiPathList: splitCsv(row.apiPathPatterns, ['/**']),
       tokenTimeout: row.tokenTimeout ?? undefined,
-      checkCaptcha: row.checkCaptcha ?? '1',
       status: row.status ?? '0',
       remark: row.remark ?? ''
     })
@@ -303,7 +455,6 @@ async function submitOauthClient() {
     grantTypes,
     apiPathPatterns,
     tokenTimeout: form.tokenTimeout,
-    checkCaptcha: form.checkCaptcha,
     status: form.status,
     remark: form.remark
   }
@@ -342,12 +493,39 @@ async function onFormSuccess(_form, ctx) {
       await navigator.clipboard.writeText(secret)
     }
   } catch {
-    // 用户点关闭/取消：不再复制
+    // 关闭/取消
   }
 }
 </script>
 
 <style scoped>
+.qb-workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: var(--qb-bottom-clearance);
+}
+
+.oauth-summary__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--qb-fg);
+}
+
+.oauth-summary__desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--qb-muted-fg);
+}
+
+.oauth-summary__dock,
+.qb-banner-card__dock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .path-list {
   width: 100%;
   display: flex;
@@ -362,6 +540,17 @@ async function onFormSuccess(_form, ctx) {
 }
 
 .path-list__row .el-input {
+  flex: 1;
+}
+
+.credential-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.credential-row .el-input {
   flex: 1;
 }
 </style>

@@ -11,3 +11,4 @@ io.github.genkidoudou.common.file.FileStorageAutoConfiguration
 io.github.genkidoudou.common.i18n.I18nMessageSourceAutoConfiguration
 io.github.genkidoudou.common.satoken.SaTokenWebMvcAutoConfiguration
 io.github.genkidoudou.common.datascope.DataPermissionConfiguration
+io.github.genkidoudou.common.sign.SignAutoConfiguration

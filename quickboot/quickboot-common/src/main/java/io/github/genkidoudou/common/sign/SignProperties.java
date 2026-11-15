@@ -69,4 +69,18 @@ public class SignProperties {
      */
     private String redisKey = "sign:nonce";
 
+
+    /**
+     * nonce存储
+     *
+     * @since 2026/11/14
+     */
+
+    private NonceStore nonceStore;
+
+    private enum NonceStore {
+        REDIS,
+        MEMORY,
+    }
+
 }

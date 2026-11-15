@@ -53,20 +53,7 @@ export default defineConfig(({mode, command}) => {
                     api: 'modern-compiler'
                 }
             },
-            postcss: {
-                plugins: [
-                    {
-                        postcssPlugin: 'internal:charset-removal',
-                        AtRule: {
-                            charset: (atRule) => {
-                                if (atRule.name === 'charset') {
-                                    atRule.remove();
-                                }
-                            }
-                        }
-                    }
-                ]
-            }
+            // PostCSS：见 postcss.config.js（tailwind + autoprefixer + charset-removal）
         },
         build: {
             target: 'ES2020',

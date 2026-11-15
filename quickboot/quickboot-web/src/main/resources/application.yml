@@ -224,4 +224,10 @@ qc:
   # 积木报表 / BI：菜单 iframe 用的后端根地址（无尾斜杠）
   jimu:
     public-base-url: http://localhost:9993
-## 日志
+  sign:
+    enable: true
+    nonce-store: redis
+    ignore-urls:
+      - /jmreport/**
+      - /drag/**
+      - /jimubi/**

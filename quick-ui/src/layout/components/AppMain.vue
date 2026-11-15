@@ -98,11 +98,11 @@ watch(
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
+  background-color: var(--qb-muted);
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #c0c0c0;
+  background-color: var(--qb-faint);
   border-radius: 3px;
 }
 </style>

@@ -1,5 +1,7 @@
 package io.github.genkidoudou.system.internal.api.impl;
 
+import io.github.genkidoudou.common.sign.OauthClientHolder;
+import io.github.genkidoudou.common.sign.SysOauthClientVo;
 import io.github.genkidoudou.system.api.api.SysOperLogApi;
 import io.github.genkidoudou.system.api.vo.SysOperLogRecordVo;
 import io.github.genkidoudou.system.internal.service.ISysOperLogService;
@@ -38,6 +40,7 @@ public class SysOperLogApiImpl implements SysOperLogApi {
         vo.setOperTime(record.getOperTime());
         vo.setCostTime(record.getCostTime());
         vo.setTraceId(record.getTraceId());
+        vo.setClientId(OauthClientHolder.getOpt().map(SysOauthClientVo::getClientId).orElse(null));
         sysOperLogService.record(vo);
     }
 }

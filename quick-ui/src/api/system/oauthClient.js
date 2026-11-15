@@ -22,12 +22,23 @@ export function pageOauthClient(data) {
 }
 
 /**
- * 详情。
+ * 详情（不含明文密钥）。
  * @param {string|number} id
  */
 export function getOauthClient(id) {
   return request({
     url: `${BASE}/${id}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 查看凭证（含明文 clientId / clientSecret）。
+ * @param {string|number} id
+ */
+export function getOauthClientCredential(id) {
+  return request({
+    url: `${BASE}/${id}/credential`,
     method: 'get'
   })
 }

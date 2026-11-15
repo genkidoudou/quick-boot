@@ -40,7 +40,9 @@ public class SysOauthClient extends BaseEntity implements Serializable {
     /** 客户端类型：public|confidential。 */
     private String clientType;
 
-    /** 允许的 grant_type，逗号分隔。 */
+    /**
+     * 能力串：授权方式（password/sms/...）与安全策略（captcha/sign），逗号分隔。
+     */
     private String grantTypes;
 
     /** 允许访问的接口路径模式。 */
@@ -48,9 +50,6 @@ public class SysOauthClient extends BaseEntity implements Serializable {
 
     /** token 有效时间（秒）。 */
     private Integer tokenTimeout;
-
-    /** 是否校验验证码(COMMON_IS)。 */
-    private String checkCaptcha;
 
     /** 状态(COMMON_STATUS)。 */
     private String status;

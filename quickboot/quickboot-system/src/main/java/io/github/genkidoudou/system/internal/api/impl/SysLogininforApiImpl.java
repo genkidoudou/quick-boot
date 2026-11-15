@@ -1,5 +1,7 @@
 package io.github.genkidoudou.system.internal.api.impl;
 
+import io.github.genkidoudou.common.sign.OauthClientHolder;
+import io.github.genkidoudou.common.sign.SysOauthClientVo;
 import io.github.genkidoudou.system.api.api.SysLogininforApi;
 import io.github.genkidoudou.system.api.vo.SysLogininforRecordVo;
 import io.github.genkidoudou.system.internal.service.ISysLogininforService;
@@ -32,6 +34,7 @@ public class SysLogininforApiImpl implements SysLogininforApi {
         vo.setStatus(record.getStatus());
         vo.setLoginTime(record.getLoginTime());
         vo.setTraceId(record.getTraceId());
+        vo.setClientId(OauthClientHolder.getOpt().map(SysOauthClientVo::getClientId).orElse(null));
         sysLogininforService.record(vo);
     }
 }

@@ -8,26 +8,26 @@ $tiffany: #4AB7BD;
 $yellow: #FEC171;
 $panGreen: #30B08F;
 
-// 默认菜单主题风格
-$base-menu-color: #bfcbd9;
-$base-menu-color-active: #f4f4f5;
-$base-menu-background: #304156;
-$base-logo-title-color: #ffffff;
+// 默认菜单主题风格（对齐 DESIGN.md 深海侧栏）
+$base-menu-color: rgba(242, 245, 250, 0.72);
+$base-menu-color-active: #f2f5fa;
+$base-menu-background: #0b1322;
+$base-logo-title-color: #f2f5fa;
 
-$base-menu-light-color: rgba(0, 0, 0, 0.7);
+$base-menu-light-color: #52525b;
 $base-menu-light-background: #ffffff;
-$base-logo-light-title-color: #001529;
+$base-logo-light-title-color: #18181b;
 
-$base-sub-menu-background: #1f2d3d;
-$base-sub-menu-hover: #001528;
+$base-sub-menu-background: #131b2b;
+$base-sub-menu-hover: rgba(255, 255, 255, 0.08);
 
-$--color-primary: #409EFF;
-$--color-success: #67C23A;
-$--color-warning: #E6A23C;
-$--color-danger: #F56C6C;
-$--color-info: #909399;
+$--color-primary: #8D51F9;
+$--color-success: #248A3D;
+$--color-warning: #D97706;
+$--color-danger: #DC2626;
+$--color-info: #007AFF;
 
-$base-sidebar-width: 210px;
+$base-sidebar-width: 232px;
 
 :export {
   menuColor: $base-menu-color;

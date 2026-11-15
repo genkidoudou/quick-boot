@@ -1,6 +1,7 @@
 package io.github.genkidoudou.common.sign;
 
 
+import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 
 @Data
@@ -26,7 +27,7 @@ public class SysOauthClientVo {
     private String clientType;
 
     /**
-     * 允许的 grant_type，逗号分隔。
+     * 能力串：授权方式（password/sms/...）与安全策略（captcha/sign），逗号分隔。
      */
     private String grantTypes;
 
@@ -41,21 +42,26 @@ public class SysOauthClientVo {
     private Integer tokenTimeout;
 
     /**
-     * 是否校验验证码(COMMON_IS)。
-     */
-    private String checkCaptcha;
-
-
-    /**
-     * 是否校验签名(COMMON_IS)
-     *
-     * @since 2026/11/12
-     */
-
-    private String checkSign;
-
-    /**
      * 状态(COMMON_STATUS)。
      */
     private String status;
+
+    /**
+     * grant_types 是否包含指定能力（忽略大小写与空白）。
+     *
+     * @param code 如 password / captcha / sign
+     * @return 是否包含
+     */
+    public boolean hasGrant(String code) {
+        if (StrUtil.isBlank(grantTypes) || StrUtil.isBlank(code)) {
+            return false;
+        }
+        String target = code.trim();
+        for (String part : grantTypes.split(",")) {
+            if (target.equalsIgnoreCase(part.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

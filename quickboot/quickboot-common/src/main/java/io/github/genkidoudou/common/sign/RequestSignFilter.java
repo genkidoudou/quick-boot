@@ -1,11 +1,10 @@
 package io.github.genkidoudou.common.sign;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
+import io.github.genkidoudou.common.spring.CachedBodyHttpServletRequest;
 import io.github.genkidoudou.common.utils.ServletUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +14,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * 验签过滤器
@@ -25,22 +30,28 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @Slf4j
 public class RequestSignFilter extends OncePerRequestFilter {
-
+    public static final String ATTR_CLIENT_ID = "CLIENT_ID";
     private final SignProperties signProperties;
 
     private final OauthClientSupport oauthClientSupport;
+
+    private final NonceStore nonceStore;
+
+    private final SignAlgorithm signAlgorithm;
     private final AntPathMatcher matcher = new AntPathMatcher();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         // 1. 总开关是否开启
         if (!signProperties.isEnable()) {
+            filterChain.doFilter(request, response);
             return;
         }
 
         // 2. 是否匹配忽略url
 
         if (matchIgnoreUrl(request, signProperties)) {
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -57,28 +68,57 @@ public class RequestSignFilter extends OncePerRequestFilter {
         // 解析sign
 
         SignUtils.SignTicket signTicket = SignUtils.parser(sign);
-        if (null == signTicket) {
+        if (signTicket == null) {
             // 签名不正确
             ServletUtils.writeResponse(response, 603);
             return;
         }
 
         SysOauthClientVo oauthClientVo = oauthClientSupport.getClient(signTicket.clientId());
-        if (null == oauthClientVo) {
+        if (null == oauthClientVo || !"0".equals(oauthClientVo.getStatus())) {
             ServletUtils.writeResponse(response, 600);
             return;
         }
 
-        String checkSign = oauthClientVo.getCheckSign();
-        if (!checkSign.equals("0")) {
+        boolean needHmac = oauthClientVo.hasGrant("sign");
+        boolean hmacMode = StrUtil.isAllNotBlank(signTicket.timestamp(), signTicket.nonce(), signTicket.hmacHex());
+        // 需要验签但只给了 1 段
+        if (needHmac && !hmacMode) {
+            ServletUtils.writeResponse(response, 603);
             return;
         }
 
-        // 验证签名
-        ContentCachingRequestWrapper contentCachingRequestWrapper = new ContentCachingRequestWrapper(request, 1024);
-        String contentAsString = contentCachingRequestWrapper.getContentAsString();
+        try {
+            // 不需要验签，或仅标识
+            if (!needHmac || !hmacMode) {
 
+                // 绑定客户端上下文，业务可用 OauthClientHolder.get() / hasGrant(...)
+                OauthClientHolder.set(oauthClientVo);
+                request.setAttribute(ATTR_CLIENT_ID, signTicket.clientId());
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+
+            // 验证签名
+            CachedBodyHttpServletRequest wrapped = new CachedBodyHttpServletRequest(request);
+            int verify = SignUtils.verify(sign, oauthClientVo, request, signProperties, nonceStore, signAlgorithm,
+                    wrapped.getBodyAsString());
+            log.debug("签名验证:{},{}", signTicket.clientId(), verify);
+            if (verify != 0) {
+                ServletUtils.writeResponse(response, verify);
+                return;
+            }
+
+            // 绑定客户端上下文，业务可用 OauthClientHolder.get() / hasGrant(...)
+            OauthClientHolder.set(oauthClientVo);
+            wrapped.setAttribute(ATTR_CLIENT_ID, signTicket.clientId());
+            filterChain.doFilter(wrapped, response);
+        } finally {
+            OauthClientHolder.remove();
+        }
     }
+
 
     /**
      * 是否匹配忽略url

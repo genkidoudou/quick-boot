@@ -341,9 +341,9 @@ function handleQuickCommand(command) {
   align-items: center;
   height: 34px;
   width: 100%;
-  background: #fff;
-  border-bottom: 1px solid #d8dce5;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 0 3px 0 rgba(0, 0, 0, 0.04);
+  background: var(--qb-card);
+  border-bottom: 1px solid var(--qb-border);
+  box-shadow: none;
   .tags-view-wrapper {
     flex: 1;
     min-width: 0;
@@ -353,9 +353,10 @@ function handleQuickCommand(command) {
       cursor: pointer;
       height: 26px;
       line-height: 26px;
-      border: 1px solid #d8dce5;
-      color: #495060;
-      background: #fff;
+      border: 1px solid var(--qb-border);
+      color: var(--qb-muted-fg);
+      background: var(--qb-muted);
+      border-radius: var(--qb-control-radius);
       padding: 0 8px;
       font-size: 12px;
       margin-left: 5px;
@@ -372,8 +373,8 @@ function handleQuickCommand(command) {
         text-align: center;
         transition: all .3s cubic-bezier(.645, .045, .355, 1);
         &:hover {
-          background-color: #b4bccc;
-          color: #fff;
+          background-color: var(--qb-faint);
+          color: var(--qb-on-media);
         }
       }
       &:first-of-type {
@@ -383,9 +384,9 @@ function handleQuickCommand(command) {
         margin-right: 15px;
       }
       &.active {
-        background-color: #42b983;
+        background-color: var(--el-color-primary);
         color: #fff;
-        border-color: #42b983;
+        border-color: var(--el-color-primary);
         &::before {
           content: '';
           background: #fff;
@@ -407,35 +408,36 @@ function handleQuickCommand(command) {
       align-items: center;
       justify-content: center;
       font-size: 14px;
-      color: #606266;
+      color: var(--qb-muted-fg);
       cursor: pointer;
       user-select: none;
       padding: 0;
       height: 24px;
       width: 24px;
-      border: 1px solid #dcdfe6;
-      border-radius: 4px;
-      background-color: #fff;
+      border: 1px solid var(--qb-border);
+      border-radius: var(--qb-control-radius);
+      background-color: var(--qb-card);
     }
   }
   .contextmenu {
     margin: 0;
-    background: #fff;
+    background: var(--qb-popover);
     z-index: 3000;
     position: absolute;
     list-style-type: none;
     padding: 5px 0;
-    border-radius: 4px;
+    border-radius: var(--qb-overlay-radius);
     font-size: 12px;
     font-weight: 400;
-    color: #333;
-    box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, 0.3);
+    color: var(--qb-fg);
+    box-shadow: var(--qb-shadow);
+    border: 1px solid var(--qb-border);
     li {
       margin: 0;
       padding: 7px 16px;
       cursor: pointer;
       &:hover {
-        background: #eee;
+        background: var(--qb-muted);
       }
     }
   }

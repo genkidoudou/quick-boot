@@ -1,5 +1,8 @@
 @import './variables.module.scss';
 @import './mixin.scss';
+@import './tokens.scss';
+@import './common.scss';
+@import './themes/glass.scss';
 @import './sidebar.scss';
 @import './ruoyi.scss';
 
@@ -23,18 +26,6 @@
   box-sizing: border-box;
 }
 
-:root {
-  --qb-page-bg: #f5f7fa;
-  --qb-surface: #ffffff;
-  --qb-border: #e4e7ed;
-  --qb-text: #303133;
-  --qb-text-secondary: #909399;
-  --qb-radius: 4px;
-  --qb-control-height: 32px;
-  --qb-menu-active-bg: transparent;
-  --qb-brand-soft: #ecf5ff;
-}
-
 html,
 body,
 #app {
@@ -43,12 +34,8 @@ body,
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--qb-page-bg, #f5f7fa);
+  background-color: var(--qb-bg);
   /* 移动端适配 */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -108,34 +95,49 @@ select {
   z-index: 2000;
 }
 
-/* Element Plus 按钮样式优化 */
+/* Element Plus 与语义令牌桥接 */
 .el-button {
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.el-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Element Plus 表单样式优化 */
 .el-form-item {
   margin-bottom: 22px;
 }
 
 .el-input__wrapper {
-  box-shadow: 0 0 0 1px var(--el-input-border-color, var(--el-border-color)) inset;
+  border-radius: var(--qb-field-radius);
+  box-shadow: 0 0 0 1px var(--qb-input, var(--el-border-color)) inset;
 }
 
 .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px var(--el-input-hover-border-color, var(--el-color-primary)) inset;
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
 
-/* Element Plus 卡片样式 */
 .el-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border-radius: var(--qb-radius);
+  border-color: var(--qb-border);
+  background: var(--qb-card);
+  color: var(--qb-fg);
+  box-shadow: var(--qb-shadow);
+}
+
+.el-dialog,
+.el-message-box,
+.el-drawer {
+  --el-dialog-border-radius: var(--qb-overlay-radius);
+  border-radius: var(--qb-overlay-radius);
+}
+
+.el-dialog,
+.el-message-box {
+  background: var(--qb-popover);
+  color: var(--qb-fg);
+}
+
+.main-container,
+.app-main {
+  background-color: var(--qb-bg);
 }
 
 /* 平板设备 (768px - 1024px) */

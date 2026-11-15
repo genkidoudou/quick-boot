@@ -1,0 +1,96 @@
+/* 玻璃 / 平面材质：仅外层壳采样一次 blur */
+
+html[data-theme='plain'] {
+  .sidebar-container,
+  .navbar,
+  .tags-view-container,
+  .el-card,
+  .el-dialog,
+  .el-drawer,
+  .el-message-box,
+  .el-popover.el-popper {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+html[data-theme='glass'] {
+  body {
+    background: transparent;
+  }
+
+  .sidebar-container,
+  .navbar,
+  .tags-view-container,
+  .el-card:not(.no-blur),
+  .el-dialog,
+  .el-drawer,
+  .el-message-box {
+    backdrop-filter: saturate(var(--qb-glass-saturate)) blur(var(--qb-glass-blur));
+    -webkit-backdrop-filter: saturate(var(--qb-glass-saturate)) blur(var(--qb-glass-blur));
+  }
+
+  .sidebar-container {
+    background-color: color-mix(
+      in srgb,
+      var(--qb-sidebar-bg) calc(var(--qb-glass-surface-opacity) * 100%),
+      transparent
+    ) !important;
+    border-color: var(--qb-border);
+  }
+
+  .navbar {
+    background: color-mix(
+      in srgb,
+      var(--qb-card) calc(var(--qb-glass-surface-opacity) * 100%),
+      transparent
+    ) !important;
+    box-shadow: none;
+    border-bottom: 1px solid var(--qb-border);
+  }
+
+  .tags-view-container {
+    background: color-mix(in srgb, var(--qb-card) 70%, transparent) !important;
+    border-bottom: 1px solid var(--qb-border-subtle);
+  }
+
+  .el-card:not(.no-blur) {
+    background: color-mix(
+      in srgb,
+      var(--qb-card) calc(var(--qb-glass-surface-opacity) * 100%),
+      transparent
+    ) !important;
+    border-color: var(--qb-border) !important;
+    box-shadow: var(--qb-shadow) !important;
+  }
+
+  .main-container,
+  .app-main {
+    background: transparent;
+  }
+}
+
+/* 无自定义壁纸时的默认晨雾 / 夜幕底 */
+html[data-theme='glass']:not([data-wallpaper='on']) body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(141, 81, 249, 0.18), transparent 55%),
+    linear-gradient(165deg, #e8eef8 0%, #f2f2f7 42%, #dde5f2 100%);
+  background-attachment: fixed;
+}
+
+html[data-theme='glass'][data-color-scheme='dark']:not([data-wallpaper='on']) body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(141, 81, 249, 0.22), transparent 55%),
+    linear-gradient(165deg, #07101c 0%, #0b1322 45%, #121c2e 100%);
+  background-attachment: fixed;
+}
+
+/* 嵌套面板禁止第二层模糊 */
+html[data-theme='glass'] .el-card .el-card,
+html[data-theme='glass'] .muted-panel,
+html[data-theme='glass'] .el-table,
+html[data-theme='glass'] .el-table th.el-table__cell,
+html[data-theme='glass'] .qb-workbench__toolbar {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

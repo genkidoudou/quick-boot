@@ -45,7 +45,7 @@ public class SysOauthClientController {
     }
 
     /**
-     * 按主键查询详情。
+     * 按主键查询详情（不含明文密钥）。
      *
      * @param id 主键
      * @return 详情
@@ -54,6 +54,18 @@ public class SysOauthClientController {
     @GetMapping("{id}")
     public R<SysOauthClientVo> get(@PathVariable Long id) {
         return R.ok(sysOauthClientService.getVoById(id));
+    }
+
+    /**
+     * 查看凭证（含明文 clientId / clientSecret）。
+     *
+     * @param id 主键
+     * @return 凭证
+     */
+    @SaCheckPermission("system:oauthClient:query")
+    @GetMapping("{id}/credential")
+    public R<SysOauthClientVo> credential(@PathVariable Long id) {
+        return R.ok(sysOauthClientService.getCredentialById(id));
     }
 
     /**

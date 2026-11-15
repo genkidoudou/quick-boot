@@ -1,5 +1,13 @@
 <template>
-  <div class="app-container">
+  <div class="app-container qb-workbench">
+    <div class="qb-card-colorful channel-summary" style="--qb-card-accent-rgb: 0, 122, 255">
+      <h2 class="channel-summary__title">消息通道</h2>
+      <p class="channel-summary__desc">邮件、Webhook 与机器人渠道的配置摘要与联调入口</p>
+      <div class="channel-summary__meta">
+        <span class="qb-badge-soft is-info">通道</span>
+        <span class="qb-badge-soft is-success">可测试</span>
+      </div>
+    </div>
     <C7JsonTable
       ref="tableRef"
       :list-function="pageChannel"
@@ -389,6 +397,31 @@ async function submitChannel() {
 </script>
 
 <style scoped>
+.qb-workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: var(--qb-bottom-clearance);
+}
+
+.channel-summary__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.channel-summary__desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--qb-muted-fg);
+}
+
+.channel-summary__meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .channel-field-label {
   display: inline-flex;
   align-items: center;

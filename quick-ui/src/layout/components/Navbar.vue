@@ -110,10 +110,12 @@ function setLayout() {
   height: 50px;
   overflow: hidden;
   position: relative;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  background: var(--qb-card);
+  border-bottom: 1px solid var(--qb-border-subtle);
+  box-shadow: var(--qb-shadow);
   display: flex;
   align-items: center;
+  color: var(--qb-fg);
 
   &.nav3 .hamburger-container {
     display: none;
@@ -139,7 +141,7 @@ function setLayout() {
 
   .navbar-logo {
     flex-shrink: 0;
-    width: 210px;
+    width: 232px;
   }
 
   .topmenu-container {
@@ -172,7 +174,7 @@ function setLayout() {
       padding: 0 8px;
       height: 100%;
       font-size: 18px;
-      color: #5a5e66;
+      color: var(--qb-muted-fg);
       vertical-align: text-bottom;
 
       &.hover-effect {

@@ -1,0 +1,414 @@
+/* 几何、阴影、字体、卡片骨架与 Tailwind 语义桥（对齐 DESIGN.md） */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 与 MoviePilot 同源字体栈：拉丁走 Inter，中文走 Noto Sans SC */
+  --qb-font-sans:
+    'Inter',
+    'Noto Sans SC',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol';
+
+  --el-font-family: var(--qb-font-sans);
+
+  --qb-radius-none: 0px;
+  --qb-radius-sm: 8px;
+  --qb-radius-md: 12px;
+  --qb-radius-lg: 20px;
+  --qb-radius-xl: 24px;
+  --qb-radius-2xl: 28px;
+  --qb-radius: var(--qb-radius-md);
+
+  --qb-field-radius: 12px;
+  --qb-control-radius: 10px;
+  --qb-overlay-radius: 16px;
+
+  --qb-shadow-plain-light: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(24, 24, 27, 0.04);
+  --qb-shadow-glass: 0 0 0 1px rgba(255, 255, 255, 0.35) inset, 0 8px 24px rgba(11, 19, 34, 0.08);
+  --qb-shadow: var(--qb-shadow-plain-light);
+
+  --qb-glass-blur: 18px;
+  --qb-glass-saturate: 1.2;
+  --qb-glass-surface-opacity: 0.72;
+  --qb-wallpaper-brightness: 1;
+  --qb-wallpaper-contrast: 1;
+  --qb-wallpaper-url: none;
+}
+
+html[data-color-scheme='dark'] {
+  --qb-shadow: none;
+}
+
+html[data-theme='glass'] {
+  --qb-shadow: var(--qb-shadow-glass);
+}
+
+html[data-glass-appearance='clear'] {
+  --qb-glass-blur: 14px;
+  --qb-glass-saturate: 1.05;
+  --qb-glass-surface-opacity: 0.58;
+}
+
+html[data-glass-appearance='tinted'] {
+  --qb-glass-blur: 18px;
+  --qb-glass-saturate: 1.25;
+  --qb-glass-surface-opacity: 0.72;
+}
+
+html[data-glass-appearance='frosted'] {
+  --qb-glass-blur: 28px;
+  --qb-glass-saturate: 1.4;
+  --qb-glass-surface-opacity: 0.82;
+}
+
+html[data-glass-quality='standard'] {
+  --qb-glass-blur: calc(var(--qb-glass-blur) * 0.85);
+}
+
+html[data-glass-quality='high'] {
+  --qb-glass-blur: calc(var(--qb-glass-blur) * 1.15);
+  --qb-glass-saturate: calc(var(--qb-glass-saturate) * 1.08);
+}
+
+html[data-theme-radius='none'] {
+  --qb-radius: var(--qb-radius-none);
+  --qb-field-radius: 0px;
+  --qb-control-radius: 0px;
+  --qb-overlay-radius: 0px;
+}
+
+html[data-theme-radius='small'] {
+  --qb-radius: var(--qb-radius-sm);
+  --qb-field-radius: 8px;
+  --qb-control-radius: 8px;
+  --qb-overlay-radius: 10px;
+}
+
+html[data-theme-radius='large'] {
+  --qb-radius: var(--qb-radius-lg);
+  --qb-field-radius: 16px;
+  --qb-control-radius: 14px;
+  --qb-overlay-radius: 20px;
+}
+
+html[data-theme-radius='extra'] {
+  --qb-radius: var(--qb-radius-2xl);
+  --qb-field-radius: 24px;
+  --qb-control-radius: 18px;
+  --qb-overlay-radius: 24px;
+}
+
+html,
+body,
+#app {
+  font-family: var(--qb-font-sans);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+body {
+  color: var(--qb-fg);
+  text-wrap: pretty;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.el-button,
+.el-input,
+.el-menu,
+.el-table,
+.el-dialog,
+.el-drawer,
+.el-message-box,
+.el-select,
+.el-dropdown,
+.el-pagination {
+  font-family: var(--qb-font-sans) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+  font-weight: 600;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* —— 七类表面原型 —— */
+
+.qb-card-shell {
+  border-radius: var(--qb-radius);
+  border: 1px solid var(--qb-border);
+  background: var(--qb-card);
+  box-shadow: var(--qb-shadow);
+  color: var(--qb-fg);
+}
+
+/* 1. 媒体与品牌展示面 */
+.qb-media-surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--qb-radius);
+  background-size: cover;
+  background-position: center;
+  color: var(--qb-on-media);
+}
+
+.qb-media-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--qb-media-scrim);
+  pointer-events: none;
+}
+
+.qb-media-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+.qb-media-surface .qb-on-media {
+  color: var(--qb-on-media);
+}
+
+.qb-media-surface .qb-on-media-muted {
+  color: var(--qb-on-media-muted);
+}
+
+/* 2. 影像底图运维卡 */
+.qb-ops-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--qb-radius);
+  border: 1px solid var(--qb-border);
+  background: var(--qb-card);
+  color: var(--qb-fg);
+  box-shadow: var(--qb-shadow);
+}
+
+.qb-ops-card.has-media {
+  color: var(--qb-on-media);
+  border-color: transparent;
+  background-size: cover;
+  background-position: center;
+}
+
+.qb-ops-card.has-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--qb-media-scrim);
+  pointer-events: none;
+}
+
+.qb-ops-card.has-media > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 3. 品牌染色横幅卡 */
+.qb-banner-card {
+  overflow: hidden;
+  border-radius: var(--qb-radius);
+  border: 1px solid var(--qb-border-subtle);
+  background: var(--qb-card);
+  box-shadow: var(--qb-shadow);
+  color: var(--qb-fg);
+}
+
+.qb-banner-card__head {
+  padding: 16px 18px 14px;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--qb-card-accent-rgb), 0.14),
+    rgba(var(--qb-card-accent-rgb), 0.05)
+  );
+}
+
+html[data-color-scheme='dark'] .qb-banner-card__head {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--qb-card-accent-rgb), 0.28),
+    rgba(var(--qb-card-accent-rgb), 0.1)
+  );
+}
+
+.qb-banner-card__dock {
+  padding: 12px 18px 14px;
+  background: var(--qb-muted);
+  border-top: 1px solid var(--qb-border-subtle);
+  color: var(--qb-muted-fg);
+}
+
+/* 4. 彩色配置摘要卡 */
+.qb-card-colorful,
+.app-card-colorful {
+  overflow: hidden;
+  border-radius: var(--qb-radius);
+  border: 1px solid var(--qb-border-subtle);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--qb-card-accent-rgb), 0.14),
+      rgba(var(--qb-card-accent-rgb), 0.05)
+    ),
+    var(--qb-card);
+  color: var(--qb-fg);
+  box-shadow: var(--qb-shadow);
+  padding: 16px 18px;
+}
+
+html[data-color-scheme='dark'] .qb-card-colorful,
+html[data-color-scheme='dark'] .app-card-colorful {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--qb-card-accent-rgb), 0.28),
+      rgba(var(--qb-card-accent-rgb), 0.1)
+    ),
+    var(--qb-card);
+}
+
+/* 5. 高密度工作台 */
+.qb-workbench {
+  border-radius: var(--qb-radius);
+  border: 1px solid var(--qb-border);
+  background: var(--qb-card);
+  box-shadow: var(--qb-shadow);
+  overflow: hidden;
+}
+
+.qb-workbench__toolbar,
+.qb-workbench .el-table__header-wrapper th.el-table__cell {
+  background: var(--qb-muted) !important;
+}
+
+.qb-badge-soft {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  border: 1px solid var(--qb-primary-border);
+  background: var(--qb-primary-soft);
+  color: var(--qb-fg);
+}
+
+.qb-badge-soft.is-success {
+  border-color: var(--qb-success-border);
+  background: var(--qb-success-soft);
+}
+
+.qb-badge-soft.is-warning {
+  border-color: var(--qb-warning-border);
+  background: var(--qb-warning-soft);
+}
+
+.qb-badge-soft.is-danger {
+  border-color: var(--qb-destructive-border);
+  background: var(--qb-destructive-soft);
+}
+
+.qb-badge-soft.is-info {
+  border-color: var(--qb-info-border);
+  background: var(--qb-info-soft);
+}
+
+/* 6. 分组设置 */
+.app-grouped-list {
+  border-radius: var(--qb-radius);
+  border: 1px solid var(--qb-border);
+  background: var(--qb-card);
+  overflow: hidden;
+}
+
+.app-grouped-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--qb-border-subtle);
+  color: var(--qb-fg);
+}
+
+.app-grouped-list__item:last-child {
+  border-bottom: none;
+}
+
+.app-responsive-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .app-responsive-input {
+    flex-direction: row;
+  }
+}
+
+/* 7. 弹出层已由 popover 令牌 + overlay radius 承接 */
+
+.no-blur {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--qb-ring);
+  outline-offset: 2px;
+}
+
+/* 壁纸层 */
+.qb-wallpaper-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--qb-bg);
+  background-image: var(--qb-wallpaper-url);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(var(--qb-wallpaper-brightness)) contrast(var(--qb-wallpaper-contrast));
+}
+
+html[data-theme='glass'][data-color-scheme='light'] .qb-wallpaper-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(242, 242, 247, 0.35), rgba(242, 242, 247, 0.55));
+}
+
+html[data-theme='glass'][data-color-scheme='dark'] .qb-wallpaper-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 19, 34, 0.35), rgba(11, 19, 34, 0.72));
+}
+
+html[data-theme='plain'] .qb-wallpaper-layer {
+  display: none;
+}

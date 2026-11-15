@@ -229,12 +229,6 @@ import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
 import { ElMessage } from 'element-plus'
-import '@fontsource/manrope/400.css'
-import '@fontsource/manrope/500.css'
-import '@fontsource/manrope/600.css'
-import '@fontsource/outfit/500.css'
-import '@fontsource/outfit/600.css'
-import '@fontsource/outfit/700.css'
 import { getLoginCaptchaConfig, listOauthProviders, phoneLogin, sendSms as sendSmsApi } from '@/api/login'
 import { getCaptchaTacUrls } from '@/api/captcha'
 import { getToken, setToken } from '@/utils/auth'
@@ -496,17 +490,17 @@ getCookie()
 
 <style lang="scss" scoped>
 .login-page {
-  --login-primary: var(--el-color-primary, #409eff);
-  --login-primary-light: var(--el-color-primary-light-3, #79bbff);
-  --login-primary-deep: var(--el-color-primary-dark-2, #337ecc);
+  --login-primary: var(--el-color-primary, #8d51f9);
+  --login-primary-light: var(--el-color-primary-light-3, #b18efb);
+  --login-primary-deep: var(--el-color-primary-dark-2, #7141c7);
   --login-primary-soft: color-mix(in srgb, var(--login-primary) 14%, transparent);
-  --login-ink: #1e2f45;
-  --login-muted: #7b8ea3;
-  --login-line: #d5e1ee;
-  --login-card: rgba(255, 255, 255, 0.72);
+  --login-ink: var(--qb-fg, #18181b);
+  --login-muted: var(--qb-muted-fg, #52525b);
+  --login-line: var(--qb-border, rgba(24, 24, 27, 0.08));
+  --login-card: var(--qb-card, rgba(255, 255, 255, 0.72));
   --login-input-bg: rgba(255, 255, 255, 0.92);
-  --login-font-display: 'Outfit', 'Manrope', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --login-font-body: 'Manrope', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --login-font-display: var(--qb-font-sans);
+  --login-font-body: var(--qb-font-sans);
 
   position: relative;
   min-height: 100vh;

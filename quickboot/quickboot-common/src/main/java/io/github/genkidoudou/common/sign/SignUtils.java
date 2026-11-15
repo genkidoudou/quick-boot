@@ -1,13 +1,17 @@
 package io.github.genkidoudou.common.sign;
 
 import cn.hutool.core.util.StrUtil;
-import io.github.genkidoudou.common.exception.WarningException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.experimental.UtilityClass;
-import org.springframework.web.util.ContentCachingRequestWrapper;
+import lombok.extern.slf4j.Slf4j;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * 签名工具类
@@ -15,6 +19,7 @@ import java.util.Base64;
  * @author luyanan
  * @since 2026/11/12
  */
+@Slf4j
 @UtilityClass
 public class SignUtils {
     public static final String TICKET_PREFIX = "v1.";
@@ -66,50 +71,118 @@ public class SignUtils {
      * @return
      * @since 2026/11/13
      */
-    public boolean verify(String sign, SysOauthClientVo sysOauthClientVo,
-                          HttpServletRequest request, SignProperties signProperties,
-                          NonceStore nonceStore,
-                          SignAlgorithm signAlgorithm) {
-        String checkSign = sysOauthClientVo.getCheckSign();
-        // 不需要签名验证
-        if (!checkSign.equals("0")) {
-            return true;
+    public int verify(String sign, SysOauthClientVo sysOauthClientVo,
+                      HttpServletRequest request, SignProperties signProperties,
+                      NonceStore nonceStore,
+                      SignAlgorithm signAlgorithm,
+                      String bodyUtf8) {
+        // grant_types 含 sign 才验 HMAC；否则视为仅标识
+        if (!sysOauthClientVo.hasGrant("sign")) {
+            return 0;
         }
-        SignTicket signTicket = parser(sign);
-        if (StrUtil.hasBlank(signTicket.clientId, signTicket.timestamp, signTicket.nonce, signTicket.hmacHex)) {
-            return false;
+        SignTicket ticket = parser(sign);
+        if (ticket == null
+                || StrUtil.hasBlank(ticket.clientId(), ticket.timestamp(), ticket.nonce(), ticket.hmacHex())) {
+            return 603;
         }
-        String clientId = signTicket.clientId;
-        String hmacHex = signTicket.hmacHex;
-        String nonce = signTicket.nonce;
-        String timestamp = signTicket.timestamp;
-
-        String clientSecret = sysOauthClientVo.getClientSecret();
-        ContentCachingRequestWrapper wrapper = new ContentCachingRequestWrapper(request, 1024);
-        String contentAsString = wrapper.getContentAsString();
-
-
-        // 5. 时间戳偏差校验
         long ts;
         try {
-            ts = Long.parseLong(timestamp);
+            ts = Long.parseLong(ticket.timestamp());
         } catch (NumberFormatException e) {
-            throw new WarningException(604);
+            return 603;
         }
-        // 超时了
         if (Math.abs(System.currentTimeMillis() - ts) > signProperties.getSkewMs()) {
-            throw new WarningException(605);
+            return 605;
+        }
+        if (StrUtil.isBlank(sysOauthClientVo.getClientSecret())) {
+            return 600;
+        }
+        // 注意：第二个参数是秒，不要传 skewMs
+        if (!nonceStore.tryAcquire(ticket.nonce(), signProperties.getNonceTtlSeconds())) {
+            return 10004;
+        }
+        String queryParams = queryParams(request);
+        log.debug("查询参数:{}", queryParams);
+
+        // 无 query 时不要拼 "?"，否则会变成 /api/foo? 与前端 /api/foo 不一致 → 604
+        String pathAndQuery = request.getRequestURI();
+        if (StrUtil.isNotBlank(queryParams)) {
+            pathAndQuery = pathAndQuery + "?" + queryParams;
         }
 
-        // 重放
+        // 把「原文」交给 verify，不要先 createHmacHex 再二次 HMAC
+        String payload = SignUtils.buildSignBody(
+                request.getMethod(), pathAndQuery,
+                ticket.timestamp(), ticket.nonce(), bodyUtf8, ticket.clientId());
+        return signAlgorithm.verify(ticket.hmacHex(), sysOauthClientVo.getClientSecret(), payload) ? 0 : 604;
 
-        boolean tryAcquire = nonceStore.tryAcquire(nonce, signProperties.getSkewMs());
-        if (!tryAcquire) {
-            return false;
+    }
+
+    private String queryParams(HttpServletRequest request) {
+        String raw = request.getQueryString();
+        if (raw == null || raw.isBlank()) {
+            return "";
         }
-        String sign1 = createSign(request, signTicket, signAlgorithm, sysOauthClientVo);
-        return signAlgorithm.verify(sign, sysOauthClientVo.getClientSecret(), sign1);
 
+        // 先按 & 切开，再按 key 排序；值保留解码前或统一重新 encode，前后端要同一策略。
+        // 这里策略：对每个 pair 的 raw key/value 先 URLDecoder 再按统一规则 encode，消除 %XX 写法差异。
+        TreeMap<String, List<String>> sorted = new TreeMap<>();
+        for (String pair : raw.split("&")) {
+            if (pair.isEmpty()) {
+                continue;
+            }
+            int i = pair.indexOf('=');
+            String k;
+            String v;
+            if (i < 0) {
+                k = decode(pair);
+                v = "";
+            } else {
+                k = decode(pair.substring(0, i));
+                v = decode(pair.substring(i + 1));
+            }
+            sorted.computeIfAbsent(k, ignore -> new ArrayList<>()).add(v);
+        }
+
+        List<String> pairs = new ArrayList<>();
+        for (Map.Entry<String, List<String>> e : sorted.entrySet()) {
+            for (String v : e.getValue()) {
+                pairs.add(enc(e.getKey()) + "=" + enc(v));
+            }
+        }
+        return String.join("&", pairs);
+    }
+
+    /**
+     * 与前端 encodeURIComponent 对齐时，注意 Java URLEncoder 空格→+，见 TS 侧 formEncode。
+     */
+    private static String enc(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8);
+    }
+
+    private static String decode(String s) {
+        return java.net.URLDecoder.decode(s, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 生成 HMAC hex（不是完整 sign 头）。
+     *
+     * @param bodyUtf8 原始请求体；无 body 传 {@code ""}
+     */
+    public static String createHmacHex(HttpServletRequest request,
+                                       SignUtils.SignTicket ticket,
+                                       SignAlgorithm signAlgorithm,
+                                       SysOauthClientVo client,
+                                       String bodyUtf8) {
+        String path = request.getRequestURI();
+        String payload = SignUtils.buildSignBody(
+                request.getMethod(),
+                path,
+                ticket.timestamp(),
+                ticket.nonce(),
+                bodyUtf8 == null ? "" : bodyUtf8,
+                ticket.clientId());
+        return signAlgorithm.sign(client.getClientSecret(), payload);
     }
 
     /**
@@ -121,10 +194,18 @@ public class SignUtils {
      * @param hmacHex   小写 hex
      */
     public String packSignHeader(String clientId, String timestamp, String nonce, String hmacHex) {
-        String plain = clientId + '|' + timestamp + '|' + nonce + '|' + hmacHex;
-        String b64 = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(plain.getBytes(StandardCharsets.UTF_8));
-        return TICKET_PREFIX + b64;
+        if (StrUtil.hasBlank(timestamp, nonce, hmacHex)) {
+            String plain = clientId;
+            String b64 = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(plain.getBytes(StandardCharsets.UTF_8));
+            return TICKET_PREFIX + b64;
+        } else {
+            String plain = clientId + '|' + timestamp + '|' + nonce + '|' + hmacHex;
+            String b64 = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(plain.getBytes(StandardCharsets.UTF_8));
+            return TICKET_PREFIX + b64;
+        }
+
     }
 
     /**
@@ -147,29 +228,15 @@ public class SignUtils {
         return clientId + "\n" + m + "\n" + p + "\n" + ts + "\n" + n + "\n" + body;
     }
 
-    /**
-     * 生成签名
-     *
-     * @param request          请求体
-     * @param signTicket       签名票据
-     * @param signAlgorithm    加密
-     * @param sysOauthClientVo 客户端信息
-     * @return
-     * @since 2026/11/13
-     */
-
-    public String createSign(HttpServletRequest request, SignTicket signTicket, SignAlgorithm signAlgorithm, SysOauthClientVo sysOauthClientVo) {
-
-
-        //加密
-        return signAlgorithm.sign(sysOauthClientVo.getClientSecret(), signBody);
-
-    }
-
 
     /**
      * 解包后的四元组
      */
     public record SignTicket(String clientId, String timestamp, String nonce, String hmacHex) {
+    }
+
+    public static void main(String[] args) {
+        String s = SignUtils.packSignHeader("web", null, null, null);
+        System.out.println(s);
     }
 }

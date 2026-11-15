@@ -4,14 +4,14 @@
  *
  * 导出：`service`（默认 axios 实例）、`download`（表单 POST 下载文件）。
  */
-import axios, { AxiosHeaders } from 'axios'
+import axios, {AxiosHeaders} from 'axios'
 import {ElMessageBox, ElMessage, ElLoading} from 'element-plus'
 import {getToken, removeToken} from '@/utils/auth'
 import {tansParams, blobValidate} from '@/utils/ruoyi'
 import cache from '@/plugins/cache'
 import {saveAs} from 'file-saver'
-import { clearSessionId } from '@/monitor/sessionContext'
-import { isMonitorEnabled } from '@/monitor/config'
+import {clearSessionId} from '@/monitor/sessionContext'
+import {isMonitorEnabled} from '@/monitor/config'
 import {
     beginRequestObservation,
     finalizeRequestObservationSuccess,
@@ -20,6 +20,7 @@ import {
 
 let downloadLoadingInstance;
 let isShowReloginDialog = false;
+import {attachSignHeader} from '../utils/sign'
 
 /** 服务端未返回 msg 时的兜底文案 */
 const DEFAULT_ERROR_MSG = '系统内部错误，请稍候再试'
@@ -46,7 +47,7 @@ const service = axios.create({
     timeout: 10000
 })
 
-service.interceptors.request.use((config) => {
+service.interceptors.request.use(async (config) => {
     if (monitorEnabled) {
         beginRequestObservation(config)
     }
@@ -60,15 +61,17 @@ service.interceptors.request.use((config) => {
     if (getToken() && !isToken) {
         config.headers['Authorization'] = 'Bearer ' + getToken()
     }
+    config = await attachSignHeader(config)
     return config
 }, error => {
     console.error('请求拦截器错误:', error)
     return Promise.reject(error)
 })
+
 function handleUnauthorized(msg = '登录状态已过期，请重新登录') {
     if (window.location.pathname === '/login' || window.location.pathname.endsWith('/login')) {
         // 登录页：展示后端业务文案（如「用户名或密码错误」），不再静默 reject
-        ElMessage({ message: msg, type: 'error', duration: 5 * 1000 })
+        ElMessage({message: msg, type: 'error', duration: 5 * 1000})
         return Promise.reject(msg)
     }
     if (!isShowReloginDialog) {
@@ -143,19 +146,19 @@ function tryHandleAxiosErrorResponseBody(error) {
     }
     if (hasBizCode && bizCode === 500) {
         const msg = tip || DEFAULT_ERROR_MSG
-        ElMessage({ message: msg, type: 'error' })
+        ElMessage({message: msg, type: 'error'})
         return Promise.reject(new Error(msg))
     }
     if (hasBizCode && bizCode !== 200) {
         const msg = tip || DEFAULT_ERROR_MSG
-        ElMessage({ message: msg, type: 'error', duration: 5 * 1000 })
+        ElMessage({message: msg, type: 'error', duration: 5 * 1000})
         return Promise.reject(error)
     }
     if (!hasBizCode && res.status >= 400 && serverMsg !== '') {
         if (res.status === 401) {
             return handleUnauthorized(body.msg)
         }
-        ElMessage({ message: body.msg, type: 'error', duration: 5 * 1000 })
+        ElMessage({message: body.msg, type: 'error', duration: 5 * 1000})
         return Promise.reject(error)
     }
     return null
@@ -187,7 +190,7 @@ service.interceptors.response.use(async (res) => {
             /** @type {import('axios').AxiosRequestConfig & { returnBlobWithHeaders?: boolean }} */
             const cfg = res.config || {}
             if (cfg.returnBlobWithHeaders === true) {
-                return { data: res.data, headers: res.headers }
+                return {data: res.data, headers: res.headers}
             }
             return res.data
         }
@@ -250,7 +253,7 @@ export function downloadRequest(url, params, config) {
             if (!params) params = {}
             return tansParams(params)
         }],
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         responseType: 'blob',
         ...config
     })
@@ -286,5 +289,7 @@ export function download(url, params, filename, config) {
         downloadLoadingInstance.close();
     })
 }
+
+
 
 export default service

@@ -42,11 +42,76 @@
     </div>
 
     <div class="setting-drawer-title">
-      <h3 class="drawer-title">主题风格设置</h3>
+      <h3 class="drawer-title">外观</h3>
+    </div>
+    <div class="drawer-item">
+      <span>明暗模式</span>
+      <span class="comp-style">
+        <el-radio-group v-model="colorScheme" size="small" @change="colorSchemeChange">
+          <el-radio-button label="light">浅色</el-radio-button>
+          <el-radio-button label="dark">深色</el-radio-button>
+          <el-radio-button label="auto">跟随</el-radio-button>
+        </el-radio-group>
+      </span>
+    </div>
+    <div class="drawer-item">
+      <span>玻璃效果</span>
+      <span class="comp-style">
+        <el-switch v-model="glassEnabled" @change="glassChange" />
+      </span>
+    </div>
+    <template v-if="glassEnabled">
+      <div class="drawer-item">
+        <span>玻璃外观</span>
+        <span class="comp-style">
+          <el-select v-model="glassAppearance" size="small" style="width: 112px" @change="glassAppearanceChange">
+            <el-option label="清透" value="clear" />
+            <el-option label="色调" value="tinted" />
+            <el-option label="磨砂" value="frosted" />
+          </el-select>
+        </span>
+      </div>
+      <div class="drawer-item">
+        <span>渲染画质</span>
+        <span class="comp-style">
+          <el-select v-model="glassQuality" size="small" style="width: 112px" @change="glassQualityChange">
+            <el-option label="标准" value="standard" />
+            <el-option label="平衡" value="balanced" />
+            <el-option label="高画质" value="high" />
+          </el-select>
+        </span>
+      </div>
+      <div class="setting-drawer-title">
+        <h3 class="drawer-title">背景壁纸</h3>
+      </div>
+      <div class="wallpaper-wrap">
+        <button
+          v-for="preset in wallpaperPresets"
+          :key="preset.id"
+          type="button"
+          class="wallpaper-card"
+          :class="{ active: wallpaperPresetId === preset.id }"
+          @click="selectWallpaperPreset(preset)"
+        >
+          <span class="wallpaper-swatch" :style="wallpaperSwatchStyle(preset)" />
+          <span>{{ preset.name }}</span>
+        </button>
+      </div>
+      <div class="drawer-item">
+        <span>上传壁纸</span>
+        <span class="comp-style">
+          <input ref="wallpaperInputRef" type="file" accept="image/*" class="wallpaper-file" @change="onWallpaperFile" />
+          <el-button size="small" @click="wallpaperInputRef?.click()">选择图片</el-button>
+        </span>
+      </div>
+    </template>
+
+    <div class="setting-drawer-title">
+      <h3 class="drawer-title">侧栏风格</h3>
     </div>
     <div class="setting-drawer-block-checbox">
       <div class="setting-drawer-block-checbox-item" @click="handleTheme('theme-dark')">
-        <div style="width:48px;height:48px;background:#191b24;border-radius:4px;" />
+        <div style="width:48px;height:48px;background:#0B1322;border-radius:4px;" />
         <div v-if="sideTheme === 'theme-dark'" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
           <i aria-label="图标: check" class="anticon anticon-check">
             <svg viewBox="64 64 896 896" width="1em" height="1em" :fill="theme" aria-hidden="true" focusable="false">
@@ -56,7 +121,7 @@
         </div>
       </div>
       <div class="setting-drawer-block-checbox-item" @click="handleTheme('theme-light')">
-        <div style="width:48px;height:48px;background:#f0f2f5;border-radius:4px;border:1px solid #ddd;" />
+        <div style="width:48px;height:48px;background:#F2F2F7;border-radius:4px;border:1px solid #ddd;" />
         <div v-if="sideTheme === 'theme-light'" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
           <i aria-label="图标: check" class="anticon anticon-check">
             <svg viewBox="64 64 896 896" width="1em" height="1em" :fill="theme" aria-hidden="true" focusable="false">
@@ -120,7 +185,21 @@ import useAppStore from '@/store/modules/app'
 import useSettingsStore from '@/store/modules/settings'
 import usePermissionStore from '@/store/modules/permission'
 import { themePackages } from '@/theme/packages'
-import { handleThemeStyle } from '@/utils/theme'
+import {
+  applyColorScheme,
+  applyGlassAppearance,
+  applyGlassQuality,
+  applyMaterial,
+  applySideTheme,
+  handleThemeStyle,
+  resolveColorScheme
+} from '@/utils/theme'
+import {
+  WALLPAPER_PRESETS,
+  applyWallpaper,
+  fileToWallpaperDataUrl,
+  writeWallpaperUrl
+} from '@/utils/wallpaper'
 import { applyNavLayout, normalizeNavType } from '@/utils/navLayout'
 import { useRoute } from 'vue-router'
 
@@ -133,8 +212,21 @@ const navType = ref(normalizeNavType(settingsStore.navType))
 const theme = ref(settingsStore.theme)
 const sideTheme = ref(settingsStore.sideTheme)
 const themePack = ref(settingsStore.themePack || 'default')
+const colorScheme = ref(settingsStore.colorScheme || 'light')
+const glassEnabled = ref(!!settingsStore.glassEnabled)
+const glassAppearance = ref(settingsStore.glassAppearance || 'tinted')
+const glassQuality = ref(settingsStore.glassQuality || 'balanced')
+const wallpaperPresets = WALLPAPER_PRESETS
+const wallpaperInputRef = ref(null)
 const storeSettings = computed(() => settingsStore)
+const wallpaperPresetId = computed(() => {
+  const url = settingsStore.wallpaperUrl || ''
+  const hit = WALLPAPER_PRESETS.find((p) => p.url === url)
+  if (hit) return hit.id
+  return url ? 'custom' : 'none'
+})
 const predefineColors = ref([
+  '#8D51F9',
   '#409EFF',
   '#0F766E',
   '#3ECF8E',
@@ -147,7 +239,7 @@ const predefineColors = ref([
   '#ffd700'
 ])
 
-/** 一键切换主题包：主色、侧栏、token 一并生效 */
+/** 一键切换主题包：主色、侧栏一并生效 */
 function handleThemePack(packId) {
   settingsStore.applyThemePack(packId)
   themePack.value = settingsStore.themePack
@@ -161,10 +253,85 @@ function themeChange(val) {
   handleThemeStyle(val)
 }
 
+/** 切换页面明暗 */
+function colorSchemeChange(val) {
+  settingsStore.colorScheme = val
+  colorScheme.value = val
+  const scheme = applyColorScheme(val)
+  handleThemeStyle(settingsStore.theme)
+  applyWallpaper(settingsStore.wallpaperUrl, {
+    glassEnabled: settingsStore.glassEnabled,
+    colorScheme: scheme
+  })
+}
+
+/** 切换玻璃材质 */
+function glassChange(val) {
+  settingsStore.glassEnabled = !!val
+  glassEnabled.value = !!val
+  applyMaterial(!!val)
+  applyGlassAppearance(settingsStore.glassAppearance)
+  applyGlassQuality(settingsStore.glassQuality)
+  applyWallpaper(settingsStore.wallpaperUrl, {
+    glassEnabled: !!val,
+    colorScheme: resolveColorScheme(settingsStore.colorScheme)
+  })
+}
+
+function glassAppearanceChange(val) {
+  settingsStore.glassAppearance = val
+  glassAppearance.value = val
+  applyGlassAppearance(val)
+}
+
+function glassQualityChange(val) {
+  settingsStore.glassQuality = val
+  glassQuality.value = val
+  applyGlassQuality(val)
+}
+
+function wallpaperSwatchStyle(preset) {
+  if (!preset.url) {
+    return { background: 'var(--qb-muted)' }
+  }
+  if (preset.url.startsWith('data:') || /^https?:/.test(preset.url)) {
+    return { backgroundImage: `url(${preset.url})`, backgroundSize: 'cover' }
+  }
+  return { backgroundImage: preset.url }
+}
+
+function selectWallpaperPreset(preset) {
+  settingsStore.wallpaperUrl = preset.url || ''
+  writeWallpaperUrl(preset.url || '')
+  applyWallpaper(preset.url || '', {
+    glassEnabled: settingsStore.glassEnabled,
+    colorScheme: resolveColorScheme(settingsStore.colorScheme)
+  })
+}
+
+async function onWallpaperFile(event) {
+  const file = event.target?.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  try {
+    const dataUrl = await fileToWallpaperDataUrl(file)
+    settingsStore.wallpaperUrl = dataUrl
+    writeWallpaperUrl(dataUrl)
+    applyWallpaper(dataUrl, {
+      glassEnabled: settingsStore.glassEnabled,
+      colorScheme: resolveColorScheme(settingsStore.colorScheme)
+    })
+    ElMessage.success('壁纸已更新')
+  } catch (e) {
+    ElMessage.error(e?.message || '壁纸上传失败')
+  }
+}
+
 /** 切换侧栏深色/浅色主题 */
 function handleTheme(val) {
   settingsStore.sideTheme = val
   sideTheme.value = val
+  applySideTheme(val)
 }
 
 /** 切换导航布局类型并同步侧栏/顶栏路由 */
@@ -190,7 +357,11 @@ function saveSetting() {
     dynamicTitle: storeSettings.value.dynamicTitle,
     sideTheme: storeSettings.value.sideTheme,
     theme: storeSettings.value.theme,
-    themePack: storeSettings.value.themePack || 'default'
+    themePack: storeSettings.value.themePack || 'default',
+    colorScheme: storeSettings.value.colorScheme || 'light',
+    glassEnabled: !!storeSettings.value.glassEnabled,
+    glassAppearance: storeSettings.value.glassAppearance || 'tinted',
+    glassQuality: storeSettings.value.glassQuality || 'balanced'
   }
   localStorage.setItem('layout-setting', JSON.stringify(layoutSetting))
   setTimeout(() => loadingInstance.close(), 800)
@@ -200,6 +371,7 @@ function saveSetting() {
 function resetSetting() {
   const loadingInstance = ElLoading.service({ lock: true, text: '正在清除设置缓存并刷新，请稍候...', background: 'rgba(0,0,0,0.7)' })
   localStorage.removeItem('layout-setting')
+  writeWallpaperUrl('')
   setTimeout(() => {
     loadingInstance.close()
     window.location.reload()
@@ -211,6 +383,10 @@ function openSetting() {
   theme.value = settingsStore.theme
   sideTheme.value = settingsStore.sideTheme
   themePack.value = settingsStore.themePack || 'default'
+  colorScheme.value = settingsStore.colorScheme || 'light'
+  glassEnabled.value = !!settingsStore.glassEnabled
+  glassAppearance.value = settingsStore.glassAppearance || 'tinted'
+  glassQuality.value = settingsStore.glassQuality || 'balanced'
   showSettings.value = true
 }
 
@@ -220,7 +396,7 @@ defineExpose({ openSetting })
 <style lang='scss' scoped>
 .setting-drawer-title {
   margin-bottom: 12px;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--qb-fg);
   line-height: 22px;
   font-weight: bold;
   .drawer-title {
@@ -234,6 +410,43 @@ defineExpose({ openSetting })
   margin: 10px 0 20px;
 }
 
+.wallpaper-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.wallpaper-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--qb-border);
+  border-radius: var(--qb-radius-sm);
+  background: var(--qb-card);
+  color: var(--qb-fg);
+  font-size: 12px;
+  text-align: left;
+}
+
+.wallpaper-card.active {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+.wallpaper-swatch {
+  display: block;
+  width: 100%;
+  height: 36px;
+  border-radius: 6px;
+  background: var(--qb-muted);
+}
+
+.wallpaper-file {
+  display: none;
+}
+
 .pack-card {
   display: flex;
   align-items: center;
@@ -241,10 +454,11 @@ defineExpose({ openSetting })
   width: 100%;
   min-height: 52px;
   padding: 8px 10px;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--qb-border);
+  border-radius: var(--qb-radius-sm);
+  background: var(--qb-card);
   text-align: left;
+  color: var(--qb-fg);
 }
 
 .pack-card.active {
@@ -269,13 +483,13 @@ defineExpose({ openSetting })
 .pack-meta b {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--qb-fg);
 }
 
 .pack-meta i {
   font-style: normal;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--qb-muted-fg);
 }
 
 .setting-drawer-block-checbox {
@@ -307,13 +521,16 @@ defineExpose({ openSetting })
 }
 
 .drawer-item {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--qb-muted-fg);
   padding: 12px 0;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 
   .comp-style {
-    float: right;
-    margin: -3px 8px 0px 0px;
+    flex: none;
   }
 }
 

@@ -45,7 +45,9 @@ public class SysOauthClientVo extends BaseEntity implements Serializable {
     @NotBlank(message = "客户端类型不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private String clientType;
 
-    /** 允许的 grant_type，逗号分隔。 */
+    /**
+     * 能力串：授权方式（password/sms/...）与安全策略（captcha/sign），逗号分隔。
+     */
     @NotBlank(message = "授权类型不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private String grantTypes;
 
@@ -55,9 +57,6 @@ public class SysOauthClientVo extends BaseEntity implements Serializable {
 
     /** token 有效时间（秒）。 */
     private Integer tokenTimeout;
-
-    /** 是否校验验证码(COMMON_IS)。 */
-    private String checkCaptcha;
 
     /** 状态(COMMON_STATUS)。 */
     private String status;

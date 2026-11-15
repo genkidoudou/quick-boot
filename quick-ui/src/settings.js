@@ -7,8 +7,25 @@ export default {
     title: appConfig.title,
     /**
      * 侧边栏主题 深色主题theme-dark，浅色主题theme-light
+     * 默认浅色，对齐 MoviePilot 玻璃侧栏气质
      */
-    sideTheme: 'theme-dark',
+    sideTheme: 'theme-light',
+    /**
+     * 页面明暗：light | dark | auto
+     */
+    colorScheme: 'light',
+    /**
+     * 是否启用玻璃材质
+     */
+    glassEnabled: false,
+    /**
+     * 玻璃外观 clear | tinted | frosted
+     */
+    glassAppearance: 'tinted',
+    /**
+     * 玻璃画质 standard | balanced | high
+     */
+    glassQuality: 'balanced',
     /**
      * 是否系统布局配置
      */

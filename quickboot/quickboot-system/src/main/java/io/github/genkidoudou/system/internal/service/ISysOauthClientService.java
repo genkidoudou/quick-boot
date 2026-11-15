@@ -29,6 +29,14 @@ public interface ISysOauthClientService {
     SysOauthClientVo getVoById(Long id);
 
     /**
+     * 查看凭证（含明文密钥），供管理端「查看」弹窗。
+     *
+     * @param id 主键
+     * @return 含 clientId / clientSecret 的视图
+     */
+    SysOauthClientVo getCredentialById(Long id);
+
+    /**
      * 新增。
      *
      * @param vo 视图对象
@@ -50,4 +58,13 @@ public interface ISysOauthClientService {
      * @param ids 主键列表
      */
     void removeByIds(List<Long> ids);
+
+    /**
+     * 根据客户端id查询
+     *
+     * @param clientId 客户端id
+     * @return
+     * @since 2026/11/14
+     */
+    SysOauthClient getByClientId(String clientId);
 }
