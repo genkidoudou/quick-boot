@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-style="soft-glass">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuickBoot 消费级样式预览</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --qb-font-sans: Inter, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --qb-radius: 12px;
+      --qb-radius-lg: 20px;
+      --qb-radius-xl: 28px;
+      --qb-primary: #8D51F9;
+      --qb-primary-rgb: 141, 81, 249;
+      --qb-success: #248A3D;
+      --qb-warning: #D97706;
+      --qb-info: #007AFF;
+      --control-h: 40px;
+      --space: 16px;
+      --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04), 0 8px 24px rgba(24, 24, 27, 0.06);
+    }
+
+    /* 1 Soft Glass App — 贴近现有 glass + 默认紫 */
+    html[data-style="soft-glass"] {
+      --qb-bg: #F2F2F7;
+      --qb-card: rgba(255, 255, 255, 0.72);
+      --qb-card-solid: #ffffff;
+      --qb-muted: rgba(244, 245, 248, 0.88);
+      --qb-fg: #18181B;
+      --qb-muted-fg: #52525B;
+      --qb-faint: #8E8E93;
+      --qb-border: rgba(24, 24, 27, 0.08);
+      --qb-sidebar: rgba(255, 255, 255, 0.66);
+      --atmosphere:
+        radial-gradient(900px 480px at 12% -10%, rgba(141, 81, 249, 0.28), transparent 60%),
+        radial-gradient(720px 420px at 88% 8%, rgba(0, 122, 255, 0.18), transparent 55%),
+        radial-gradient(640px 420px at 50% 100%, rgba(141, 81, 249, 0.12), transparent 60%),
+        linear-gradient(180deg, #eef0f7 0%, #f2f2f7 45%, #ebeaf5 100%);
+      --hero-scrim: linear-gradient(135deg, rgba(141, 81, 249, 0.92), rgba(88, 86, 214, 0.78) 48%, rgba(0, 122, 255, 0.55));
+      --glass-blur: blur(22px) saturate(1.35);
+      --nav-width: 232px;
+    }
+
+    /* 2 Night Media App — 深海 + 媒体横幅 */
+    html[data-style="night-media"] {
+      --qb-bg: #0B1322;
+      --qb-card: rgba(24, 34, 53, 0.72);
+      --qb-card-solid: #182235;
+      --qb-muted: rgba(19, 27, 43, 0.9);
+      --qb-fg: #F2F5FA;
+      --qb-muted-fg: rgba(242, 245, 250, 0.72);
+      --qb-faint: rgba(242, 245, 250, 0.46);
+      --qb-border: rgba(255, 255, 255, 0.08);
+      --qb-sidebar: rgba(24, 34, 53, 0.7);
+      --qb-success: #69C59A;
+      --qb-warning: #E4B863;
+      --qb-info: #7C9CC4;
+      --atmosphere:
+        radial-gradient(800px 520px at 20% 0%, rgba(141, 81, 249, 0.35), transparent 55%),
+        radial-gradient(700px 480px at 100% 20%, rgba(0, 122, 255, 0.22), transparent 50%),
+        radial-gradient(600px 400px at 40% 100%, rgba(105, 197, 154, 0.1), transparent 55%),
+        linear-gradient(180deg, #0a1020 0%, #0b1322 50%, #101a2e 100%);
+      --hero-scrim: linear-gradient(120deg, rgba(11, 19, 34, 0.15), rgba(11, 19, 34, 0.55) 40%, rgba(11, 19, 34, 0.92)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='400'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%236B5CFF'/%3E%3Cstop offset='.55' stop-color='%238D51F9'/%3E%3Cstop offset='1' stop-color='%23007AFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='400' fill='url(%23g)'/%3E%3Ccircle cx='920' cy='120' r='160' fill='%23ffffff' fill-opacity='.08'/%3E%3Ccircle cx='180' cy='280' r='120' fill='%2300d4ff' fill-opacity='.12'/%3E%3C/svg%3E") center/cover;
+      --glass-blur: blur(24px) saturate(1.4);
+      --shadow-card: 0 1px 0 rgba(255,255,255,0.04), 0 12px 32px rgba(0,0,0,0.35);
+      --nav-width: 232px;
+    }
+
+    /* 3 Daylight Product — 亮产品首页感，弱侧栏 */
+    html[data-style="daylight"] {
+      --qb-bg: #F7F6FB;
+      --qb-card: #ffffff;
+      --qb-card-solid: #ffffff;
+      --qb-muted: #F1F0F6;
+      --qb-fg: #1C1B22;
+      --qb-muted-fg: #5B5966;
+      --qb-faint: #8E8C99;
+      --qb-border: rgba(28, 27, 34, 0.08);
+      --qb-sidebar: transparent;
+      --qb-primary: #7C3AED;
+      --qb-primary-rgb: 124, 58, 237;
+      --atmosphere:
+        radial-gradient(1000px 500px at 50% -20%, rgba(124, 58, 237, 0.14), transparent 55%),
+        linear-gradient(180deg, #faf9fd 0%, #f7f6fb 100%);
+      --hero-scrim: linear-gradient(135deg, #7C3AED, #6366F1 55%, #38BDF8);
+      --glass-blur: none;
+      --shadow-card: 0 1px 2px rgba(28, 27, 34, 0.04), 0 10px 28px rgba(28, 27, 34, 0.05);
+      --nav-width: 0px;
+      --qb-radius-lg: 24px;
+      --qb-radius-xl: 32px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--qb-font-sans);
+      color: var(--qb-fg);
+      background: var(--atmosphere);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+      text-wrap: pretty;
+    }
+
+    button, input { font: inherit; }
+
+    .picker {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      backdrop-filter: var(--glass-blur);
+      background: color-mix(in srgb, var(--qb-card-solid) 78%, transparent);
+      border-bottom: 1px solid var(--qb-border);
+    }
+    .picker__title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+    .picker__title span {
+      color: var(--qb-muted-fg);
+      font-weight: 400;
+      margin-left: 8px;
+    }
+    .picker__tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .picker__tab {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid var(--qb-border);
+      background: color-mix(in srgb, var(--qb-card-solid) 70%, transparent);
+      color: var(--qb-muted-fg);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .picker__tab.is-active {
+      color: var(--qb-fg);
+      border-color: rgba(var(--qb-primary-rgb), 0.35);
+      background: rgba(var(--qb-primary-rgb), 0.12);
+      font-weight: 500;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: var(--nav-width) minmax(0, 1fr);
+      min-height: calc(100vh - 59px);
+      transition: grid-template-columns .25s ease;
+    }
+    html[data-style="daylight"] .shell { grid-template-columns: 1fr; }
+    html[data-style="daylight"] .nav { display: none; }
+
+    .nav {
+      padding: 18px 14px;
+      border-right: 1px solid var(--qb-border);
+      background: var(--qb-sidebar);
+      backdrop-filter: var(--glass-blur);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px 18px;
+    }
+    .brand__mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--qb-primary) 85%, white), var(--qb-primary));
+      box-shadow: 0 6px 16px rgba(var(--qb-primary-rgb), 0.35);
+    }
+    .brand__name { font-weight: 600; font-size: 15px; }
+    .brand__sub { font-size: 12px; color: var(--qb-faint); margin-top: 2px; }
+
+    .nav__group { margin-top: 8px; }
+    .nav__label {
+      font-size: 11px;
+      color: var(--qb-faint);
+      padding: 8px 12px 6px;
+    }
+    .nav__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 12px;
+      color: var(--qb-muted-fg);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .nav__item.is-active {
+      background: rgba(var(--qb-primary-rgb), 0.12);
+      color: var(--qb-fg);
+      font-weight: 500;
+    }
+    .nav__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .45;
+    }
+    .nav__item.is-active .nav__dot {
+      background: var(--qb-primary);
+      opacity: 1;
+    }
+
+    .main { padding: 20px 24px 40px; max-width: 1180px; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .search {
+      flex: 1;
+      max-width: 420px;
+      height: var(--control-h);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-radius: 14px;
+      border: 1px solid var(--qb-border);
+      background: var(--qb-card);
+      backdrop-filter: var(--glass-blur);
+      color: var(--qb-faint);
+      font-size: 14px;
+    }
+    .top-actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      height: var(--control-h);
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--qb-border);
+      background: var(--qb-card);
+      color: var(--qb-fg);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .btn--primary {
+      border-color: transparent;
+      background: var(--qb-primary);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(var(--qb-primary-rgb), 0.28);
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c4b5fd, var(--qb-primary));
+      border: 2px solid color-mix(in srgb, var(--qb-card-solid) 80%, transparent);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--qb-radius-xl);
+      min-height: 188px;
+      padding: 28px 28px 24px;
+      color: #F8FAFC;
+      background: var(--hero-scrim);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 18px;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -60px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+    }
+    .hero__kicker {
+      font-size: 13px;
+      opacity: 0.78;
+      margin: 0 0 8px;
+    }
+    .hero__title {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+      max-width: 16ch;
+    }
+    .hero__desc {
+      margin: 10px 0 0;
+      max-width: 42ch;
+      font-size: 14px;
+      line-height: 1.55;
+      color: rgba(248, 250, 252, 0.78);
+    }
+    .hero__cta {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hero .btn {
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(255,255,255,0.22);
+      color: #fff;
+      backdrop-filter: blur(8px);
+    }
+    .hero .btn--primary {
+      background: #fff;
+      color: #3b1d7a;
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .app-card {
+      border: 1px solid var(--qb-border);
+      border-radius: var(--qb-radius-lg);
+      background: var(--qb-card);
+      backdrop-filter: var(--glass-blur);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      min-height: 148px;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-card__tint {
+      height: 64px;
+      background: linear-gradient(
+        135deg,
+        rgba(var(--qb-primary-rgb), 0.22),
+        rgba(var(--qb-primary-rgb), 0.06)
+      );
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .app-card__icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: rgba(var(--qb-primary-rgb), 0.16);
+      border: 1px solid rgba(var(--qb-primary-rgb), 0.22);
+      display: grid;
+      place-items: center;
+      color: var(--qb-primary);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .pill {
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      background: rgba(36, 138, 61, 0.12);
+      color: var(--qb-success);
+      border: 1px solid color-mix(in srgb, var(--qb-success) 28%, transparent);
+    }
+    html[data-style="night-media"] .pill {
+      background: rgba(105, 197, 154, 0.16);
+    }
+    .app-card__body {
+      padding: 14px 16px 16px;
+      background: var(--qb-muted);
+      flex: 1;
+    }
+    .app-card__title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .app-card__meta {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--qb-muted-fg);
+      line-height: 1.45;
+    }
+
+    .panel {
+      border: 1px solid var(--qb-border);
+      border-radius: var(--qb-radius-lg);
+      background: var(--qb-card);
+      backdrop-filter: var(--glass-blur);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+    .panel__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--qb-muted);
+      border-bottom: 1px solid var(--qb-border);
+    }
+    .panel__title { font-size: 14px; font-weight: 600; margin: 0; }
+    .panel__hint { font-size: 12px; color: var(--qb-faint); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--qb-border);
+    }
+    th {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--qb-faint);
+      background: transparent;
+    }
+    td { color: var(--qb-fg); }
+    tr:last-child td { border-bottom: 0; }
+    .num { font-variant-numeric: tabular-nums; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(var(--qb-primary-rgb), 0.12);
+      color: var(--qb-primary);
+      border: 1px solid rgba(var(--qb-primary-rgb), 0.26);
+    }
+    .tag--ok {
+      background: rgba(36, 138, 61, 0.12);
+      color: var(--qb-success);
+      border-color: color-mix(in srgb, var(--qb-success) 28%, transparent);
+    }
+    .linkish {
+      color: var(--qb-primary);
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .login-strip {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+    }
+    .login-preview {
+      border-radius: var(--qb-radius-xl);
+      border: 1px solid var(--qb-border);
+      min-height: 220px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(420px 240px at 20% 20%, rgba(var(--qb-primary-rgb), 0.35), transparent 60%),
+        radial-gradient(360px 220px at 90% 80%, rgba(0, 122, 255, 0.22), transparent 55%),
+        color-mix(in srgb, var(--qb-bg) 40%, #000 0%);
+    }
+    html[data-style="soft-glass"] .login-preview,
+    html[data-style="daylight"] .login-preview {
+      background:
+        radial-gradient(420px 240px at 20% 20%, rgba(var(--qb-primary-rgb), 0.22), transparent 60%),
+        radial-gradient(360px 220px at 90% 80%, rgba(0, 122, 255, 0.14), transparent 55%),
+        linear-gradient(160deg, #eceaf8, #f5f6fb 55%, #e8eefc);
+    }
+    .login-card {
+      width: min(320px, 100%);
+      margin: 0 auto;
+      padding: 22px 20px;
+      border-radius: 20px;
+      background: var(--qb-card);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--qb-border);
+      box-shadow: var(--shadow-card);
+      text-align: center;
+    }
+    .login-card h3 { margin: 0 0 4px; font-size: 18px; }
+    .login-card p { margin: 0 0 16px; color: var(--qb-muted-fg); font-size: 13px; }
+    .field {
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--qb-border);
+      background: color-mix(in srgb, var(--qb-card-solid) 70%, transparent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      color: var(--qb-faint);
+      font-size: 13px;
+      text-align: left;
+    }
+    .note {
+      border-radius: var(--qb-radius-lg);
+      border: 1px solid var(--qb-border);
+      background: var(--qb-card);
+      backdrop-filter: var(--glass-blur);
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow-card);
+    }
+    .note h4 { margin: 0 0 8px; font-size: 14px; }
+    .note ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--qb-muted-fg);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    @media (max-width: 960px) {
+      .shell { grid-template-columns: 1fr; }
+      .nav { display: none; }
+      .grid { grid-template-columns: 1fr; }
+      .login-strip { grid-template-columns: 1fr; }
+      .main { padding: 16px; }
+      .hero__title { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="picker">
+    <div class="picker__title">
+      QuickBoot 消费级样式预览
+      <span>基于现有 --qb-* 令牌 · 静态对照</span>
+    </div>
+    <div class="picker__tabs" role="tablist" aria-label="样式方案">
+      <button class="picker__tab is-active" data-style="soft-glass" type="button">1 Soft Glass App</button>
+      <button class="picker__tab" data-style="night-media" type="button">2 Night Media App</button>
+      <button class="picker__tab" data-style="daylight" type="button">3 Daylight Product</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="nav" aria-label="侧栏">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand__name">QuickBoot</div>
+          <div class="brand__sub">产品工作台</div>
+        </div>
+      </div>
+      <div class="nav__group">
+        <div class="nav__label">开始</div>
+        <a class="nav__item is-active" href="#"><span class="nav__dot"></span>工作台</a>
+        <a class="nav__item" href="#"><span class="nav__dot"></span>应用</a>
+        <a class="nav__item" href="#"><span class="nav__dot"></span>消息</a>
+      </div>
+      <div class="nav__group">
+        <div class="nav__label">系统</div>
+        <a class="nav__item" href="#"><span class="nav__dot"></span>用户</a>
+        <a class="nav__item" href="#"><span class="nav__dot"></span>设置</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search" aria-hidden="true">搜索应用、用户或配置…</div>
+        <div class="top-actions">
+          <button class="btn" type="button">主题</button>
+          <button class="btn btn--primary" type="button">新建</button>
+          <div class="avatar" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <section class="hero" aria-label="工作台横幅">
+        <p class="hero__kicker" id="hero-kicker">今天 · 产品工作台</p>
+        <h1 class="hero__title" id="hero-title">把运维入口做成会呼吸的产品壳</h1>
+        <p class="hero__desc" id="hero-desc">保留 Element Plus 与 --qb-*，用玻璃、媒体横幅和大入口卡，先让第一屏不像后台。</p>
+        <div class="hero__cta">
+          <button class="btn btn--primary" type="button">打开常用应用</button>
+          <button class="btn" type="button">查看运行状态</button>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="入口卡">
+        <article class="app-card">
+          <div class="app-card__tint">
+            <div class="app-card__icon">用</div>
+            <span class="pill">运行中</span>
+          </div>
+          <div class="app-card__body">
+            <h2 class="app-card__title">用户中心</h2>
+            <p class="app-card__meta">账号、角色与登录策略 · 最近 12 次变更</p>
+          </div>
+        </article>
+        <article class="app-card">
+          <div class="app-card__tint" style="--qb-primary-rgb: 0,122,255;">
+            <div class="app-card__icon" style="color:#007AFF;background:rgba(0,122,255,.14);border-color:rgba(0,122,255,.22);">讯</div>
+            <span class="pill">3 通道</span>
+          </div>
+          <div class="app-card__body">
+            <h2 class="app-card__title">消息通道</h2>
+            <p class="app-card__meta">邮件 / 企微 / Webhook · 摘要卡染色头部</p>
+          </div>
+        </article>
+        <article class="app-card">
+          <div class="app-card__tint" style="--qb-primary-rgb: 36,138,61;">
+            <div class="app-card__icon" style="color:#248A3D;background:rgba(36,138,61,.14);border-color:rgba(36,138,61,.22);">监</div>
+            <span class="pill">健康</span>
+          </div>
+          <div class="app-card__body">
+            <h2 class="app-card__title">运行监控</h2>
+            <p class="app-card__meta">任务队列与接口延迟 · 媒体运维卡原型</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel" aria-label="轻量表格壳">
+        <div class="panel__bar">
+          <div>
+            <h2 class="panel__title">最近活动</h2>
+            <div class="panel__hint">表格仍是表格，但外框走 card / muted，而不是「灰底管理台」</div>
+          </div>
+          <button class="btn" type="button">筛选</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>事项</th>
+              <th>状态</th>
+              <th>次数</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>OAuth 客户端密钥轮换</td>
+              <td><span class="tag tag--ok">完成</span></td>
+              <td class="num">1</td>
+              <td><button class="linkish" type="button">查看</button></td>
+            </tr>
+            <tr>
+              <td>消息通道连通性检查</td>
+              <td><span class="tag">进行中</span></td>
+              <td class="num">3</td>
+              <td><button class="linkish" type="button">查看</button></td>
+            </tr>
+            <tr>
+              <td>登录页主题同步</td>
+              <td><span class="tag tag--ok">完成</span></td>
+              <td class="num">8</td>
+              <td><button class="linkish" type="button">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="login-strip" aria-label="登录面对照">
+        <div class="login-preview">
+          <div class="login-card">
+            <h3>欢迎回来</h3>
+            <p>品牌氛围 + 玻璃登录卡</p>
+            <div class="field">手机号 / 用户名</div>
+            <div class="field">密码</div>
+            <button class="btn btn--primary" style="width:100%;" type="button">登录</button>
+          </div>
+        </div>
+        <aside class="note">
+          <h4 id="note-title">方案 1 · Soft Glass App</h4>
+          <ul id="note-list">
+            <li>主色保持 #8D51F9，画布 #F2F2F7</li>
+            <li>侧栏 / 卡片半透 + blur，贴近现有 glass</li>
+            <li>适合作为整站默认气质升级</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const copy = {
+      'soft-glass': {
+        kicker: '今天 · Soft Glass',
+        title: '浅色玻璃，先把工作台做成 App 壳',
+        desc: '延续现有 glass 令牌与默认紫，加大圆角与入口卡染色，运维页只换壳不改表格结构。',
+        noteTitle: '方案 1 · Soft Glass App',
+        notes: [
+          '主色保持 #8D51F9，画布 #F2F2F7',
+          '侧栏 / 卡片半透 + blur，贴近现有 glass',
+          '适合作为整站默认气质升级'
+        ]
+      },
+      'night-media': {
+        kicker: '今晚 · Night Media',
+        title: '深海画布，让横幅承担情绪',
+        desc: '暗色 --qb-* + 媒体横幅 scrim，登录与工作台更像影音类产品，列表面板仍安静可读。',
+        noteTitle: '方案 2 · Night Media App',
+        notes: [
+          '深色底 #0B1322 / 卡面 #182235',
+          '横幅走 media-scrim 气质，信息密度仍克制',
+          '适合默认深色或影音 / 运维监控场景'
+        ]
+      },
+      daylight: {
+        kicker: '日光 · Daylight Product',
+        title: '弱化侧栏，第一屏就是产品首页',
+        desc: '平面亮色、更大圆角与顶栏主导航感；列表仍在下方，但进入感更像产品而不是后台框架。',
+        noteTitle: '方案 3 · Daylight Product',
+        notes: [
+          '隐藏侧栏预览，突出顶栏 + 大入口',
+          '平面材质、更亮画布，玻璃可关',
+          '适合登录后首页 / 应用中心，后台页可回侧栏'
+        ]
+      }
+    }
+
+    const tabs = document.querySelectorAll('.picker__tab')
+    const root = document.documentElement
+    const heroKicker = document.getElementById('hero-kicker')
+    const heroTitle = document.getElementById('hero-title')
+    const heroDesc = document.getElementById('hero-desc')
+    const noteTitle = document.getElementById('note-title')
+    const noteList = document.getElementById('note-list')
+
+    function applyStyle(id) {
+      root.setAttribute('data-style', id)
+      tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.style === id))
+      const c = copy[id]
+      heroKicker.textContent = c.kicker
+      heroTitle.textContent = c.title
+      heroDesc.textContent = c.desc
+      noteTitle.textContent = c.noteTitle
+      noteList.innerHTML = c.notes.map((n) => `<li>${n}</li>`).join('')
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => applyStyle(tab.dataset.style))
+    })
+  </script>
+</body>
+</html>
