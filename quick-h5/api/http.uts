@@ -1,0 +1,112 @@
+import { API_BASE } from "@/config/env"
+import { getToken } from "@/store/user"
+
+/**
+ * HTTP 方法。
+ */
+export type HttpMethod = "GET" | "POST"
+
+/**
+ * 请求选项。
+ * login 可用 query 拼在 url 上（对齐 quick-ui /login params）。
+ */
+export type RequestOptions = {
+	url : string
+	method ?: HttpMethod
+	data ?: any | null
+	query ?: string
+	needToken ?: boolean
+}
+
+function joinUrl(path : string) : string {
+	const base = API_BASE.endsWith("/") ? API_BASE.substring(0, API_BASE.length - 1) : API_BASE
+	if (path.startsWith("http://") || path.startsWith("https://")) {
+		return path
+	}
+	const p = path.startsWith("/") ? path : ("/" + path)
+	return base + p
+}
+
+/**
+ * 编码单个 query 片段。
+ */
+export function enc(v : string) : string {
+	return encodeURIComponent(v)
+}
+
+/**
+ * 统一请求：解析 R 包装，非 200 toast 后 reject。
+ */
+export function request(opts : RequestOptions) : Promise<UTSJSONObject> {
+	return new Promise<UTSJSONObject>((resolve, reject) => {
+		const method = opts.method ?? "GET"
+		let url = joinUrl(opts.url)
+		const q = opts.query
+		if (q != null && q.length > 0) {
+			url = url.indexOf("?") >= 0 ? (url + "&" + q) : (url + "?" + q)
+		}
+		const header = {
+			"Content-Type": "application/json;charset=UTF-8"
+		} as UTSJSONObject
+		const needToken = opts.needToken != false
+		if (needToken) {
+			const token = getToken()
+			if (token.length > 0) {
+				header.set("Authorization", "Bearer " + token)
+			}
+		}
+		uni.request({
+			url: url,
+			method: method,
+			data: opts.data,
+			header: header,
+			success: (res) => {
+				const statusCode = res.statusCode
+				if (statusCode < 200 || statusCode >= 300) {
+					const msg = "网络错误(" + statusCode + ")"
+					uni.showToast({ title: msg, icon: "none" })
+					reject(msg)
+					return
+				}
+				const bodyAny = res.data
+				if (bodyAny == null) {
+					reject("响应为空")
+					return
+				}
+				let body : UTSJSONObject | null = null
+				if (bodyAny instanceof UTSJSONObject) {
+					body = bodyAny as UTSJSONObject
+				} else {
+					try {
+						body = JSON.parseObject(JSON.stringify(bodyAny))
+					} catch (e) {
+						body = null
+					}
+				}
+				if (body == null) {
+					reject("响应解析失败")
+					return
+				}
+				const codeNum = body.getNumber("code")
+				if (codeNum != null && codeNum != 200) {
+					let message = body.getString("msg")
+					if (message == null || message.length == 0) {
+						message = body.getString("message")
+					}
+					if (message == null || message.length == 0) {
+						message = "请求失败"
+					}
+					uni.showToast({ title: message!, icon: "none" })
+					reject(message)
+					return
+				}
+				resolve(body)
+			},
+			fail: (err) => {
+				const msg = err.errMsg.length > 0 ? err.errMsg : "请求失败"
+				uni.showToast({ title: msg, icon: "none" })
+				reject(msg)
+			}
+		})
+	})
+}
