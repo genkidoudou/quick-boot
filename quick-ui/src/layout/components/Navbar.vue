@@ -112,7 +112,7 @@ function setLayout() {
   position: relative;
   background: var(--qb-card);
   border-bottom: 1px solid var(--qb-border-subtle);
-  box-shadow: var(--qb-shadow);
+  box-shadow: none;
   display: flex;
   align-items: center;
   color: var(--qb-fg);
@@ -131,7 +131,7 @@ function setLayout() {
     -webkit-tap-highlight-color: transparent;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.025);
+      background: var(--qb-sidebar-hover);
     }
   }
 
@@ -182,7 +182,7 @@ function setLayout() {
         transition: background 0.3s;
 
         &:hover {
-          background: rgba(0, 0, 0, 0.025);
+          background: var(--qb-sidebar-hover);
         }
       }
     }
@@ -198,7 +198,7 @@ function setLayout() {
           cursor: pointer;
           width: 40px;
           height: 40px;
-          border-radius: 10px;
+          border-radius: 12px;
         }
       }
     }

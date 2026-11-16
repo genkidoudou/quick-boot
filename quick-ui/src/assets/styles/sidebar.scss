@@ -18,7 +18,7 @@
   .sidebar-container {
     --qb-sidebar-item-radius: 14px;
     --qb-sidebar-active-bg: color-mix(in srgb, var(--el-color-primary) 14%, transparent);
-    --qb-sidebar-active-fg: var(--el-color-primary);
+    --qb-sidebar-active-fg: var(--qb-sidebar-text-active);
 
     transition: width 0.28s, background-color 0.2s ease, box-shadow 0.2s ease;
     width: $base-sidebar-width !important;
@@ -283,12 +283,14 @@
 }
 
 html[data-theme='glass'] #app .sidebar-container {
-  background-color: color-mix(in srgb, var(--qb-sidebar-bg) 78%, transparent) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--qb-sidebar-bg) calc(var(--qb-glass-surface-opacity) * 100%),
+    transparent
+  ) !important;
   backdrop-filter: saturate(var(--qb-glass-saturate, 1.2)) blur(var(--qb-glass-blur, 18px));
   -webkit-backdrop-filter: saturate(var(--qb-glass-saturate, 1.2)) blur(var(--qb-glass-blur, 18px));
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.35) inset,
-    0 12px 32px rgba(11, 19, 34, 0.08);
+  box-shadow: var(--qb-shadow);
 }
 
 html[data-side-theme='theme-dark'] #app .sidebar-container {
@@ -328,7 +330,7 @@ html[data-side-theme='theme-dark'] #app .sidebar-container {
 
   .el-menu-item.is-active {
     background-color: color-mix(in srgb, var(--el-color-primary) 14%, transparent) !important;
-    color: var(--el-color-primary) !important;
+    color: var(--qb-sidebar-text-active) !important;
   }
 
   > .el-menu--popup {
