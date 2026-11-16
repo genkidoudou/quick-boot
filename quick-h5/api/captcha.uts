@@ -1,0 +1,32 @@
+import { API_BASE } from "@/config/env"
+import { request, RequestOptions } from "@/api/http"
+
+/**
+ * 是否启用天爱行为验证码。
+ */
+export function fetchCaptchaEnabled() : Promise<boolean> {
+	return request({
+		url: "/api/captcha/config",
+		method: "GET",
+		needToken: false
+	} as RequestOptions).then((res) : boolean => {
+		let data = res.getJSON("data")
+		if (data == null) {
+			// 部分实现直接返回 Map
+			data = res
+		}
+		const enabled = data!.getBoolean("captchaEnabled")
+		return enabled == true
+	})
+}
+
+/**
+ * TAC / 原生校验使用的绝对地址。
+ */
+export function getCaptchaTacUrls() : UTSJSONObject {
+	const base = API_BASE.endsWith("/") ? API_BASE.substring(0, API_BASE.length - 1) : API_BASE
+	const o = JSON.parseObject("{}")!
+	o.set("generateUrl", base + "/api/captcha/generate")
+	o.set("validateUrl", base + "/api/captcha/validate")
+	return o
+}

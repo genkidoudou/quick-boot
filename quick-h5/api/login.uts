@@ -1,0 +1,75 @@
+import { request, enc, RequestOptions } from "@/api/http"
+
+/**
+ * 从登录 data 解析 accessToken。
+ */
+export function parseAccessToken(data : UTSJSONObject | null) : string {
+	if (data == null) {
+		return ""
+	}
+	const t1 = data.getString("accessToken")
+	if (t1 != null && t1.length > 0) {
+		return t1
+	}
+	const t2 = data.getString("access_token")
+	if (t2 != null && t2.length > 0) {
+		return t2
+	}
+	return ""
+}
+
+function tokenFromRes(res : UTSJSONObject) : Promise<string> {
+	const data = res.getJSON("data")
+	const token = parseAccessToken(data)
+	if (token.length == 0) {
+		return Promise.reject("登录成功但未返回 token")
+	}
+	return Promise.resolve(token)
+}
+
+/**
+ * 账号密码登录。uuid 为天爱校验 id，可空。
+ */
+export function loginByPassword(username : string, password : string, uuid : string | null) : Promise<string> {
+	let query = "username=" + enc(username) + "&password=" + enc(password) + "&grantType=password"
+	if (uuid != null && uuid.length > 0) {
+		query = query + "&uuid=" + enc(uuid)
+	}
+	return request({
+		url: "/login",
+		method: "POST",
+		query: query,
+		needToken: false
+	} as RequestOptions).then((res) : Promise<string> => tokenFromRes(res))
+}
+
+/**
+ * 发送短信验证码（后端若未实现会 404，由 http 层 toast）。
+ */
+export function sendSmsCode(phone : string) : Promise<void> {
+	const data = {
+		phone: phone
+	}
+	return request({
+		url: "/sendSms",
+		method: "POST",
+		data: data,
+		needToken: false
+	} as RequestOptions).then((_res) : void => {})
+}
+
+/**
+ * 手机号 + 短信码登录。
+ */
+export function loginByPhone(phone : string, smsCode : string) : Promise<string> {
+	const data = {
+		phone: phone,
+		smsCode: smsCode
+	}
+	return request({
+		url: "/phoneLogin",
+		method: "POST",
+		data: data,
+		needToken: false
+	} as RequestOptions).then((res) : Promise<string> => tokenFromRes(res))
+}
