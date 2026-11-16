@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container qb-workbench">
     <C7JsonTable
         ref="tableRef"
         :list-function="pageUser"
