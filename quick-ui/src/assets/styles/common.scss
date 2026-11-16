@@ -38,7 +38,7 @@
   --qb-overlay-radius: 16px;
 
   --qb-shadow-plain-light: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(24, 24, 27, 0.04);
-  --qb-shadow-glass: 0 0 0 1px rgba(255, 255, 255, 0.35) inset, 0 8px 24px rgba(11, 19, 34, 0.08);
+  --qb-shadow-glass: 0 0 0 1px rgba(255, 255, 255, 0.35) inset, 0 8px 28px rgba(11, 19, 34, 0.1);
   --qb-shadow: var(--qb-shadow-plain-light);
 
   --qb-glass-blur: 18px;
@@ -64,8 +64,8 @@ html[data-glass-appearance='clear'] {
 }
 
 html[data-glass-appearance='tinted'] {
-  --qb-glass-blur: 18px;
-  --qb-glass-saturate: 1.25;
+  --qb-glass-blur: 22px;
+  --qb-glass-saturate: 1.35;
   --qb-glass-surface-opacity: 0.72;
 }
 
@@ -168,7 +168,7 @@ h6 {
 .qb-media-surface {
   position: relative;
   overflow: hidden;
-  border-radius: var(--qb-radius);
+  border-radius: var(--qb-radius-lg);
   background-size: cover;
   background-position: center;
   color: var(--qb-on-media);
@@ -229,7 +229,7 @@ h6 {
 /* 3. 品牌染色横幅卡 */
 .qb-banner-card {
   overflow: hidden;
-  border-radius: var(--qb-radius);
+  border-radius: var(--qb-radius-lg);
   border: 1px solid var(--qb-border-subtle);
   background: var(--qb-card);
   box-shadow: var(--qb-shadow);
@@ -264,7 +264,7 @@ html[data-color-scheme='dark'] .qb-banner-card__head {
 .qb-card-colorful,
 .app-card-colorful {
   overflow: hidden;
-  border-radius: var(--qb-radius);
+  border-radius: var(--qb-radius-lg);
   border: 1px solid var(--qb-border-subtle);
   background:
     linear-gradient(
@@ -291,7 +291,7 @@ html[data-color-scheme='dark'] .app-card-colorful {
 
 /* 5. 高密度工作台 */
 .qb-workbench {
-  border-radius: var(--qb-radius);
+  border-radius: var(--qb-radius-lg);
   border: 1px solid var(--qb-border);
   background: var(--qb-card);
   box-shadow: var(--qb-shadow);
