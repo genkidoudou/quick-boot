@@ -1,0 +1,34 @@
+<template>
+	<!-- #ifdef WEB -->
+	<captcha-h5 ref="innerRef"></captcha-h5>
+	<!-- #endif -->
+	<!-- #ifndef WEB -->
+	<captcha-native ref="innerRef"></captcha-native>
+	<!-- #endif -->
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 多端验证码入口：H5 走官方 TAC，其它端走原生滑块。
+	 */
+	const innerRef = ref<ComponentPublicInstance | null>(null)
+
+	/**
+	 * 打开验证码，成功返回 uuid。
+	 */
+	function open() : Promise<string> {
+		const inst = innerRef.value
+		if (inst == null) {
+			return Promise.reject("验证码组件未就绪")
+		}
+		const anyInst = inst as any
+		if (anyInst.open == null) {
+			return Promise.reject("验证码 open 不可用")
+		}
+		return anyInst.open() as Promise<string>
+	}
+
+	defineExpose({
+		open
+	})
+</script>

@@ -1,0 +1,174 @@
+<template>
+	<view v-if="visible" class="mask" @click="onMaskClick">
+		<view class="panel" @click.stop="">
+			<text class="title">安全验证</text>
+			<!-- #ifdef WEB -->
+			<view id="tianai-captcha-box" class="tac-box"></view>
+			<!-- #endif -->
+			<!-- #ifndef WEB -->
+			<text class="hint">请使用原生验证组件</text>
+			<!-- #endif -->
+			<view class="ops">
+				<rice-button size="small" type="info" text="关闭" @click="close"></rice-button>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { getCaptchaTacUrls } from "@/api/captcha"
+
+	const visible = ref(false)
+	let pendingResolve : ((v : string) => void) | null = null
+	let pendingReject : ((e : string) => void) | null = null
+	let tacInstance : any | null = null
+
+	function close() {
+		visible.value = false
+		destroyTac()
+		const rej = pendingReject
+		pendingResolve = null
+		pendingReject = null
+		if (rej != null) {
+			rej("已取消验证")
+		}
+	}
+
+	function onMaskClick() {
+		close()
+	}
+
+	function destroyTac() {
+		// #ifdef WEB
+		if (tacInstance != null) {
+			try {
+				tacInstance.destroyWindow()
+			} catch (e) {}
+			tacInstance = null
+		}
+		// #endif
+	}
+
+	function openTac() {
+		// #ifdef WEB
+		const urls = getCaptchaTacUrls()
+		const generateUrl = urls.getString("generateUrl") ?? ""
+		const validateUrl = urls.getString("validateUrl") ?? ""
+		const w = globalThis as any
+		if (w.initTAC == null) {
+			uni.showToast({ title: "验证码脚本未加载，请刷新重试", icon: "none" })
+			close()
+			return
+		}
+		const config = {
+			requestCaptchaDataUrl: generateUrl,
+			validCaptchaUrl: validateUrl,
+			bindEl: "#tianai-captcha-box",
+			validSuccess: (res : any, _c : any, tac : any) => {
+				try {
+					tac.destroyWindow()
+				} catch (e) {}
+				tacInstance = null
+				visible.value = false
+				let id = ""
+				if (res != null && res.data != null && res.data.id != null) {
+					id = `${res.data.id}`
+				} else if (res != null && res.id != null) {
+					id = `${res.id}`
+				}
+				const resolve = pendingResolve
+				pendingResolve = null
+				pendingReject = null
+				if (resolve != null) {
+					resolve(id)
+				}
+			},
+			validFail: (_res : any, _c : any, tac : any) => {
+				try {
+					tac.reloadCaptcha()
+				} catch (e) {}
+			},
+			btnCloseFun: (_el : any, tac : any) => {
+				try {
+					tac.destroyWindow()
+				} catch (e) {}
+				close()
+			}
+		} as any
+		const style = { logoUrl: null } as any
+		w.initTAC("/static/tac", config, style).then((tac : any) => {
+			tacInstance = tac
+			tac.init()
+		}).catch((_e : any) => {
+			uni.showToast({ title: "验证码初始化失败", icon: "none" })
+			close()
+		})
+		// #endif
+	}
+
+	/**
+	 * 打开 H5 TAC，成功返回 uuid。
+	 */
+	function open() : Promise<string> {
+		return new Promise<string>((resolve, reject) => {
+			pendingResolve = resolve
+			pendingReject = reject
+			visible.value = true
+			// #ifdef WEB
+			setTimeout(() => {
+				openTac()
+			}, 50)
+			// #endif
+			// #ifndef WEB
+			reject("当前端请使用原生验证码")
+			// #endif
+		})
+	}
+
+	defineExpose({
+		open
+	})
+</script>
+
+<style>
+	.mask {
+		position: fixed;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.45);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+	.panel {
+		width: 340px;
+		padding: 16px;
+		border-radius: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		display: flex;
+		flex-direction: column;
+	}
+	.title {
+		font-size: 16px;
+		color: var(--rice-text-color);
+		margin-bottom: 12px;
+	}
+	.tac-box {
+		min-height: 200px;
+		width: 100%;
+	}
+	.hint {
+		font-size: 14px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.ops {
+		margin-top: 12px;
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+	}
+</style>

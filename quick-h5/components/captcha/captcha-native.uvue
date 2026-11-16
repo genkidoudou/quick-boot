@@ -1,0 +1,325 @@
+<template>
+	<view v-if="visible" class="mask" @click="onMaskClick">
+		<view class="panel" @click.stop="">
+			<text class="title">安全验证</text>
+			<view class="bg-wrap">
+				<image v-if="bgSrc.length > 0" class="bg" :src="bgSrc" mode="widthFix"></image>
+				<image v-if="sliderSrc.length > 0" class="slider-img" :src="sliderSrc" :style="sliderStyle"></image>
+			</view>
+			<view class="track">
+				<view class="track-bar" :style="trackBarStyle"></view>
+				<view
+					class="knob"
+					:style="knobStyle"
+					@touchstart="onTouchStart"
+					@touchmove.stop.prevent="onTouchMove"
+					@touchend="onTouchEnd"
+				>
+					<text class="knob-text">||</text>
+				</view>
+			</view>
+			<view class="ops">
+				<rice-button size="small" type="info" text="刷新" @click="reload"></rice-button>
+				<rice-button size="small" type="info" text="关闭" @click="close"></rice-button>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { getCaptchaTacUrls } from "@/api/captcha"
+
+	const visible = ref(false)
+	const bgSrc = ref("")
+	const sliderSrc = ref("")
+	const captchaId = ref("")
+	const moveX = ref(0)
+	const maxX = ref(220)
+	const startPageX = ref(0)
+	const startTime = ref(0)
+	const trackArr = ref([] as UTSJSONObject[])
+	let pendingResolve : ((v : string) => void) | null = null
+	let pendingReject : ((e : string) => void) | null = null
+
+	const sliderStyle = computed(() : string => {
+		return "left:" + moveX.value + "px;"
+	})
+	const knobStyle = computed(() : string => {
+		return "transform:translateX(" + moveX.value + "px);"
+	})
+	const trackBarStyle = computed(() : string => {
+		return "width:" + moveX.value + "px;"
+	})
+
+	function resetTrack() {
+		moveX.value = 0
+		trackArr.value = []
+		startTime.value = 0
+		startPageX.value = 0
+	}
+
+	function close() {
+		visible.value = false
+		const rej = pendingReject
+		pendingResolve = null
+		pendingReject = null
+		if (rej != null) {
+			rej("已取消验证")
+		}
+	}
+
+	function onMaskClick() {
+		close()
+	}
+
+	function loadCaptcha() : void {
+		const urls = getCaptchaTacUrls()
+		const generateUrl = urls.getString("generateUrl") ?? ""
+		uni.request({
+			url: generateUrl,
+			method: "GET",
+			success: (res) => {
+				const bodyAny = res.data
+				let body : UTSJSONObject | null = null
+				if (bodyAny instanceof UTSJSONObject) {
+					body = bodyAny as UTSJSONObject
+				} else {
+					try {
+						body = JSON.parseObject(JSON.stringify(bodyAny))
+					} catch (e) {
+						body = null
+					}
+				}
+				if (body == null) {
+					uni.showToast({ title: "验证码加载失败", icon: "none" })
+					return
+				}
+				// tianai ApiResponse: { code, data: ImageCaptchaVO }
+				const data = body.getJSON("data") ?? body
+				const id = data.getString("id") ?? ""
+				captchaId.value = id
+				const bg = data.getString("backgroundImage") ?? data.getString("captcha") ?? ""
+				const slider = data.getString("templateImage") ?? ""
+				bgSrc.value = bg.indexOf("data:") == 0 || bg.length == 0 ? bg : ("data:image/png;base64," + bg)
+				sliderSrc.value = slider.indexOf("data:") == 0 || slider.length == 0 ? slider : ("data:image/png;base64," + slider)
+				resetTrack()
+			},
+			fail: (_e) => {
+				uni.showToast({ title: "验证码请求失败", icon: "none" })
+			}
+		})
+	}
+
+	function reload() {
+		loadCaptcha()
+	}
+
+	function pushTrack(type : string, x : number, y : number) {
+		const now = Date.now()
+		const t0 = startTime.value > 0 ? startTime.value : now
+		const item = JSON.parseObject("{}")!
+		item.set("x", x)
+		item.set("y", y)
+		item.set("type", type)
+		item.set("t", now - t0)
+		const next = trackArr.value.slice(0)
+		next.push(item)
+		trackArr.value = next
+	}
+
+	function onTouchStart(e : UniTouchEvent) {
+		if (e.touches.length == 0) {
+			return
+		}
+		const touch = e.touches[0]
+		startPageX.value = touch.clientX
+		startTime.value = Date.now()
+		pushTrack("down", 0, 0)
+	}
+
+	function onTouchMove(e : UniTouchEvent) {
+		if (e.touches.length == 0) {
+			return
+		}
+		const touch = e.touches[0]
+		let dx = touch.clientX - startPageX.value
+		if (dx < 0) {
+			dx = 0
+		}
+		if (dx > maxX.value) {
+			dx = maxX.value
+		}
+		moveX.value = dx
+		pushTrack("move", dx as number, 0)
+	}
+
+	function onTouchEnd(_e : UniTouchEvent) {
+		pushTrack("up", moveX.value, 0)
+		submitValidate()
+	}
+
+	function submitValidate() {
+		const urls = getCaptchaTacUrls()
+		const validateUrl = urls.getString("validateUrl") ?? ""
+		const trackData = JSON.parseObject("{}")!
+		trackData.set("bgImageWidth", 300)
+		trackData.set("bgImageHeight", 150)
+		trackData.set("sliderImageWidth", 60)
+		trackData.set("sliderImageHeight", 60)
+		trackData.set("startTime", startTime.value)
+		trackData.set("stopTime", Date.now())
+		trackData.set("trackList", trackArr.value)
+		const body = JSON.parseObject("{}")!
+		body.set("id", captchaId.value)
+		body.set("data", trackData)
+		uni.request({
+			url: validateUrl,
+			method: "POST",
+			header: {
+				"Content-Type": "application/json;charset=UTF-8"
+			} as UTSJSONObject,
+			data: body,
+			success: (res) => {
+				let result : UTSJSONObject | null = null
+				const bodyAny = res.data
+				if (bodyAny instanceof UTSJSONObject) {
+					result = bodyAny as UTSJSONObject
+				} else {
+					try {
+						result = JSON.parseObject(JSON.stringify(bodyAny))
+					} catch (e) {
+						result = null
+					}
+				}
+				if (result == null) {
+					uni.showToast({ title: "校验失败", icon: "none" })
+					reload()
+					return
+				}
+				const code = result.getNumber("code")
+				const ok = code == null || code == 200
+				if (!ok) {
+					uni.showToast({ title: "验证失败，请重试", icon: "none" })
+					reload()
+					return
+				}
+				let id = captchaId.value
+				const data = result.getJSON("data")
+				if (data != null) {
+					const rid = data.getString("id")
+					if (rid != null && rid.length > 0) {
+						id = rid
+					}
+				}
+				visible.value = false
+				const resolve = pendingResolve
+				pendingResolve = null
+				pendingReject = null
+				if (resolve != null) {
+					resolve(id)
+				}
+			},
+			fail: (_e) => {
+				uni.showToast({ title: "校验请求失败", icon: "none" })
+				reload()
+			}
+		})
+	}
+
+	/**
+	 * 打开原生验证码，成功返回 uuid。
+	 */
+	function open() : Promise<string> {
+		return new Promise<string>((resolve, reject) => {
+			pendingResolve = resolve
+			pendingReject = reject
+			visible.value = true
+			loadCaptcha()
+		})
+	}
+
+	defineExpose({
+		open
+	})
+</script>
+
+<style>
+	.mask {
+		position: fixed;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.45);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+	.panel {
+		width: 320px;
+		padding: 16px;
+		border-radius: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		display: flex;
+		flex-direction: column;
+	}
+	.title {
+		font-size: 16px;
+		color: var(--rice-text-color);
+		margin-bottom: 12px;
+	}
+	.bg-wrap {
+		position: relative;
+		width: 100%;
+		min-height: 120px;
+		overflow: hidden;
+		border-radius: 8px;
+		background-color: var(--rice-background);
+	}
+	.bg {
+		width: 100%;
+	}
+	.slider-img {
+		position: absolute;
+		top: 0;
+		width: 60px;
+		height: 60px;
+	}
+	.track {
+		position: relative;
+		height: 40px;
+		margin-top: 12px;
+		border-radius: 20px;
+		background-color: var(--rice-background);
+		overflow: hidden;
+	}
+	.track-bar {
+		height: 40px;
+		background-color: rgba(141, 81, 249, 0.25);
+	}
+	.knob {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 40px;
+		height: 40px;
+		border-radius: 20px;
+		background-color: #8d51f9;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.knob-text {
+		color: #ffffff;
+		font-size: 12px;
+	}
+	.ops {
+		margin-top: 12px;
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+	}
+</style>
