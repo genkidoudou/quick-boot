@@ -490,14 +490,13 @@ getCookie()
 
 <style lang="scss" scoped>
 .login-page {
-  --login-primary: var(--el-color-primary, #8d51f9);
-  --login-primary-light: var(--el-color-primary-light-3, #b18efb);
-  --login-primary-deep: var(--el-color-primary-dark-2, #7141c7);
+  --login-primary: var(--el-color-primary);
+  --login-primary-light: var(--el-color-primary-light-3);
+  --login-primary-deep: var(--el-color-primary-dark-2);
   --login-primary-soft: color-mix(in srgb, var(--login-primary) 14%, transparent);
   --login-ink: var(--qb-fg, #18181b);
   --login-muted: var(--qb-muted-fg, #52525b);
   --login-line: var(--qb-border, rgba(24, 24, 27, 0.08));
-  --login-card: var(--qb-card, rgba(255, 255, 255, 0.72));
   --login-input-bg: rgba(255, 255, 255, 0.92);
   --login-font-display: var(--qb-font-sans);
   --login-font-body: var(--qb-font-sans);
@@ -681,15 +680,12 @@ getCookie()
   z-index: 1;
   width: min(380px, 100%);
   padding: 32px 28px 18px;
-  border-radius: 16px;
+  border-radius: var(--qb-radius-xl, 24px);
   display: flex;
   flex-direction: column;
-  background: var(--login-card);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
-    0 0 32px color-mix(in srgb, var(--login-primary) 12%, transparent),
-    0 18px 48px rgba(70, 110, 160, 0.14);
+  background: color-mix(in srgb, var(--qb-card) 86%, transparent);
+  border: 1px solid var(--qb-border);
+  box-shadow: var(--qb-shadow);
   backdrop-filter: blur(24px) saturate(1.15);
   -webkit-backdrop-filter: blur(24px) saturate(1.15);
   animation: loginCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
