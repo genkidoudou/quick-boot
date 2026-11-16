@@ -1,0 +1,14 @@
+<script setup lang="uts">
+	import { initAppTheme } from "@/store/theme"
+
+	onLaunch(() => {
+		initAppTheme()
+	})
+</script>
+
+<style>
+	/* #ifndef WEB */
+	@import "@/uni_modules/rice-ui/libs/style/index.css";
+	@import "@/styles/soft-glass.css";
+	/* #endif */
+</style>

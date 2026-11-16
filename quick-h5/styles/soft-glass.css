@@ -1,0 +1,8 @@
+/* Soft Glass 主色，须在 rice-ui index.css 之后引入 */
+.rice-theme-light {
+	--rice-primary-color: #8D51F9;
+}
+
+.rice-theme-dark {
+	--rice-primary-color: #A078FF;
+}

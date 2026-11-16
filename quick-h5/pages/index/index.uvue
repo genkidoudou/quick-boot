@@ -1,0 +1,81 @@
+<template>
+	<view class="page">
+		<view class="content">
+			<rice-tag text="RiceUI" type="primary"></rice-tag>
+			<view class="gap"></view>
+			<rice-button type="primary" text="主要按钮" @click="onPrimaryClick"></rice-button>
+			<view class="gap"></view>
+			<rice-button type="info" :text="themeButtonText" @click="onToggleTheme"></rice-button>
+			<view class="gap"></view>
+			<rice-button type="warning" text="打开 Dialog" @click="onOpenDialog"></rice-button>
+			<view class="gap"></view>
+			<rice-button type="error" text="退出登录" @click="onLogout"></rice-button>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { showDialog } from "@/uni_modules/rice-ui"
+	import { themeState, toggleTheme } from "@/store/theme"
+	import { hasToken, clearToken } from "@/store/user"
+
+	const themeButtonText = computed(() : string => {
+		return themeState.isDark ? '切换为浅色' : '切换为暗黑'
+	})
+
+	onShow(() => {
+		if (!hasToken()) {
+			uni.reLaunch({ url: "/pages/login/login" })
+		}
+	})
+
+	const onPrimaryClick = () => {
+		uni.showToast({
+			title: '点击了按钮',
+			icon: 'none'
+		})
+	}
+
+	const onToggleTheme = () => {
+		toggleTheme()
+	}
+
+	const onOpenDialog = () => {
+		showDialog({
+			title: '提示',
+			message: 'Dialog 页面注册成功',
+			confirm: () => {
+				uni.showToast({
+					title: '确定',
+					icon: 'none'
+				})
+			},
+			cancel: () => {}
+		})
+	}
+
+	const onLogout = () => {
+		clearToken()
+		uni.reLaunch({ url: "/pages/login/login" })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 16px;
+	}
+	.gap {
+		height: 12px;
+	}
+</style>

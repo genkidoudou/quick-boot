@@ -1,0 +1,23 @@
+import { setTheme } from "@/uni_modules/rice-ui"
+
+type ThemeState = {
+	isDark: boolean
+}
+
+export const themeState = reactive({
+	isDark: false
+} as ThemeState)
+
+export const applyRiceTheme = () => {
+	setTheme(themeState.isDark ? 'dark' : 'light')
+}
+
+export const initAppTheme = () => {
+	themeState.isDark = false
+	applyRiceTheme()
+}
+
+export const toggleTheme = () => {
+	themeState.isDark = !themeState.isDark
+	applyRiceTheme()
+}
