@@ -15,9 +15,9 @@ export default {
      */
     colorScheme: 'light',
     /**
-     * 是否启用玻璃材质
+     * 是否启用玻璃材质（Soft Glass 默认开启）
      */
-    glassEnabled: false,
+    glassEnabled: true,
     /**
      * 玻璃外观 clear | tinted | frosted
      */

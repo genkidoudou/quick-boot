@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     include: [
       'src/test/**/*.test.{js,ts}',
+      'src/settings.softGlass.test.js',
       'src/packages/C7Preview/**/*.test.ts',
       'src/utils/**/*.test.{js,ts}',
       'src/packages/__tests__/**/*.test.{js,ts}',
