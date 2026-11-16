@@ -1,16 +1,16 @@
 <template>
   <div class="app-container home">
     <section class="qb-media-surface home-hero no-blur" aria-label="欢迎">
-      <p class="qb-on-media-muted home-hero__eyebrow">QuickBoot</p>
+      <p class="qb-on-media-muted home-hero__eyebrow">今天 · 产品工作台</p>
       <h1 class="qb-on-media home-hero__title">欢迎进入 {{ appConfig.loginTitle }}</h1>
-      <p class="qb-on-media-muted home-hero__sub">基于 Spring Boot + Vue 3 的快速开发平台</p>
+      <p class="qb-on-media-muted home-hero__sub">从常用应用与运行状态开始，而不是从一张空表格开始。</p>
     </section>
 
     <div class="home-grid">
       <article class="qb-banner-card">
         <div class="qb-banner-card__head">
           <h2 class="home-card-title">认证与客户端</h2>
-          <p class="home-card-desc">OAuth 客户端、签名校验与授权类型统一管理</p>
+          <p class="home-card-desc">客户端、签名与授权，一处看清</p>
         </div>
         <div class="qb-banner-card__dock">
           <span class="qb-badge-soft is-info">系统</span>
@@ -20,7 +20,7 @@
 
       <article class="qb-card-colorful" style="--qb-card-accent-rgb: 0, 122, 255">
         <h2 class="home-card-title">消息通道</h2>
-        <p class="home-card-desc">邮件、Webhook、机器人渠道的彩色配置摘要入口</p>
+        <p class="home-card-desc">邮件 / Webhook / 机器人通道</p>
         <div class="home-card-meta">
           <span class="qb-badge-soft is-success">可用</span>
         </div>
@@ -28,7 +28,7 @@
 
       <article class="qb-ops-card has-media home-ops" :style="{ backgroundImage: opsBg }">
         <h2 class="home-card-title qb-on-media">运维概览</h2>
-        <p class="qb-on-media-muted home-card-desc">任务、日志与监控面板沿用影像底图运维卡原型</p>
+        <p class="qb-on-media-muted home-card-desc">任务、日志与监控入口</p>
       </article>
 
       <article class="qb-card-shell home-settings">
@@ -64,8 +64,9 @@ const opsBg =
 }
 
 .home-hero {
-  min-height: 220px;
-  padding: 48px 28px;
+  min-height: 200px;
+  padding: 40px 28px;
+  /* 圆角由全局 .qb-media-surface 的 radius-lg 提供 */
   background-image:
     radial-gradient(ellipse at 30% 20%, rgba(141, 81, 249, 0.55), transparent 50%),
     linear-gradient(145deg, #182235, #0b1322 60%, #1a2740);
