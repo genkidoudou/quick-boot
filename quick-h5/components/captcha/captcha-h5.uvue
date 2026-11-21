@@ -1,15 +1,20 @@
 <template>
-	<view v-if="visible" class="mask" @click="onMaskClick">
-		<view class="panel" @click.stop="">
-			<text class="title">安全验证</text>
-			<!-- #ifdef WEB -->
-			<view id="tianai-captcha-box" class="tac-box"></view>
-			<!-- #endif -->
-			<!-- #ifndef WEB -->
-			<text class="hint">请使用原生验证组件</text>
-			<!-- #endif -->
-			<view class="ops">
-				<rice-button size="small" type="info" text="关闭" @click="close"></rice-button>
+	<!-- 稳定根节点，避免仅 v-if 根在蒸汽下影响挂载 -->
+	<view class="captcha-h5-root">
+		<view v-if="visible" class="mask" @click="onMaskClick">
+			<view class="panel" @click.stop="">
+				<text class="title">安全验证</text>
+				<!-- #ifdef H5 || WEB -->
+				<view id="tianai-captcha-box" class="tac-box"></view>
+				<!-- #endif -->
+				<!-- #ifndef H5 -->
+				<!-- #ifndef WEB -->
+				<text class="hint">请使用原生验证组件</text>
+				<!-- #endif -->
+				<!-- #endif -->
+				<view class="ops">
+					<rice-button size="small" type="info" text="关闭" @click="close"></rice-button>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -17,6 +22,7 @@
 
 <script setup lang="uts">
 	import { getCaptchaTacUrls } from "@/api/captcha"
+	import { registerCaptchaOpen } from "@/components/captcha/bridge.uts"
 
 	const visible = ref(false)
 	let pendingResolve : ((v : string) => void) | null = null
@@ -39,7 +45,7 @@
 	}
 
 	function destroyTac() {
-		// #ifdef WEB
+		// #ifdef H5 || WEB
 		if (tacInstance != null) {
 			try {
 				tacInstance.destroyWindow()
@@ -50,7 +56,7 @@
 	}
 
 	function openTac() {
-		// #ifdef WEB
+		// #ifdef H5 || WEB
 		const urls = getCaptchaTacUrls()
 		const generateUrl = urls.getString("generateUrl") ?? ""
 		const validateUrl = urls.getString("validateUrl") ?? ""
@@ -114,13 +120,15 @@
 			pendingResolve = resolve
 			pendingReject = reject
 			visible.value = true
-			// #ifdef WEB
+			// #ifdef H5 || WEB
 			setTimeout(() => {
 				openTac()
 			}, 50)
 			// #endif
+			// #ifndef H5
 			// #ifndef WEB
 			reject("当前端请使用原生验证码")
+			// #endif
 			// #endif
 		})
 	}
@@ -128,9 +136,25 @@
 	defineExpose({
 		open
 	})
+
+	onMounted(() => {
+		registerCaptchaOpen(open)
+		const current = getCurrentInstance()
+		if (current != null && current.proxy != null) {
+			const proxy = current.proxy as any
+			proxy.open = open
+		}
+	})
+
+	onUnmounted(() => {
+		registerCaptchaOpen(null)
+	})
 </script>
 
 <style>
+	.captcha-h5-root {
+		/* 占位根；弹层用 fixed，勿 overflow:hidden 以免裁剪 */
+	}
 	.mask {
 		position: fixed;
 		left: 0;

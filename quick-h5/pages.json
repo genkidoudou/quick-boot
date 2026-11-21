@@ -2,7 +2,8 @@
   "easycom": {
     "autoscan": true,
     "custom": {
-      "^rice-(.*)": "@/uni_modules/rice-ui/components/rice-$1/rice-$1.uvue"
+      "^rice-(.*)": "@/uni_modules/rice-ui/components/rice-$1/rice-$1.uvue",
+      "^captcha-(.*)": "@/components/captcha/captcha-$1.uvue"
     }
   },
   "pages": [
@@ -16,7 +17,263 @@
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "quick-h5"
+        "navigationBarTitleText": "首页",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/workbench/workbench",
+      "style": {
+        "navigationBarTitleText": "工作台"
+      }
+    },
+    {
+      "path": "pages/mine/mine",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/mine/profile",
+      "style": {
+        "navigationBarTitleText": "个人资料"
+      }
+    },
+    {
+      "path": "pages/msg/inbox/index",
+      "style": {
+        "navigationBarTitleText": "消息中心",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/msg/inbox/detail",
+      "style": {
+        "navigationBarTitleText": "消息详情"
+      }
+    },
+    {
+      "path": "pages/system/user/index",
+      "style": {
+        "navigationBarTitleText": "用户管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/user/form",
+      "style": {
+        "navigationBarTitleText": "用户"
+      }
+    },
+    {
+      "path": "pages/system/role/index",
+      "style": {
+        "navigationBarTitleText": "角色管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/role/form",
+      "style": {
+        "navigationBarTitleText": "角色"
+      }
+    },
+    {
+      "path": "pages/system/dict/type/index",
+      "style": {
+        "navigationBarTitleText": "字典类型",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/dict/type/form",
+      "style": {
+        "navigationBarTitleText": "字典类型"
+      }
+    },
+    {
+      "path": "pages/system/dict/data/index",
+      "style": {
+        "navigationBarTitleText": "字典数据",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/dict/data/form",
+      "style": {
+        "navigationBarTitleText": "字典数据"
+      }
+    },
+    {
+      "path": "pages/system/oauthClient/index",
+      "style": {
+        "navigationBarTitleText": "客户端管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/oauthClient/form",
+      "style": {
+        "navigationBarTitleText": "客户端"
+      }
+    },
+    {
+      "path": "pages/system/oauthClient/credential",
+      "style": {
+        "navigationBarTitleText": "查看凭证"
+      }
+    },
+    {
+      "path": "pages/system/logininfor/index",
+      "style": {
+        "navigationBarTitleText": "登录日志",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/logininfor/detail",
+      "style": {
+        "navigationBarTitleText": "登录详情"
+      }
+    },
+    {
+      "path": "pages/system/operLog/index",
+      "style": {
+        "navigationBarTitleText": "操作日志",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/operLog/detail",
+      "style": {
+        "navigationBarTitleText": "操作详情"
+      }
+    },
+    {
+      "path": "pages/system/dept/index",
+      "style": {
+        "navigationBarTitleText": "部门管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/dept/form",
+      "style": {
+        "navigationBarTitleText": "部门"
+      }
+    },
+    {
+      "path": "pages/system/menu/index",
+      "style": {
+        "navigationBarTitleText": "菜单管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/menu/form",
+      "style": {
+        "navigationBarTitleText": "菜单"
+      }
+    },
+    {
+      "path": "pages/system/config/index",
+      "style": {
+        "navigationBarTitleText": "参数管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/config/form",
+      "style": {
+        "navigationBarTitleText": "参数"
+      }
+    },
+    {
+      "path": "pages/system/file/index",
+      "style": {
+        "navigationBarTitleText": "文件管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/file/upload",
+      "style": {
+        "navigationBarTitleText": "上传文件"
+      }
+    },
+    {
+      "path": "pages/system/fileClassify/index",
+      "style": {
+        "navigationBarTitleText": "文件分类",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/system/fileClassify/form",
+      "style": {
+        "navigationBarTitleText": "文件分类"
+      }
+    },
+    {
+      "path": "pages/job/job/index",
+      "style": {
+        "navigationBarTitleText": "定时任务",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/job/job/form",
+      "style": {
+        "navigationBarTitleText": "任务"
+      }
+    },
+    {
+      "path": "pages/job/jobLog/index",
+      "style": {
+        "navigationBarTitleText": "任务日志",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/job/jobLog/detail",
+      "style": {
+        "navigationBarTitleText": "日志详情"
+      }
+    },
+    {
+      "path": "pages/examples/index",
+      "style": {
+        "navigationBarTitleText": "C7 示例"
+      }
+    },
+    {
+      "path": "pages/examples/form",
+      "style": {
+        "navigationBarTitleText": "表单控件"
+      }
+    },
+    {
+      "path": "pages/examples/display",
+      "style": {
+        "navigationBarTitleText": "展示组件"
+      }
+    },
+    {
+      "path": "pages/examples/feedback",
+      "style": {
+        "navigationBarTitleText": "弹层与反馈"
+      }
+    },
+    {
+      "path": "pages/examples/misc",
+      "style": {
+        "navigationBarTitleText": "其它组件"
+      }
+    },
+    {
+      "path": "pages/examples/about",
+      "style": {
+        "navigationBarTitleText": "关于 QuickBoot"
       }
     },
     {
@@ -31,5 +288,31 @@
     "navigationBarTitleText": "quick-h5",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#8D51F9",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tab/home.png",
+        "selectedIconPath": "static/tab/home-active.png"
+      },
+      {
+        "pagePath": "pages/workbench/workbench",
+        "text": "工作台",
+        "iconPath": "static/tab/work.png",
+        "selectedIconPath": "static/tab/work-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "static/tab/mine.png",
+        "selectedIconPath": "static/tab/mine-active.png"
+      }
+    ]
   }
 }

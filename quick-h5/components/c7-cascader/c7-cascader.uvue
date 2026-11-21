@@ -1,0 +1,226 @@
+<template>
+	<!-- C7 级联：触发条 + 单层 rice-cascader（use-popup，勿再包一层弹层） -->
+	<view class="c7-cascader">
+		<view class="c7-cascader__field" :class="disabled ? 'is-disabled' : ''" @click="onOpen">
+			<text class="c7-cascader__text" :class="displayText.length == 0 ? 'is-placeholder' : ''">{{ displayText.length > 0 ? displayText : placeholder }}</text>
+			<text class="c7-cascader__arrow">›</text>
+		</view>
+		<rice-cascader
+			v-model:show="show"
+			:options="cascaderOptions"
+			:title="title"
+			:use-popup="true"
+			closeable
+			@finish="onFinish"
+			@clickClose="onClose"
+			@open="onVisible(true)"
+			@close="onVisible(false)"
+		></rice-cascader>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Cascader（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Cascader` 的**树形级联单选**：`dataList` / `options` +
+	 * `labelKey` / `valueKey` / `childrenKey`，`v-model` 取末级 value。
+	 *
+	 * **交互实现（重要）**
+	 * - 底座为 **单层** `rice-cascader`，并设 `use-popup=true`
+	 * - **不要**再外包 `rice-popup`，否则会出现双重弹层
+	 * - 触发条只负责打开；弹层由 cascader 自身管理
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue`：末级 value 字符串；展示文案为路径 label 用 `separator` 拼接
+	 * - `change` / `visible-change`；`load-error` / `loading-change` 为命名对齐预留
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP Cascader 的懒加载/多选等；选项需一次性传入
+	 * - 节点映射为 rice 需要的 `{ text, value, children? }`
+	 */
+	defineOptions({ name: "C7Cascader" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前选中末级 value（字符串） */
+		modelValue : string
+		/** 树形选项（优先于 options） */
+		dataList : any | null
+		/** 备选树形选项；dataList 为空时使用 */
+		options : any | null
+		/** 节点文案字段名，默认 label（映射为 rice 的 text） */
+		labelKey : string
+		/** 节点值字段名，默认 value */
+		valueKey : string
+		/** 子节点字段名，默认 children */
+		childrenKey : string
+		/** 未选中时触发条占位文案 */
+		placeholder : string
+		/** 级联弹层标题 */
+		title : string
+		/** 是否禁用（不可打开） */
+		disabled : boolean
+		/** 路径展示分隔符，默认 " / " */
+		separator : string
+	}>(), {
+		modelValue: "",
+		dataList: null,
+		options: null,
+		labelKey: "label",
+		valueKey: "value",
+		childrenKey: "children",
+		placeholder: "请选择",
+		title: "请选择",
+		disabled: false,
+		separator: " / "
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : string]
+		change : [v : string]
+		"visible-change" : [v : boolean]
+		"load-error" : [e : string]
+		"loading-change" : [v : boolean]
+	}>()
+
+	/** rice-cascader 弹层显隐 */
+	const show = ref(false)
+	/** 触发条展示的路径文案 */
+	const displayText = ref("")
+
+	/** 将业务节点映射为 rice-cascader 的 `{ text, value, children? }` */
+	function mapNode(row : any) : UTSJSONObject | null {
+		if (row == null) {
+			return null
+		}
+		if (typeof row != "object") {
+			const s = `${row}`
+			return { text: s, value: s } as UTSJSONObject
+		}
+		const o = row as UTSJSONObject
+		const label = o[props.labelKey] != null ? `${o[props.labelKey]}` : (o["text"] != null ? `${o["text"]}` : "")
+		const value = o[props.valueKey] != null ? `${o[props.valueKey]}` : label
+		const childrenRaw = o[props.childrenKey]
+		const node = { text: label, value: value } as UTSJSONObject
+		if (childrenRaw != null && Array.isArray(childrenRaw)) {
+			const kids : any[] = []
+			const arr = childrenRaw as any[]
+			for (let i = 0; i < arr.length; i++) {
+				const c = mapNode(arr[i])
+				if (c != null) {
+					kids.push(c)
+				}
+			}
+			if (kids.length > 0) {
+				node["children"] = kids
+			}
+		}
+		return node
+	}
+
+	/** 供 rice-cascader 使用的 options */
+	const cascaderOptions = computed(() : any[] => {
+		let raw : any | null = props.dataList
+		if (raw == null) {
+			raw = props.options
+		}
+		const out : any[] = []
+		if (raw == null || !Array.isArray(raw)) {
+			return out
+		}
+		const arr = raw as any[]
+		for (let i = 0; i < arr.length; i++) {
+			const n = mapNode(arr[i])
+			if (n != null) {
+				out.push(n)
+			}
+		}
+		return out
+	})
+
+	/** 打开级联弹层（disabled 时忽略） */
+	function onOpen() {
+		if (props.disabled) {
+			return
+		}
+		show.value = true
+	}
+
+	/** 关闭按钮：收起弹层 */
+	function onClose() {
+		show.value = false
+	}
+
+	/** 转发 visible-change */
+	function onVisible(v : boolean) {
+		emit("visible-change", v)
+	}
+
+	/**
+	 * 选完路径：取末级 value 写回 v-model，路径 label 拼到 displayText。
+	 */
+	function onFinish(e : any) {
+		let val = ""
+		let labels : string[] = []
+		if (e != null && typeof e == "object") {
+			const o = e as UTSJSONObject
+			if (o["value"] != null) {
+				val = `${o["value"]}`
+			}
+			const selected = o["selectedOptions"]
+			if (selected != null && Array.isArray(selected)) {
+				const arr = selected as any[]
+				const vals : string[] = []
+				for (let i = 0; i < arr.length; i++) {
+					const so = arr[i] as UTSJSONObject
+					if (so["text"] != null) {
+						labels.push(`${so["text"]}`)
+					}
+					if (so["value"] != null) {
+						vals.push(`${so["value"]}`)
+					}
+				}
+				if (vals.length > 0) {
+					val = vals[vals.length - 1]
+				}
+			}
+		}
+		displayText.value = labels.length > 0 ? labels.join(props.separator) : val
+		emit("update:modelValue", val)
+		emit("change", val)
+		show.value = false
+	}
+
+	watch(() : string => props.modelValue, (v : string) => {
+		if (v.length == 0) {
+			displayText.value = ""
+		}
+	})
+</script>
+
+<style>
+	.c7-cascader__field {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 12px;
+		border-radius: 12px;
+		background-color: rgba(142, 142, 147, 0.12);
+	}
+	.c7-cascader__field.is-disabled {
+		opacity: 0.5;
+	}
+	.c7-cascader__text {
+		flex: 1;
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-cascader__text.is-placeholder {
+		color: #8e8e93;
+	}
+	.c7-cascader__arrow {
+		font-size: 18px;
+		color: #8e8e93;
+	}
+</style>

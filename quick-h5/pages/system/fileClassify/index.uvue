@@ -1,0 +1,80 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageFileClassify"
+			:delete-function="removeFileClassify"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:fileClassify:add']"
+			:edit-button-permi="['system:fileClassify:edit']"
+			:delete-button-permi="['system:fileClassify:remove']"
+			delete-label-prop="classifyName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import {
+		pageFileClassify,
+		removeFileClassify,
+		FileClassifyPayload
+	} from "@/api/system/fileClassify"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "classifyName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "classifyCode", label: "编码" } as UTSJSONObject,
+		{ prop: "allowExt", label: "后缀", emptyText: "—" } as UTSJSONObject,
+		{ prop: "anonymous", label: "是否匿名", columnType: "tag", dictType: "COMMON_IS" } as UTSJSONObject,
+		{ prop: "maxCount", label: "每次个数" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "classifyCode", label: "分类编码", type: "input" } as UTSJSONObject,
+		{ prop: "classifyName", label: "分类名称", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject,
+		{ prop: "anonymous", label: "是否匿名", type: "select", dictType: "COMMON_IS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/system/fileClassify/form" })
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as FileClassifyPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/system/fileClassify/form?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

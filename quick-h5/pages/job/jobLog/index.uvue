@@ -1,0 +1,103 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="listFn"
+			:delete-function="removeJobLog"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="false"
+			:delete-button-permi="['job:jobLog:remove']"
+			delete-label-prop="jobId"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 任务日志列表（只读 + 删除）；支持 ?jobId= 预填筛选。
+	 * 字段对齐 SysJobLogVo / quick-ui。
+	 */
+	import {
+		pageJobLog,
+		removeJobLog,
+		JobLogPayload
+	} from "@/api/job/jobLog"
+	import { PageQuery, PageResult } from "@/api/shared/page"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+	const presetJobId = ref("")
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "jobId", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "JOB_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "triggerType", label: "触发来源", emptyText: "—" } as UTSJSONObject,
+		{ prop: "jobParam", label: "任务参数", emptyText: "—" } as UTSJSONObject,
+		{ prop: "costMs", label: "耗时(ms)", emptyText: "—" } as UTSJSONObject,
+		{ prop: "startTime", label: "开始时间", emptyText: "—" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "jobId", label: "任务ID", type: "input" } as UTSJSONObject,
+		{ prop: "instanceId", label: "实例ID", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "JOB_STATUS" } as UTSJSONObject
+	] as any[]
+
+	function listFn(query : PageQuery) : Promise<PageResult> {
+		const param = query.param
+		if (presetJobId.value.length > 0) {
+			const existing = param["jobId"]
+			if (existing == null || `${existing}`.trim().length == 0) {
+				param["jobId"] = presetJobId.value
+			}
+		}
+		return pageJobLog({
+			current: query.current,
+			size: query.size,
+			param: param
+		} as PageQuery)
+	}
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const jid = query["jobId"]
+		if (jid != null && `${jid}`.length > 0) {
+			presetJobId.value = `${jid}`
+		}
+	})
+
+	function onRowClick(row : any) {
+		const payload = row as JobLogPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/job/jobLog/detail?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

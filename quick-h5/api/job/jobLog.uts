@@ -1,0 +1,121 @@
+/**
+ * 定时任务日志 API，对齐 quick-ui `/api/job/jobLog.js` 与后端 `/job/jobLog`。
+ * 字段以 SysJobLogVo 为准（无 jobName / jobMessage 等旧字段）。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	removeIds,
+	readStr
+} from "@/api/shared/page"
+import { request, RequestOptions } from "@/api/http"
+
+const BASE = "/job/jobLog"
+
+export type JobLogCatResult = {
+	fromLine : number
+	toLine : number
+	content : string
+	end : boolean
+	missing : boolean
+}
+
+export type JobLogPayload = {
+	id : string
+	jobId : string
+	triggerType : string
+	instanceId : string
+	heartbeatTime : string
+	jobParam : string
+	status : string
+	startTime : string
+	endTime : string
+	costMs : string
+	result : string
+	errorMsg : string
+}
+
+function emptyJobLog() : JobLogPayload {
+	return {
+		id: "",
+		jobId: "",
+		triggerType: "",
+		instanceId: "",
+		heartbeatTime: "",
+		jobParam: "",
+		status: "",
+		startTime: "",
+		endTime: "",
+		costMs: "",
+		result: "",
+		errorMsg: ""
+	} as JobLogPayload
+}
+
+export function mapJobLogRow(row : UTSJSONObject) : JobLogPayload {
+	return {
+		id: readStr(row, "id"),
+		jobId: readStr(row, "jobId"),
+		triggerType: readStr(row, "triggerType"),
+		instanceId: readStr(row, "instanceId"),
+		heartbeatTime: readStr(row, "heartbeatTime"),
+		jobParam: readStr(row, "jobParam"),
+		status: readStr(row, "status"),
+		startTime: readStr(row, "startTime"),
+		endTime: readStr(row, "endTime"),
+		costMs: readStr(row, "costMs"),
+		result: readStr(row, "result"),
+		errorMsg: readStr(row, "errorMsg")
+	} as JobLogPayload
+}
+
+export function pageJobLog(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapJobLogRow)
+}
+
+export function getJobLog(id : string) : Promise<JobLogPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapJobLogRow, emptyJobLog()) as Promise<JobLogPayload>
+}
+
+export function removeJobLog(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+/**
+ * 增量拉取过程日志（文件 cat）。
+ * @param id 日志 id
+ * @param fromLine 起始行（1-based）；之后传上次 toLine + 1
+ */
+export function catJobLog(id : string, fromLine : number) : Promise<JobLogCatResult> {
+	const fl = fromLine > 0 ? fromLine : 1
+	return request({
+		url: BASE + "/" + encodeURIComponent(id) + "/cat",
+		method: "GET",
+		query: "fromLine=" + fl,
+		needToken: true
+	} as RequestOptions).then((res) : JobLogCatResult => {
+		const data = res.getJSON("data")
+		if (data == null) {
+			return {
+				fromLine: fl,
+				toLine: fl - 1,
+				content: "",
+				end: true,
+				missing: true
+			} as JobLogCatResult
+		}
+		const fromN = data.getNumber("fromLine")
+		const toN = data.getNumber("toLine")
+		const endFlag = data.getBoolean("end")
+		const missFlag = data.getBoolean("missing")
+		return {
+			fromLine: fromN != null ? fromN : fl,
+			toLine: toN != null ? toN : (fl - 1),
+			content: readStr(data, "content"),
+			end: endFlag == true,
+			missing: missFlag == true
+		} as JobLogCatResult
+	})
+}

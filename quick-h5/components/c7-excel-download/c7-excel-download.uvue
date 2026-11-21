@@ -1,0 +1,87 @@
+<template>
+	<view class="c7-excel-download" @click="onClick">
+		<slot>
+			<rice-button
+				type="primary"
+				plain
+				shape="round"
+				:text="downloading ? '导出中…' : defaultLabel"
+				:loading="downloading"
+				:disabled="downloading"
+			></rice-button>
+		</slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7ExcelDownload（quick-h5）
+	 *
+	 * Excel 导出触发器：点击后调用 `downloadFn()`；成功/失败 toast，并透出
+	 * success(fileName) / error。默认插槽可完全替换外观。
+	 *
+	 * **v-model:downloading**
+	 * - 内外共享导出中状态；busy 期间忽略再次点击
+	 *
+	 * **文件名**
+	 * - success 事件携带：`fileName` 非空优先，否则 `defaultFileName`，再否则 export.xlsx
+	 * - 实际落盘/下载由 `downloadFn` 自行完成（本组件不写文件）
+	 */
+	defineOptions({ name: "C7ExcelDownload" })
+
+	const props = withDefaults(defineProps<{
+		/** 导出函数；null 时点击无操作 */
+		downloadFn : (() => Promise<any>) | null
+		/** 导出文件名（优先）；空则用 defaultFileName */
+		fileName : string
+		/** 默认文件名，回落 export.xlsx */
+		defaultFileName : string
+		/** 默认按钮文案（无插槽时） */
+		defaultLabel : string
+		/** v-model:downloading；导出进行中 */
+		downloading : boolean
+	}>(), {
+		downloadFn: null,
+		fileName: "",
+		defaultFileName: "export.xlsx",
+		defaultLabel: "导出",
+		downloading: false
+	})
+
+	const emit = defineEmits<{
+		/** 同步 downloading */
+		"update:downloading" : [v : boolean]
+		/** 导出成功，携带解析后的文件名 */
+		success : [fileName : string]
+		/** 导出失败 */
+		error : [err : any]
+	}>()
+
+	/** 与 v-model:downloading 双向同步 */
+	const busy = computed({
+		get : () : boolean => props.downloading,
+		set : (v : boolean) => emit("update:downloading", v)
+	})
+
+	/**
+	 * 点击导出：busy 守卫 → downloadFn → success/error + toast。
+	 */
+	async function onClick() {
+		const fn = props.downloadFn
+		if (fn == null || busy.value) {
+			return
+		}
+		busy.value = true
+		const name = props.fileName.length > 0 ? props.fileName : (props.defaultFileName.length > 0 ? props.defaultFileName : "export.xlsx")
+		try {
+			await fn()
+			emit("success", name)
+			uni.showToast({ title: "导出完成", icon: "none" })
+		} catch (e) {
+			emit("error", e)
+			uni.showToast({ title: "导出失败", icon: "none" })
+		} finally {
+			busy.value = false
+		}
+	}
+</script>

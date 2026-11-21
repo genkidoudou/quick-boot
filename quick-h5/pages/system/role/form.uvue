@@ -1,0 +1,894 @@
+<template>
+	<!-- 角色新增/编辑：对齐 quick-ui（菜单树 / 数据范围 / 可授权角色）；备注非必填 -->
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增角色"
+		edit-title="修改角色"
+		:show-delete="isEdit"
+		:add-button-permi="['system:role:add']"
+		:edit-button-permi="['system:role:edit']"
+		:delete-button-permi="['system:role:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="roleName" label="角色名称" required>
+				<rice-input
+					v-model="form['roleName']"
+					placeholder="请输入角色名称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="roleCode" label="角色编码" required>
+				<rice-input
+					v-model="form['roleCode']"
+					placeholder="请输入角色编码"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="roleSort" label="角色排序">
+				<rice-input
+					v-model="form['roleSort']"
+					placeholder="请输入排序"
+					clearable
+					:maxlength="10"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="dataScope" label="数据权限" required>
+				<c7-select
+					v-model="form['dataScope']"
+					:options="dataScopeOpts"
+					placeholder="请选择数据权限"
+				></c7-select>
+			</rice-form-item>
+
+			<!-- dataScope=2：自定义数据权限部门范围（默认不父子联动，对齐桌面） -->
+			<rice-form-item v-if="form['dataScope'] == '2'" name="deptIds" label="数据范围">
+				<view class="menu-panel">
+					<view class="menu-panel__bar">
+						<text class="menu-panel__act" @click="expandAllDepts">展开</text>
+						<text class="menu-panel__sep">·</text>
+						<text class="menu-panel__act" @click="collapseAllDepts">折叠</text>
+						<text class="menu-panel__sep">·</text>
+						<text class="menu-panel__act" @click="selectAllDepts">全选</text>
+						<text class="menu-panel__sep">·</text>
+						<text class="menu-panel__act" @click="clearAllDepts">全不选</text>
+					</view>
+					<rice-checkbox-group
+						v-model="form['deptIds']"
+						direction="column"
+						@change="onDeptChange"
+					>
+						<template v-for="(item, idx) in visibleDeptOpts" :key="idx">
+							<view class="menu-row" :style="menuRowStyle(item.depth)">
+								<text
+									v-if="item.hasChildren"
+									class="menu-row__arrow"
+									@click.stop="toggleDeptExpand(item.value)"
+								>{{ isDeptExpanded(item.value) ? "▼" : "▶" }}</text>
+								<text v-else class="menu-row__arrow menu-row__arrow--empty"></text>
+								<rice-checkbox
+									:label="item.label"
+									:value="item.value"
+									:custom-style="menuCheckStyle"
+								></rice-checkbox>
+							</view>
+						</template>
+					</rice-checkbox-group>
+					<text v-if="deptFlatOpts.length == 0" class="menu-panel__empty">暂无部门</text>
+				</view>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="menuIds" label="菜单权限">
+				<view class="menu-panel">
+					<view class="menu-panel__bar">
+						<text class="menu-panel__act" @click="expandAllMenus">展开</text>
+						<text class="menu-panel__sep">·</text>
+						<text class="menu-panel__act" @click="collapseAllMenus">折叠</text>
+						<text class="menu-panel__sep">·</text>
+						<text class="menu-panel__act" @click="selectAllMenus">全选</text>
+						<text class="menu-panel__sep">·</text>
+						<text class="menu-panel__act" @click="clearAllMenus">全不选</text>
+					</view>
+					<rice-checkbox-group
+						v-model="form['menuIds']"
+						direction="column"
+						@change="onMenuChange"
+					>
+						<template v-for="(item, idx) in visibleMenuOpts" :key="idx">
+							<view class="menu-row" :style="menuRowStyle(item.depth)">
+								<text
+									v-if="item.hasChildren"
+									class="menu-row__arrow"
+									@click.stop="toggleExpand(item.value)"
+								>{{ isExpanded(item.value) ? "▼" : "▶" }}</text>
+								<text v-else class="menu-row__arrow menu-row__arrow--empty"></text>
+								<rice-checkbox
+									:label="item.label"
+									:value="item.value"
+									:custom-style="menuCheckStyle"
+								></rice-checkbox>
+							</view>
+						</template>
+					</rice-checkbox-group>
+					<text v-if="menuFlatOpts.length == 0" class="menu-panel__empty">暂无菜单</text>
+				</view>
+			</rice-form-item>
+
+			<rice-form-item name="assignableRoleIds" label="可授权角色">
+				<c7-checkbox
+					v-model="form['assignableRoleIds']"
+					:data-list="assignableOpts"
+					label-key="roleName"
+					value-key="id"
+				></c7-checkbox>
+			</rice-form-item>
+
+			<!-- show-required=false：避免被 rice-form 的 show-required 全局带出红星 -->
+			<rice-form-item name="remark" label="备注" :show-required="false">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 角色新增 / 编辑（quick-h5）
+	 * 对齐 quick-ui：菜单权限（联动+折叠）、dataScope=2 部门范围、可授权角色；备注非必填。
+	 */
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import {
+		getRole,
+		addRole,
+		updateRole,
+		removeRole,
+		authRoleList,
+		RolePayload,
+		RoleOption
+	} from "@/api/system/role"
+	import { treeselectMenu } from "@/api/system/menu"
+	import { treeselectDept } from "@/api/system/dept"
+	import { readStr, toRowObject } from "@/api/shared/page"
+
+	type RoleFormModel = {
+		roleName : string
+		roleCode : string
+		roleSort : string
+		dataScope : string
+		status : string
+		remark : string
+		menuIds : string[]
+		assignableRoleIds : string[]
+		deptIds : string[]
+	}
+
+	type TreeFlatItem = {
+		label : string
+		value : string
+		depth : number
+		hasChildren : boolean
+	}
+
+	const dataScopeOpts = [
+		{ label: "全部数据权限", value: "1" } as UTSJSONObject,
+		{ label: "自定义数据权限", value: "2" } as UTSJSONObject,
+		{ label: "本部门数据权限", value: "3" } as UTSJSONObject,
+		{ label: "本部门及以下", value: "4" } as UTSJSONObject,
+		{ label: "仅本人", value: "5" } as UTSJSONObject
+	] as any[]
+
+	const id = ref("")
+	const form = ref({
+		roleName: "",
+		roleCode: "",
+		roleSort: "0",
+		dataScope: "1",
+		status: "0",
+		remark: "",
+		menuIds: [] as string[],
+		assignableRoleIds: [] as string[],
+		deptIds: [] as string[]
+	} as RoleFormModel)
+
+	const assignableOpts = ref([] as any[])
+
+	const menuFlatOpts = ref([] as TreeFlatItem[])
+	const expandedIds = ref([] as string[])
+	const menuChildren = new Map<string, string[]>()
+	const menuParent = new Map<string, string>()
+	let prevMenuIds : string[] = []
+	let menuCascading = false
+
+	const deptFlatOpts = ref([] as TreeFlatItem[])
+	const deptExpandedIds = ref([] as string[])
+	const deptChildren = new Map<string, string[]>()
+	const deptParent = new Map<string, string>()
+	let prevDeptIds : string[] = []
+	let deptCascading = false
+
+	const menuCheckStyle = {
+		marginBottom: "0px",
+		flex: "1"
+	} as UTSJSONObject
+
+	const formRules = new Map<string, FormRules[]>([
+		["roleName", [{ required: true, message: "角色名称不能为空", trigger: "blur" } as FormRules]],
+		["roleCode", [{ required: true, message: "角色编码不能为空", trigger: "blur" } as FormRules]],
+		["dataScope", [{ required: true, message: "数据权限不能为空", trigger: "change" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	function menuRowStyle(depth : number) : string {
+		return `padding-left:${4 + depth * 16}px`
+	}
+
+	function listHas(ids : string[], idVal : string) : boolean {
+		for (let i = 0; i < ids.length; i++) {
+			if (ids[i] == idVal) {
+				return true
+			}
+		}
+		return false
+	}
+
+	function copyIds(ids : string[]) : string[] {
+		const out : string[] = []
+		for (let i = 0; i < ids.length; i++) {
+			out.push(ids[i])
+		}
+		return out
+	}
+
+	function normalizeIds(raw : any) : string[] {
+		const out : string[] = []
+		if (raw == null) {
+			return out
+		}
+		if (Array.isArray(raw)) {
+			const arr = raw as any[]
+			for (let i = 0; i < arr.length; i++) {
+				const v = arr[i]
+				if (v != null) {
+					const s = `${v}`
+					if (s.length > 0 && !listHas(out, s)) {
+						out.push(s)
+					}
+				}
+			}
+			return out
+		}
+		const s = `${raw}`.trim()
+		if (s.length > 0) {
+			out.push(s)
+		}
+		return out
+	}
+
+	function readChildren(row : UTSJSONObject) : any[] {
+		let kids = row.getArray("children")
+		if (kids == null) {
+			const anyRow = row as any
+			const plain = anyRow["children"]
+			if (plain != null && Array.isArray(plain)) {
+				kids = plain as any[]
+			}
+		}
+		if (kids == null) {
+			return [] as any[]
+		}
+		return kids as any[]
+	}
+
+	function isExpandedIn(expanded : string[], idVal : string) : boolean {
+		return listHas(expanded, idVal)
+	}
+
+	function isVisibleIn(
+		item : TreeFlatItem,
+		expanded : string[],
+		parentMap : Map<string, string>
+	) : boolean {
+		if (item.depth == 0) {
+			return true
+		}
+		let cur = parentMap.get(item.value)
+		while (cur != null && cur.length > 0) {
+			if (!isExpandedIn(expanded, cur)) {
+				return false
+			}
+			cur = parentMap.get(cur)
+		}
+		return true
+	}
+
+	function isExpanded(idVal : string) : boolean {
+		return isExpandedIn(expandedIds.value, idVal)
+	}
+
+	function isDeptExpanded(idVal : string) : boolean {
+		return isExpandedIn(deptExpandedIds.value, idVal)
+	}
+
+	const visibleMenuOpts = computed(() : TreeFlatItem[] => {
+		const out : TreeFlatItem[] = []
+		const list = menuFlatOpts.value
+		for (let i = 0; i < list.length; i++) {
+			if (isVisibleIn(list[i], expandedIds.value, menuParent)) {
+				out.push(list[i])
+			}
+		}
+		return out
+	})
+
+	const visibleDeptOpts = computed(() : TreeFlatItem[] => {
+		const out : TreeFlatItem[] = []
+		const list = deptFlatOpts.value
+		for (let i = 0; i < list.length; i++) {
+			if (isVisibleIn(list[i], deptExpandedIds.value, deptParent)) {
+				out.push(list[i])
+			}
+		}
+		return out
+	})
+
+	function toggleExpandList(expanded : string[], idVal : string) : string[] {
+		if (listHas(expanded, idVal)) {
+			const next : string[] = []
+			for (let i = 0; i < expanded.length; i++) {
+				if (expanded[i] != idVal) {
+					next.push(expanded[i])
+				}
+			}
+			return next
+		}
+		const next = copyIds(expanded)
+		next.push(idVal)
+		return next
+	}
+
+	function toggleExpand(idVal : string) {
+		expandedIds.value = toggleExpandList(expandedIds.value, idVal)
+	}
+
+	function toggleDeptExpand(idVal : string) {
+		deptExpandedIds.value = toggleExpandList(deptExpandedIds.value, idVal)
+	}
+
+	function collectAllParents(list : TreeFlatItem[]) : string[] {
+		const ids : string[] = []
+		for (let i = 0; i < list.length; i++) {
+			if (list[i].hasChildren) {
+				ids.push(list[i].value)
+			}
+		}
+		return ids
+	}
+
+	function expandAllMenus() {
+		expandedIds.value = collectAllParents(menuFlatOpts.value)
+	}
+
+	function collapseAllMenus() {
+		expandedIds.value = [] as string[]
+	}
+
+	function expandAllDepts() {
+		deptExpandedIds.value = collectAllParents(deptFlatOpts.value)
+	}
+
+	function collapseAllDepts() {
+		deptExpandedIds.value = [] as string[]
+	}
+
+	function collectDescendants(
+		idVal : string,
+		childMap : Map<string, string[]>,
+		out : string[]
+	) {
+		const kids = childMap.get(idVal)
+		if (kids == null) {
+			return
+		}
+		for (let i = 0; i < kids.length; i++) {
+			const kid = kids[i]
+			if (!listHas(out, kid)) {
+				out.push(kid)
+			}
+			collectDescendants(kid, childMap, out)
+		}
+	}
+
+	function collectAncestors(
+		idVal : string,
+		parentMap : Map<string, string>,
+		out : string[]
+	) {
+		let cur = parentMap.get(idVal)
+		while (cur != null && cur.length > 0) {
+			if (!listHas(out, cur)) {
+				out.push(cur)
+			}
+			cur = parentMap.get(cur)
+		}
+	}
+
+	function syncPrevMenuIds(ids : string[]) {
+		prevMenuIds = copyIds(ids)
+	}
+
+	function setMenuIds(ids : string[]) {
+		menuCascading = true
+		form.value.menuIds = ids
+		syncPrevMenuIds(ids)
+		menuCascading = false
+	}
+
+	function syncPrevDeptIds(ids : string[]) {
+		prevDeptIds = copyIds(ids)
+	}
+
+	function setDeptIds(ids : string[]) {
+		deptCascading = true
+		form.value.deptIds = ids
+		syncPrevDeptIds(ids)
+		deptCascading = false
+	}
+
+	/** 部门树父子联动：取消父清子孙；勾父带子孙；勾子带祖先 */
+	function onDeptChange(v : any) {
+		if (deptCascading) {
+			return
+		}
+		const next = normalizeIds(v)
+		const prev = prevDeptIds
+		const added : string[] = []
+		const removed : string[] = []
+		for (let i = 0; i < next.length; i++) {
+			if (!listHas(prev, next[i])) {
+				added.push(next[i])
+			}
+		}
+		for (let i = 0; i < prev.length; i++) {
+			if (!listHas(next, prev[i])) {
+				removed.push(prev[i])
+			}
+		}
+		const result = copyIds(next)
+		for (let i = 0; i < removed.length; i++) {
+			const desc : string[] = []
+			collectDescendants(removed[i], deptChildren, desc)
+			const keep : string[] = []
+			for (let k = 0; k < result.length; k++) {
+				if (!listHas(desc, result[k])) {
+					keep.push(result[k])
+				}
+			}
+			result.splice(0, result.length)
+			for (let k = 0; k < keep.length; k++) {
+				result.push(keep[k])
+			}
+		}
+		for (let i = 0; i < added.length; i++) {
+			const aid = added[i]
+			const desc : string[] = []
+			collectDescendants(aid, deptChildren, desc)
+			for (let j = 0; j < desc.length; j++) {
+				if (!listHas(result, desc[j])) {
+					result.push(desc[j])
+				}
+			}
+			const anc : string[] = []
+			collectAncestors(aid, deptParent, anc)
+			for (let j = 0; j < anc.length; j++) {
+				if (!listHas(result, anc[j])) {
+					result.push(anc[j])
+				}
+			}
+		}
+		setDeptIds(result)
+	}
+
+	function onMenuChange(v : any) {
+		if (menuCascading) {
+			return
+		}
+		const next = normalizeIds(v)
+		const prev = prevMenuIds
+		const added : string[] = []
+		const removed : string[] = []
+		for (let i = 0; i < next.length; i++) {
+			if (!listHas(prev, next[i])) {
+				added.push(next[i])
+			}
+		}
+		for (let i = 0; i < prev.length; i++) {
+			if (!listHas(next, prev[i])) {
+				removed.push(prev[i])
+			}
+		}
+		const result = copyIds(next)
+		for (let i = 0; i < removed.length; i++) {
+			const desc : string[] = []
+			collectDescendants(removed[i], menuChildren, desc)
+			const keep : string[] = []
+			for (let k = 0; k < result.length; k++) {
+				if (!listHas(desc, result[k])) {
+					keep.push(result[k])
+				}
+			}
+			result.splice(0, result.length)
+			for (let k = 0; k < keep.length; k++) {
+				result.push(keep[k])
+			}
+		}
+		for (let i = 0; i < added.length; i++) {
+			const aid = added[i]
+			const desc : string[] = []
+			collectDescendants(aid, menuChildren, desc)
+			for (let j = 0; j < desc.length; j++) {
+				if (!listHas(result, desc[j])) {
+					result.push(desc[j])
+				}
+			}
+			const anc : string[] = []
+			collectAncestors(aid, menuParent, anc)
+			for (let j = 0; j < anc.length; j++) {
+				if (!listHas(result, anc[j])) {
+					result.push(anc[j])
+				}
+			}
+		}
+		setMenuIds(result)
+	}
+
+	function walkTree(
+		nodes : any[],
+		depth : number,
+		parentId : string,
+		out : TreeFlatItem[],
+		childMap : Map<string, string[]>,
+		parentMap : Map<string, string>,
+		labelKey : string,
+		idKey : string,
+		idKeyAlt : string
+	) {
+		for (let i = 0; i < nodes.length; i++) {
+			const row = toRowObject(nodes[i])
+			if (row == null) {
+				continue
+			}
+			let mid = readStr(row, idKey)
+			if (mid.length == 0 && idKeyAlt.length > 0) {
+				mid = readStr(row, idKeyAlt)
+			}
+			const name = readStr(row, labelKey)
+			const kids = readChildren(row)
+			if (mid.length > 0) {
+				out.push({
+					label: name.length > 0 ? name : mid,
+					value: mid,
+					depth: depth,
+					hasChildren: kids.length > 0
+				} as TreeFlatItem)
+				if (parentId.length > 0) {
+					parentMap.set(mid, parentId)
+					let sibs = childMap.get(parentId)
+					if (sibs == null) {
+						sibs = [] as string[]
+						childMap.set(parentId, sibs)
+					}
+					sibs.push(mid)
+				}
+			}
+			if (kids.length > 0 && mid.length > 0) {
+				walkTree(kids, depth + 1, mid, out, childMap, parentMap, labelKey, idKey, idKeyAlt)
+			} else if (kids.length > 0) {
+				walkTree(kids, depth + 1, parentId, out, childMap, parentMap, labelKey, idKey, idKeyAlt)
+			}
+		}
+	}
+
+	function loadMenuTree() {
+		treeselectMenu().then((tree) => {
+			menuChildren.clear()
+			menuParent.clear()
+			expandedIds.value = [] as string[]
+			const out : TreeFlatItem[] = []
+			walkTree(tree, 0, "", out, menuChildren, menuParent, "menuName", "id", "menuId")
+			menuFlatOpts.value = out
+		}).catch((_e) => {
+			menuFlatOpts.value = [] as TreeFlatItem[]
+			expandedIds.value = [] as string[]
+			menuChildren.clear()
+			menuParent.clear()
+			uni.showToast({ title: "菜单权限树加载失败", icon: "none" })
+		})
+	}
+
+	function loadDeptTree() {
+		treeselectDept().then((tree) => {
+			deptChildren.clear()
+			deptParent.clear()
+			deptExpandedIds.value = [] as string[]
+			const out : TreeFlatItem[] = []
+			walkTree(tree, 0, "", out, deptChildren, deptParent, "deptName", "id", "")
+			deptFlatOpts.value = out
+		}).catch((_e) => {
+			deptFlatOpts.value = [] as TreeFlatItem[]
+			deptExpandedIds.value = [] as string[]
+			deptChildren.clear()
+			deptParent.clear()
+			uni.showToast({ title: "部门树加载失败", icon: "none" })
+		})
+	}
+
+	function loadAssignableOpts(roleId : string) {
+		authRoleList(roleId).then((list : RoleOption[]) => {
+			const opts : any[] = []
+			for (let i = 0; i < list.length; i++) {
+				opts.push({
+					id: list[i].id,
+					roleName: list[i].roleName
+				} as UTSJSONObject)
+			}
+			assignableOpts.value = opts
+		}).catch((_e) => {
+			assignableOpts.value = [] as any[]
+		})
+	}
+
+	function selectAllMenus() {
+		const ids : string[] = []
+		const list = menuFlatOpts.value
+		for (let i = 0; i < list.length; i++) {
+			ids.push(list[i].value)
+		}
+		setMenuIds(ids)
+	}
+
+	function clearAllMenus() {
+		setMenuIds([] as string[])
+	}
+
+	function selectAllDepts() {
+		const ids : string[] = []
+		const list = deptFlatOpts.value
+		for (let i = 0; i < list.length; i++) {
+			ids.push(list[i].value)
+		}
+		setDeptIds(ids)
+	}
+
+	function clearAllDepts() {
+		setDeptIds([] as string[])
+	}
+
+	function applyForm(row : RolePayload) {
+		const menus = copyIds(row.menuIds)
+		const assignable = copyIds(row.assignableRoleIds)
+		const depts = copyIds(row.deptIds)
+		form.value = {
+			roleName: row.roleName,
+			roleCode: row.roleCode,
+			roleSort: row.roleSort.length > 0 ? row.roleSort : "0",
+			dataScope: row.dataScope.length > 0 ? row.dataScope : "1",
+			status: row.status.length > 0 ? row.status : "0",
+			remark: row.remark,
+			menuIds: menus,
+			assignableRoleIds: assignable,
+			deptIds: depts
+		} as RoleFormModel
+		syncPrevMenuIds(menus)
+		syncPrevDeptIds(depts)
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getRole(id.value).then((row) => {
+			applyForm(row)
+			loadAssignableOpts(id.value)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		loadMenuTree()
+		loadDeptTree()
+		if (query == null) {
+			loadAssignableOpts("")
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		} else {
+			loadAssignableOpts("")
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : RolePayload {
+		const f = form.value
+		return {
+			id: id.value,
+			roleName: f.roleName.trim(),
+			roleCode: f.roleCode.trim(),
+			roleSort: f.roleSort.trim().length > 0 ? f.roleSort.trim() : "0",
+			dataScope: f.dataScope,
+			status: f.status,
+			remark: f.remark.trim(),
+			menuIds: normalizeIds(f.menuIds),
+			assignableRoleIds: normalizeIds(f.assignableRoleIds),
+			deptIds: normalizeIds(f.deptIds)
+		} as RolePayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/role/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/role/index" })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateRole(payload) : addRole(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.roleName.length > 0 ? form.value.roleName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除角色「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				removeRole([id.value]).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>
+
+<style>
+	.menu-panel {
+		width: 100%;
+		padding: 8px 4px 4px;
+		border-radius: 12px;
+		background-color: rgba(142, 142, 147, 0.08);
+	}
+	.menu-panel__bar {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		flex-wrap: wrap;
+		margin-bottom: 8px;
+		padding: 0 4px;
+	}
+	.menu-panel__act {
+		font-size: 13px;
+		color: #007aff;
+		font-weight: 600;
+	}
+	.menu-panel__sep {
+		margin: 0 8px;
+		color: rgba(60, 60, 67, 0.35);
+	}
+	.menu-panel__empty {
+		font-size: 13px;
+		color: rgba(60, 60, 67, 0.45);
+		padding: 8px 4px;
+	}
+	.menu-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 6px;
+		width: 100%;
+	}
+	.menu-row__arrow {
+		width: 18px;
+		font-size: 10px;
+		color: rgba(60, 60, 67, 0.55);
+		text-align: center;
+		flex-shrink: 0;
+	}
+	.menu-row__arrow--empty {
+		opacity: 0;
+	}
+</style>

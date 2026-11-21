@@ -1,0 +1,44 @@
+/**
+ * rice-form ref 工具（与业务无关）。
+ * 蒸汽 H5 下 expose 可能在实例 / exposed / $.exposed / $vm.$.exposed。
+ */
+
+/**
+ * 解析实例上的 validate 方法；找不到返回 null。
+ * 不要用 $callMethod（方法未挂载时会硬报 method not found）。
+ */
+export function resolveRiceFormValidate(inst : any | null) : (() => Promise<any>) | null {
+	if (inst == null) {
+		return null
+	}
+	if (typeof inst.validate == "function") {
+		return () : Promise<any> => inst.validate() as Promise<any>
+	}
+	if (inst.exposed != null && typeof inst.exposed.validate == "function") {
+		return () : Promise<any> => inst.exposed.validate() as Promise<any>
+	}
+	if (inst.$ != null && inst.$.exposed != null && typeof inst.$.exposed.validate == "function") {
+		return () : Promise<any> => inst.$.exposed.validate() as Promise<any>
+	}
+	if (inst.$vm != null && inst.$vm.$ != null && inst.$vm.$.exposed != null
+		&& typeof inst.$vm.$.exposed.validate == "function") {
+		return () : Promise<any> => inst.$vm.$.exposed.validate() as Promise<any>
+	}
+	return null
+}
+
+/**
+ * 调用 rice-form.validate。
+ * @returns true 通过；false 未通过；null 未找到 validate（可走本地兜底）
+ */
+export function callRiceFormValidate(inst : any | null) : Promise<boolean | null> {
+	const fn = resolveRiceFormValidate(inst)
+	if (fn == null) {
+		return Promise.resolve(null)
+	}
+	return fn().then((result) : boolean | null => {
+		return result == true
+	}).catch((_e) : boolean | null => {
+		return false
+	})
+}

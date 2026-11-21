@@ -1,0 +1,169 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageJob"
+			:delete-function="removeJob"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['job:job:add']"
+			:edit-button-permi="['job:job:edit']"
+			:delete-button-permi="['job:job:remove']"
+			delete-label-prop="jobName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 定时任务列表：编辑 / 执行一次 / 启停 / 日志。
+	 */
+	import {
+		pageJob,
+		removeJob,
+		runJob,
+		changeJobStatus,
+		JobPayload
+	} from "@/api/job/job"
+	import { bindC7TablePage, callC7Table } from "@/components/c7-json-table/table-page.uts"
+	import { hasPermi } from "@/utils/permission"
+	import { c7Confirm } from "@/components/c7-message-box/index.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "jobName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "jobGroup", label: "分组", columnType: "tag", dictType: "JOB_GROUP" } as UTSJSONObject,
+		{ prop: "jobType", label: "类型", columnType: "tag", dictType: "JOB_TYPE" } as UTSJSONObject,
+		{ prop: "concurrent", label: "允许重叠", columnType: "tag", dictType: "COMMON_IS" } as UTSJSONObject,
+		{ prop: "cronExpression", label: "Cron" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "jobName", label: "任务名称", type: "input" } as UTSJSONObject,
+		{ prop: "jobGroup", label: "分组", type: "select", dictType: "JOB_GROUP" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function refreshTable() {
+		callC7Table(tableRef.value, "refreshData")
+	}
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/job/job/form" })
+	}
+
+	function goEdit(id : string) {
+		uni.navigateTo({ url: "/pages/job/job/form?id=" + encodeURIComponent(id) })
+	}
+
+	function goJobLog(id : string) {
+		uni.navigateTo({ url: "/pages/job/jobLog/index?jobId=" + encodeURIComponent(id) })
+	}
+
+	async function doRun(row : JobPayload) {
+		const name = row.jobName.length > 0 ? row.jobName : row.id
+		const r = await c7Confirm(`确认执行一次任务「${name}」？`, "提示")
+		if (r.action != "confirm") {
+			return
+		}
+		runJob(row.id).then(() => {
+			uni.showToast({ title: "已触发执行", icon: "success" })
+			refreshTable()
+		}).catch((_e) => {})
+	}
+
+	async function doToggle(row : JobPayload) {
+		const next = row.status == "0" ? "1" : "0"
+		const tip = next == "1" ? "停用" : "启用"
+		const name = row.jobName.length > 0 ? row.jobName : row.id
+		const r = await c7Confirm(`确认${tip}任务「${name}」？`, "提示")
+		if (r.action != "confirm") {
+			return
+		}
+		changeJobStatus(row.id, next).then(() => {
+			uni.showToast({ title: `已${tip}`, icon: "success" })
+			refreshTable()
+		}).catch((_e) => {})
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as JobPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		const canEdit = hasPermi(["job:job:edit"])
+		const canLog = hasPermi(["job:jobLog:list"])
+		const enabled = payload.status == "0"
+		const items : string[] = []
+		const actions : string[] = []
+		if (canEdit) {
+			items.push("执行一次")
+			actions.push("run")
+			items.push(enabled ? "停用" : "启用")
+			actions.push("toggle")
+			if (!enabled) {
+				items.push("修改")
+				actions.push("edit")
+			}
+		}
+		if (canLog) {
+			items.push("日志")
+			actions.push("log")
+		}
+		if (items.length == 0) {
+			if (!enabled) {
+				goEdit(payload.id)
+			}
+			return
+		}
+		uni.showActionSheet({
+			itemList: items,
+			success: (res) => {
+				const act = actions[res.tapIndex]
+				if (act == "run") {
+					doRun(payload)
+					return
+				}
+				if (act == "toggle") {
+					doToggle(payload)
+					return
+				}
+				if (act == "edit") {
+					goEdit(payload.id)
+					return
+				}
+				if (act == "log") {
+					goJobLog(payload.id)
+				}
+			}
+		})
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

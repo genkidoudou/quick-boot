@@ -1,0 +1,721 @@
+{
+  "generatedAt": "2026-11-16T03:04:26.924Z",
+  "lib": "e:\\workspace\\luyanan\\quick-boot\\quick-ui\\src\\packages",
+  "components": [
+    {
+      "name": "C7Button",
+      "kind": "component",
+      "props": [
+        "btnType",
+        "clickFunction",
+        "debounceDelay",
+        "confirm",
+        "confirmMessage",
+        "confirmFn",
+        "validate",
+        "validateRef",
+        "beforeClick",
+        "beforePipeline",
+        "checkSuccess",
+        "successMessage",
+        "successNotify",
+        "showErrorToast",
+        "errorMessage",
+        "label",
+        "type",
+        "plain",
+        "size",
+        "disabled"
+      ],
+      "events": [
+        "before-click",
+        "after-click",
+        "success",
+        "error"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7ButtonGroup",
+      "kind": "component",
+      "props": [
+        "buttons",
+        "mode",
+        "maxVisible",
+        "spacing",
+        "size",
+        "responsive",
+        "moreText",
+        "moreIcon",
+        "moreButtonType",
+        "moreButtonPlain",
+        "trigger"
+      ],
+      "events": [
+        "before-command",
+        "after-command"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Card",
+      "kind": "component",
+      "props": [
+        "label",
+        "textSize",
+        "isBold",
+        "showColorBlock",
+        "isShowColorBlock",
+        "colorBlockColor",
+        "collapsible",
+        "defaultExpanded",
+        "modelValue",
+        "expandText",
+        "collapseText",
+        "shadow"
+      ],
+      "events": [
+        "update:modelValue",
+        "change"
+      ],
+      "expose": [
+        "toggle",
+        "expand",
+        "collapse"
+      ]
+    },
+    {
+      "name": "C7CardGrid",
+      "kind": "component",
+      "props": [
+        "listFunction",
+        "searchColumns",
+        "defaultSearchParam",
+        "rowsKey",
+        "totalKey",
+        "rowKey",
+        "pageSizes",
+        "defaultPageSize",
+        "emptyText",
+        "minCardWidth",
+        "gridGap",
+        "showToolbar",
+        "showSearchButton",
+        "showResetButton",
+        "searchButtonText",
+        "resetButtonText",
+        "searchButtonProps",
+        "resetButtonProps",
+        "onSearch",
+        "onReset",
+        "beforeFetch",
+        "showAddButton",
+        "addButtonPermi",
+        "addButtonText",
+        "addButtonProps",
+        "onAdd",
+        "showAddCard",
+        "addCardPermi",
+        "addCardText",
+        "onAddCard"
+      ],
+      "events": [
+        "update:searchParam",
+        "before-fetch",
+        "after-fetch",
+        "fetch-error",
+        "add-click",
+        "add-card-click",
+        "search-submit",
+        "search-reset"
+      ],
+      "expose": [
+        "refreshData",
+        "getDataList",
+        "searchParam",
+        "currentPage",
+        "currentPageSize",
+        "total",
+        "cardRows"
+      ]
+    },
+    {
+      "name": "C7Cascader",
+      "kind": "component",
+      "props": [
+        "dataList",
+        "options",
+        "fetchData",
+        "fetchParams",
+        "resultKey",
+        "dataFormatter",
+        "autoLoad",
+        "lazy",
+        "rootParentId",
+        "multiple",
+        "separator",
+        "labelKey",
+        "valueKey",
+        "childrenKey",
+        "valueType"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "load-error",
+        "visible-change",
+        "loading-change"
+      ],
+      "expose": [
+        "loading",
+        "reload",
+        "cascaderRef"
+      ]
+    },
+    {
+      "name": "C7Checkbox",
+      "kind": "component",
+      "props": [
+        "dataList",
+        "fetchData",
+        "fetchParams",
+        "resultKey",
+        "dataFormatter",
+        "labelKey",
+        "valueKey",
+        "autoLoad",
+        "joinValue",
+        "showSelectAll",
+        "indeterminate",
+        "min",
+        "max",
+        "disabled",
+        "checkboxStyle"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "loading-change"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Copy",
+      "kind": "component",
+      "props": [
+        "text",
+        "getCopyText",
+        "mode",
+        "disabled",
+        "showMessage",
+        "notify",
+        "beforeCopy",
+        "afterCopy",
+        "buttonText",
+        "buttonType",
+        "iconButtonType",
+        "iconLabel",
+        "successMessage",
+        "errorMessagePrefix"
+      ],
+      "events": [
+        "copy",
+        "success",
+        "error"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7DatePicker",
+      "kind": "component",
+      "props": [
+        "modelValue",
+        "rangeMerge",
+        "mergeDelimiter"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "blur",
+        "focus"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Descriptions",
+      "kind": "component",
+      "props": [
+        "data",
+        "items",
+        "defaultEmptyText"
+      ],
+      "events": [],
+      "expose": []
+    },
+    {
+      "name": "C7Dialog",
+      "kind": "component",
+      "props": [
+        "modelValue",
+        "visible",
+        "mode",
+        "title",
+        "footer",
+        "cancelText",
+        "confirmText",
+        "confirmLoading",
+        "onConfirm",
+        "width",
+        "size",
+        "mobileMode",
+        "modalProps"
+      ],
+      "events": [
+        "update:modelValue",
+        "update:visible",
+        "open",
+        "opened",
+        "close",
+        "closed",
+        "cancel",
+        "confirm",
+        "submit"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7DictTag",
+      "kind": "component",
+      "props": [
+        "modelValue",
+        "options",
+        "separator",
+        "showValue",
+        "max",
+        "collapse",
+        "dictType",
+        "size",
+        "effect",
+        "round"
+      ],
+      "events": [],
+      "expose": []
+    },
+    {
+      "name": "C7ExcelDownload",
+      "kind": "component",
+      "props": [
+        "downloadFn",
+        "fileName",
+        "defaultFileName",
+        "notify",
+        "defaultLabel"
+      ],
+      "events": [
+        "success",
+        "error"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7ExcelUpload",
+      "kind": "component",
+      "props": [
+        "accept",
+        "maxSizeMb",
+        "uploadFn",
+        "notify",
+        "templateDownloadFn",
+        "templateFileName",
+        "errorFileName"
+      ],
+      "events": [
+        "success",
+        "error",
+        "cancel"
+      ],
+      "expose": [
+        "uploading",
+        "reset"
+      ]
+    },
+    {
+      "name": "C7FormDialog",
+      "kind": "component",
+      "props": [
+        "form",
+        "formRef",
+        "getPayload",
+        "submit",
+        "isEdit",
+        "successMessage",
+        "onSuccess"
+      ],
+      "events": [],
+      "expose": [
+        "open",
+        "confirm"
+      ]
+    },
+    {
+      "name": "C7FormLabel",
+      "kind": "component",
+      "props": [
+        "text",
+        "tip"
+      ],
+      "events": [],
+      "expose": []
+    },
+    {
+      "name": "C7JsonTable",
+      "kind": "component",
+      "props": [
+        "listFunction",
+        "tableColumns",
+        "searchColumns",
+        "defaultSearchParam",
+        "rowsKey",
+        "totalKey",
+        "rowKey",
+        "border",
+        "stripe",
+        "showSelection",
+        "showIndex",
+        "columnSettingKey",
+        "deleteFunction",
+        "exportFunction",
+        "exportDefaultFileName",
+        "exportLoadingOptions",
+        "importFunction",
+        "importTemplateDownloadFn",
+        "importTemplateFileName",
+        "importMaxSizeMb",
+        "beforeDelete",
+        "checkDeleteSuccess",
+        "deleteConfirmMessage",
+        "emptyText",
+        "pageSizes",
+        "lazy",
+        "load",
+        "treeProps",
+        "beforeFetch",
+        "showSearchButton",
+        "showResetButton",
+        "searchButtonText",
+        "resetButtonText",
+        "searchButtonProps",
+        "resetButtonProps",
+        "onSearch",
+        "onReset",
+        "showAddButton",
+        "showEditButton",
+        "showDeleteButton",
+        "showExportButton",
+        "showImportButton",
+        "addButtonPermi",
+        "editButtonPermi",
+        "deleteButtonPermi",
+        "exportButtonPermi",
+        "importButtonPermi",
+        "addButtonText",
+        "editButtonText",
+        "deleteButtonText",
+        "exportButtonText",
+        "importButtonText",
+        "addButtonProps",
+        "editButtonProps",
+        "deleteButtonProps",
+        "onAdd",
+        "onEdit"
+      ],
+      "events": [
+        "update:searchParam",
+        "before-fetch",
+        "after-fetch",
+        "fetch-error",
+        "selection-change",
+        "sort-change",
+        "delete-success",
+        "export-success",
+        "import-success",
+        "add-click",
+        "edit-click",
+        "search-submit",
+        "search-reset"
+      ],
+      "expose": [
+        "refreshData",
+        "getDataList",
+        "selectedRows",
+        "searchParam",
+        "currentPage",
+        "currentPageSize",
+        "total",
+        "tableRef"
+      ]
+    },
+    {
+      "name": "C7JsonTableColumn",
+      "kind": "component",
+      "props": [
+        "columns",
+        "emptyText"
+      ],
+      "events": [],
+      "expose": []
+    },
+    {
+      "name": "C7MessageBox",
+      "kind": "api",
+      "props": [
+        "setMessageBoxDefaults",
+        "mergeMessageBoxOptions",
+        "mapMessageBoxResolve",
+        "mapMessageBoxReject",
+        "splitTitleAndOptions",
+        "c7Confirm",
+        "c7Alert",
+        "c7Prompt",
+        "c7DangerConfirm",
+        "c7Loading"
+      ],
+      "events": [],
+      "expose": []
+    },
+    {
+      "name": "C7Pagination",
+      "kind": "component",
+      "props": [
+        "currentPage",
+        "pageSize",
+        "total",
+        "pageSizes",
+        "layout",
+        "autoReset"
+      ],
+      "events": [
+        "update:currentPage",
+        "update:pageSize",
+        "current-change",
+        "size-change",
+        "prev-click",
+        "next-click",
+        "change"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Preview",
+      "kind": "component",
+      "props": [
+        "urls",
+        "displayType",
+        "autoDetect",
+        "coverType",
+        "width",
+        "height",
+        "previewText",
+        "videoDialogTitle",
+        "onPreview"
+      ],
+      "events": [
+        "preview",
+        "close"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Radio",
+      "kind": "component",
+      "props": [
+        "dataList",
+        "options",
+        "fetchData",
+        "fetchParams",
+        "resultKey",
+        "dataFormatter",
+        "labelKey",
+        "valueKey",
+        "autoLoad",
+        "radioStyle",
+        "fetchErrorBehavior",
+        "invalidModelBehavior",
+        "emptyDisplay",
+        "emptyText",
+        "suppressInvalidModelDevWarn"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "loading-change"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Select",
+      "kind": "component",
+      "props": [
+        "dataList",
+        "options",
+        "fetchData",
+        "fetchParams",
+        "resultKey",
+        "dataFormatter",
+        "labelKey",
+        "valueKey",
+        "autoLoad",
+        "remote",
+        "reloadOnClear",
+        "separator",
+        "multiple"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "visible-change",
+        "loading-change"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Switch",
+      "kind": "component",
+      "props": [
+        "modelValue",
+        "activeValue",
+        "inactiveValue",
+        "activeText",
+        "inactiveText",
+        "dictList",
+        "confirmFn",
+        "confirmMessage",
+        "asyncChange",
+        "afterChange",
+        "beforeChange",
+        "disabled",
+        "activeColor",
+        "inactiveColor",
+        "loading"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "cancel"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7TimePicker",
+      "kind": "component",
+      "props": [
+        "modelValue",
+        "rangeMerge",
+        "mergeDelimiter"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "blur",
+        "focus"
+      ],
+      "expose": []
+    },
+    {
+      "name": "C7Title",
+      "kind": "component",
+      "props": [
+        "tag",
+        "label",
+        "title",
+        "labelSize",
+        "decorationColor",
+        "labelColor",
+        "showBorder",
+        "icon"
+      ],
+      "events": [],
+      "expose": []
+    },
+    {
+      "name": "C7TreeSelect",
+      "kind": "component",
+      "props": [
+        "dataList",
+        "options",
+        "fetchData",
+        "fetchParams",
+        "resultKey",
+        "dataFormatter",
+        "autoLoad",
+        "multiple",
+        "separator",
+        "labelKey",
+        "valueKey",
+        "childrenKey",
+        "valueType"
+      ],
+      "events": [
+        "update:modelValue",
+        "change",
+        "load-error",
+        "visible-change",
+        "loading-change"
+      ],
+      "expose": [
+        "loading",
+        "reload",
+        "treeSelectRef"
+      ]
+    },
+    {
+      "name": "C7Upload",
+      "kind": "component",
+      "props": [
+        "classify",
+        "autoUpload",
+        "disabled",
+        "uploadFn"
+      ],
+      "events": [
+        "success",
+        "error",
+        "change"
+      ],
+      "expose": [
+        "submit",
+        "clearFiles",
+        "getFiles",
+        "reloadRule"
+      ]
+    },
+    {
+      "name": "C7Watermark",
+      "kind": "component",
+      "props": [
+        "text",
+        "image",
+        "fullscreen",
+        "fullscreenScope",
+        "disabled",
+        "tamperResistant",
+        "editable",
+        "zIndex",
+        "crossOrigin",
+        "fontSize",
+        "fontColor",
+        "fontFamily",
+        "opacity",
+        "rotate",
+        "gapX",
+        "gapY",
+        "width",
+        "height",
+        "offsetX",
+        "offsetY"
+      ],
+      "events": [],
+      "expose": []
+    }
+  ]
+}

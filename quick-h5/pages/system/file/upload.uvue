@@ -1,0 +1,222 @@
+<template>
+	<view class="page">
+		<view class="card">
+			<text class="title">上传文件</text>
+			<text class="tip">走 multipart：`POST /sys/file/upload/{classifyCode}`</text>
+			<rice-form label-position="top" :border-bottom="false">
+				<rice-form-item name="classifyCode" label="上传分类" required>
+					<c7-select
+						v-model="classifyCode"
+						:options="classifyOpts"
+						placeholder="请选择分类"
+					></c7-select>
+				</rice-form-item>
+			</rice-form>
+			<text v-if="hint.length > 0" class="hint">{{ hint }}</text>
+			<view class="btn" @click="onPick">
+				<text class="btn-t">{{ uploading ? "上传中…" : "选择并上传" }}</text>
+			</view>
+			<view class="btn ghost" @click="goList">
+				<text class="btn-t ghost-t">返回列表</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 上传页：分类下拉 + chooseImage / chooseFile + uploadFile。
+	 */
+	import {
+		uploadFile,
+		listUploadClassifies,
+		FileClassifyOption
+	} from "@/api/system/file"
+
+	const classifyCode = ref("")
+	const uploading = ref(false)
+	const classifyOpts = ref([] as any[])
+	const classifyMeta = ref([] as FileClassifyOption[])
+
+	const hint = computed(() : string => {
+		const code = classifyCode.value
+		if (code.length == 0) {
+			return ""
+		}
+		for (let i = 0; i < classifyMeta.value.length; i++) {
+			const c = classifyMeta.value[i]
+			if (c.classifyCode == code) {
+				const ext = c.allowExt.length > 0 ? c.allowExt : "—"
+				const max = c.maxCount.length > 0 ? c.maxCount : "1"
+				return "后缀 " + ext + "，每次最多 " + max + " 个"
+			}
+		}
+		return ""
+	})
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/file/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/file/index" })
+			}
+		})
+	}
+
+	onLoad((_q) => {
+		listUploadClassifies().then((list) => {
+			classifyMeta.value = list
+			const opts : any[] = []
+			for (let i = 0; i < list.length; i++) {
+				const c = list[i]
+				opts.push({
+					label: c.classifyName + "（" + c.classifyCode + "）",
+					value: c.classifyCode
+				} as UTSJSONObject)
+			}
+			classifyOpts.value = opts
+			if (classifyCode.value.length == 0 && list.length > 0) {
+				classifyCode.value = list[0].classifyCode
+			}
+		}).catch((_e) => {})
+	})
+
+	function doUpload(path : string) {
+		const code = classifyCode.value.trim()
+		if (code.length == 0) {
+			uni.showToast({ title: "请选择分类", icon: "none" })
+			return
+		}
+		if (uploading.value) {
+			return
+		}
+		uploading.value = true
+		uploadFile(path, code).then(() => {
+			uploading.value = false
+			uni.showToast({ title: "上传成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			uploading.value = false
+		})
+	}
+
+	function onPick() {
+		if (uploading.value) {
+			return
+		}
+		if (classifyCode.value.trim().length == 0) {
+			uni.showToast({ title: "请选择分类", icon: "none" })
+			return
+		}
+		uni.showActionSheet({
+			itemList: ["从相册选图", "选任意文件"] as string[],
+			success: (res) => {
+				if (res.tapIndex == 0) {
+					uni.chooseImage({
+						count: 1,
+						success: (r) => {
+							const paths = r.tempFilePaths
+							if (paths != null && paths.length > 0) {
+								doUpload(paths[0])
+							}
+						},
+						fail: (_e) => {
+							uni.showToast({ title: "未选择文件", icon: "none" })
+						}
+					})
+					return
+				}
+				if (res.tapIndex == 1) {
+					// #ifdef H5
+					uni.chooseFile({
+						count: 1,
+						success: (r) => {
+							const paths = r.tempFilePaths
+							if (paths != null && paths.length > 0) {
+								doUpload(paths[0])
+								return
+							}
+							const files = r.tempFiles
+							if (files != null && files.length > 0) {
+								const f = files[0] as UTSJSONObject
+								const p = f["path"]
+								if (p != null && `${p}`.length > 0) {
+									doUpload(`${p}`)
+								}
+							}
+						},
+						fail: (_e) => {
+							uni.showToast({ title: "当前端不支持选任意文件，请用相册", icon: "none" })
+						}
+					})
+					// #endif
+					// #ifndef H5
+					uni.showToast({ title: "请用相册选图，或到 H5 端选任意文件", icon: "none" })
+					// #endif
+				}
+			}
+		})
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+		padding: 16px;
+	}
+	.card {
+		border-radius: 16px;
+		padding: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: column;
+	}
+	.title {
+		font-size: 17px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		margin-bottom: 6px;
+	}
+	.tip {
+		font-size: 12px;
+		color: #8e8e93;
+		margin-bottom: 12px;
+	}
+	.hint {
+		font-size: 12px;
+		color: #8e8e93;
+		margin-bottom: 4px;
+	}
+	.btn {
+		margin-top: 12px;
+		height: 44px;
+		border-radius: 12px;
+		background-color: #007aff;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.btn-t {
+		font-size: 15px;
+		font-weight: 600;
+		color: #ffffff;
+	}
+	.ghost {
+		background-color: rgba(0, 122, 255, 0.1);
+	}
+	.ghost-t {
+		color: #007aff;
+	}
+</style>

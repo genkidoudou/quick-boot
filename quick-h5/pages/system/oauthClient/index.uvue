@@ -1,0 +1,128 @@
+<template>
+	<!-- Soft Glass 列表视觉由 C7JsonTable 内置；本页只配业务 props -->
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageOauthClient"
+			:delete-function="removeOauthClient"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:oauthClient:add']"
+			:edit-button-permi="['system:oauthClient:edit']"
+			:delete-button-permi="['system:oauthClient:remove']"
+			delete-label-prop="clientName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * OAuth 客户端列表：编辑 / 查看凭证。
+	 */
+	import {
+		pageOauthClient,
+		removeOauthClient,
+		OauthClientPayload
+	} from "@/api/system/oauthClient"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+	import { hasPermi } from "@/utils/permission"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "clientName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "clientId", label: "客户端ID" } as UTSJSONObject,
+		{ prop: "clientType", label: "类型", emptyText: "—" } as UTSJSONObject,
+		{ prop: "grantTypes", label: "授权类型", emptyText: "—" } as UTSJSONObject,
+		{ prop: "apiPathPatterns", label: "接口路径", emptyText: "—" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "clientId", label: "客户端ID", type: "input" } as UTSJSONObject,
+		{ prop: "clientName", label: "客户端名称", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/system/oauthClient/form" })
+	}
+
+	function goEdit(id : string) {
+		uni.navigateTo({ url: "/pages/system/oauthClient/form?id=" + encodeURIComponent(id) })
+	}
+
+	function goCredential(id : string) {
+		uni.navigateTo({ url: "/pages/system/oauthClient/credential?id=" + encodeURIComponent(id) })
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as OauthClientPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		const canEdit = hasPermi(["system:oauthClient:edit"])
+		const canQuery = hasPermi(["system:oauthClient:query"])
+		const items : string[] = []
+		const actions : string[] = []
+		if (canEdit) {
+			items.push("编辑")
+			actions.push("edit")
+		}
+		if (canQuery) {
+			items.push("查看凭证")
+			actions.push("cred")
+		}
+		if (items.length == 0) {
+			goEdit(payload.id)
+			return
+		}
+		if (items.length == 1) {
+			if (actions[0] == "edit") {
+				goEdit(payload.id)
+			} else {
+				goCredential(payload.id)
+			}
+			return
+		}
+		uni.showActionSheet({
+			itemList: items,
+			success: (res) => {
+				const act = actions[res.tapIndex]
+				if (act == "edit") {
+					goEdit(payload.id)
+					return
+				}
+				if (act == "cred") {
+					goCredential(payload.id)
+				}
+			}
+		})
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

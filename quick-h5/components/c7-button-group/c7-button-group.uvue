@@ -1,0 +1,275 @@
+<template>
+	<view class="c7-button-group">
+		<template v-for="(btn, idx) in visibleButtons" :key="idx">
+			<c7-button
+				:label="btnLabel(btn)"
+				:btn-type="btnTypeOf(btn)"
+				:type="btnTypeAttr(btn)"
+				:confirm="btnConfirm(btn)"
+				:confirm-message="btnConfirmMsg(btn)"
+				:click-function="btnClick(btn)"
+				@before-click="onBefore(btn)"
+				@after-click="(ok : boolean) => onAfter(btn, ok)"
+			></c7-button>
+		</template>
+		<text
+			v-if="moreButtons.length > 0"
+			class="c7-button-group__more"
+			@click="openMore"
+		>{{ moreText }}</text>
+		<slot></slot>
+		<rice-action-sheet
+			v-model:show="moreShow"
+			:actions="moreActions"
+			@select="onMoreSelect"
+		></rice-action-sheet>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7ButtonGroup（quick-h5）
+	 *
+	 * 数据驱动一组 `C7Button`：按 `mode` / `maxVisible` 决定内联展示与「更多」收纳；
+	 * 多余操作进 `rice-action-sheet`。
+	 *
+	 * **mode**
+	 * - `auto`（默认）：前 `maxVisible` 个内联，其余进更多
+	 * - `inline`：全部内联，无更多
+	 * - `dropdown`：全部进更多，无内联按钮
+	 *
+	 * **buttons 项约定（UTSJSONObject）**
+	 * - `label` / `text`：文案
+	 * - `btnType` / `type` / `confirm` / `confirmMessage`
+	 * - `clickFunction` 或 `onClick`：点击回调
+	 * - `hidden=true`：跳过该项
+	 *
+	 * **事件**
+	 * - `before-command` / `after-command`：内联与更多共用（更多里自行 await 回调）
+	 *
+	 * **注意**：`size` / `spacing` / `moreButtonType` 预留对齐桌面 API，当前 UI 未透传。
+	 */
+	defineOptions({ name: "C7ButtonGroup" })
+
+	const props = withDefaults(defineProps<{
+		/** 按钮配置数组；项为对象，见顶部说明；null/非数组视为空 */
+		buttons : any | null
+		/** 展示模式：auto | inline | dropdown */
+		mode : string
+		/** auto 模式下内联最大个数；≤0 时按 1 处理 */
+		maxVisible : number
+		/** 间距语义（预留，当前样式用固定 gap） */
+		spacing : string
+		/** 透传尺寸语义（预留，当前未传给子按钮） */
+		size : string
+		/** 「更多」入口文案 */
+		moreText : string
+		/** 更多按钮类型语义（预留） */
+		moreButtonType : string
+	}>(), {
+		buttons: null,
+		mode: "auto",
+		maxVisible: 2,
+		spacing: "md",
+		size: "",
+		moreText: "更多",
+		moreButtonType: "default"
+	})
+
+	const emit = defineEmits<{
+		/** 任一命令执行前（含更多里选中） */
+		"before-command" : [item : any]
+		/** 命令结束；payload: { item, success } */
+		"after-command" : [payload : UTSJSONObject]
+	}>()
+
+	/** 更多 action-sheet 是否展示 */
+	const moreShow = ref(false)
+
+	/** 过滤 hidden 后的全部按钮 */
+	const allButtons = computed(() : any[] => {
+		if (props.buttons == null || !Array.isArray(props.buttons)) {
+			return []
+		}
+		const arr = props.buttons as any[]
+		const out : any[] = []
+		for (let i = 0; i < arr.length; i++) {
+			const b = arr[i]
+			if (b == null) {
+				continue
+			}
+			const o = b as UTSJSONObject
+			if (o["hidden"] == true) {
+				continue
+			}
+			out.push(b)
+		}
+		return out
+	})
+
+	/** 内联可见按钮（按 mode / maxVisible） */
+	const visibleButtons = computed(() : any[] => {
+		if (props.mode == "dropdown") {
+			return []
+		}
+		if (props.mode == "inline") {
+			return allButtons.value
+		}
+		const max = props.maxVisible > 0 ? props.maxVisible : 1
+		return allButtons.value.slice(0, max)
+	})
+
+	/** 收纳进「更多」的按钮 */
+	const moreButtons = computed(() : any[] => {
+		if (props.mode == "inline") {
+			return []
+		}
+		if (props.mode == "dropdown") {
+			return allButtons.value
+		}
+		const max = props.maxVisible > 0 ? props.maxVisible : 1
+		return allButtons.value.slice(max)
+	})
+
+	/** rice-action-sheet 的 actions（name + index） */
+	const moreActions = computed(() : any[] => {
+		const out : any[] = []
+		for (let i = 0; i < moreButtons.value.length; i++) {
+			out.push({
+				name: btnLabel(moreButtons.value[i]),
+				index: i
+			} as UTSJSONObject)
+		}
+		return out
+	})
+
+	/** 安全转为 UTSJSONObject */
+	function asObj(btn : any) : UTSJSONObject | null {
+		if (btn == null) {
+			return null
+		}
+		return btn as UTSJSONObject
+	}
+
+	/** 读取 label，其次 text */
+	function btnLabel(btn : any) : string {
+		const o = asObj(btn)
+		if (o == null) {
+			return ""
+		}
+		const l = o["label"]
+		if (l != null) {
+			return `${l}`
+		}
+		const t = o["text"]
+		return t != null ? `${t}` : ""
+	}
+
+	/** 读取 btnType（语义类型，交给 C7Button） */
+	function btnTypeOf(btn : any) : string {
+		const o = asObj(btn)
+		if (o == null) {
+			return ""
+		}
+		const t = o["btnType"]
+		return t != null ? `${t}` : ""
+	}
+
+	/** 读取 type（rice-button 外观类型） */
+	function btnTypeAttr(btn : any) : string {
+		const o = asObj(btn)
+		if (o == null) {
+			return ""
+		}
+		const t = o["type"]
+		return t != null ? `${t}` : ""
+	}
+
+	/** 是否需要确认 */
+	function btnConfirm(btn : any) : boolean {
+		const o = asObj(btn)
+		return o != null && o["confirm"] == true
+	}
+
+	/** 确认文案；缺省「确定执行该操作？」 */
+	function btnConfirmMsg(btn : any) : string {
+		const o = asObj(btn)
+		if (o == null) {
+			return "确定执行该操作？"
+		}
+		const m = o["confirmMessage"]
+		return m != null ? `${m}` : "确定执行该操作？"
+	}
+
+	/** 点击回调：优先 clickFunction，其次 onClick */
+	function btnClick(btn : any) : (() => Promise<any> | any) | null {
+		const o = asObj(btn)
+		if (o == null) {
+			return null
+		}
+		const fn = o["clickFunction"]
+		if (fn != null && typeof fn == "function") {
+			return fn as () => Promise<any> | any
+		}
+		const onClick = o["onClick"]
+		if (onClick != null && typeof onClick == "function") {
+			return onClick as () => Promise<any> | any
+		}
+		return null
+	}
+
+	/** 内联按钮 before-click → before-command */
+	function onBefore(btn : any) {
+		emit("before-command", btn)
+	}
+
+	/** 内联按钮 after-click → after-command */
+	function onAfter(btn : any, ok : boolean) {
+		emit("after-command", { item: btn, success: ok } as UTSJSONObject)
+	}
+
+	/** 打开更多 action-sheet */
+	function openMore() {
+		moreShow.value = true
+	}
+
+	/**
+	 * 更多项选中：关闭 sheet → before-command → 执行回调 → after-command。
+	 * 注意：更多路径不走 C7Button 的确认/防抖，由配置方自行处理。
+	 */
+	async function onMoreSelect(_action : any, index : number) {
+		moreShow.value = false
+		const idx = index
+		if (idx < 0 || idx >= moreButtons.value.length) {
+			return
+		}
+		const btn = moreButtons.value[idx]
+		onBefore(btn)
+		const fn = btnClick(btn)
+		if (fn == null) {
+			onAfter(btn, true)
+			return
+		}
+		try {
+			await fn()
+			onAfter(btn, true)
+		} catch (_e) {
+			onAfter(btn, false)
+		}
+	}
+</script>
+
+<style>
+	.c7-button-group {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+	.c7-button-group__more {
+		font-size: 14px;
+		color: #007aff;
+		padding: 6px 10px;
+	}
+</style>

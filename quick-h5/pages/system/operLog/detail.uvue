@@ -1,0 +1,191 @@
+<template>
+	<!-- 操作日志详情：只读，无保存/删除 -->
+	<c7-form-page
+		:loading="loading"
+		:is-edit="true"
+		edit-title="操作日志详情"
+		:show-save="false"
+		:show-delete="false"
+	>
+		<view class="kv">
+			<view class="kv-row">
+				<text class="k">操作人</text>
+				<text class="v">{{ detail.operName.length > 0 ? detail.operName : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">状态</text>
+				<c7-dict-tag :value="detail.status" dict-type="OPER_STATUS"></c7-dict-tag>
+			</view>
+			<view class="kv-row">
+				<text class="k">请求方式</text>
+				<text class="v">{{ detail.requestMethod.length > 0 ? detail.requestMethod : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">耗时(ms)</text>
+				<text class="v">{{ detail.costTime.length > 0 ? detail.costTime : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">URL</text>
+				<text class="v">{{ detail.operUrl.length > 0 ? detail.operUrl : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">方法</text>
+				<text class="v">{{ detail.method.length > 0 ? detail.method : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">IP</text>
+				<text class="v">{{ detail.ipAddr.length > 0 ? detail.ipAddr : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">地点</text>
+				<text class="v">{{ detail.loginLocation.length > 0 ? detail.loginLocation : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">浏览器</text>
+				<text class="v">{{ detail.browser.length > 0 ? detail.browser : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">操作系统</text>
+				<text class="v">{{ detail.os.length > 0 ? detail.os : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">客户端</text>
+				<text class="v">{{ detail.clientId.length > 0 ? detail.clientId : "—" }}</text>
+			</view>
+			<view class="kv-row">
+				<text class="k">操作时间</text>
+				<text class="v">{{ detail.operTime.length > 0 ? detail.operTime : "—" }}</text>
+			</view>
+			<view class="kv-row" @click="copyText(detail.traceId, '链路ID')">
+				<text class="k">链路ID</text>
+				<text class="v link">{{ detail.traceId.length > 0 ? detail.traceId : "—" }}</text>
+			</view>
+			<view class="kv-block">
+				<text class="k">请求参数</text>
+				<text class="pre" @click="copyText(detail.params, '请求参数')">{{ detail.params.length > 0 ? detail.params : "—" }}</text>
+			</view>
+			<view class="kv-block">
+				<text class="k">返回结果</text>
+				<text class="pre">{{ detail.jsonResult.length > 0 ? detail.jsonResult : "—" }}</text>
+			</view>
+			<view class="kv-block">
+				<text class="k">错误信息</text>
+				<text class="pre is-err">{{ detail.errorMsg.length > 0 ? detail.errorMsg : "—" }}</text>
+			</view>
+		</view>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 操作日志详情（quick-h5）
+	 */
+	import {
+		getOperLog,
+		OperLogPayload
+	} from "@/api/system/operLog"
+
+	const loading = ref(false)
+	const detail = ref({
+		id: "",
+		operName: "",
+		requestMethod: "",
+		operUrl: "",
+		method: "",
+		ipAddr: "",
+		loginLocation: "",
+		browser: "",
+		os: "",
+		clientId: "",
+		status: "",
+		costTime: "",
+		traceId: "",
+		operTime: "",
+		params: "",
+		jsonResult: "",
+		errorMsg: ""
+	} as OperLogPayload)
+
+	function loadDetail(id : string) {
+		if (id.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getOperLog(id).then((row) => {
+			detail.value = row
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	function copyText(text : string, label : string) {
+		if (text.length == 0) {
+			uni.showToast({ title: label + "为空", icon: "none" })
+			return
+		}
+		uni.setClipboardData({
+			data: text,
+			success: () => {
+				uni.showToast({ title: "已复制" + label, icon: "success" })
+			}
+		})
+	}
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			loadDetail(`${qid}`)
+		}
+	})
+</script>
+
+<style>
+	.kv {
+		display: flex;
+		flex-direction: column;
+	}
+	.kv-row {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		margin-bottom: 12px;
+	}
+	.kv-block {
+		display: flex;
+		flex-direction: column;
+		margin-bottom: 14px;
+	}
+	.k {
+		width: 88px;
+		font-size: 13px;
+		color: #8e8e93;
+		padding-top: 2px;
+	}
+	.kv-block .k {
+		width: auto;
+		margin-bottom: 6px;
+	}
+	.v {
+		flex: 1;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--rice-text-color);
+	}
+	.link {
+		color: #007aff;
+	}
+	.pre {
+		font-size: 12px;
+		line-height: 18px;
+		color: var(--rice-text-color);
+		word-break: break-all;
+	}
+	.pre.is-err {
+		color: #c0392b;
+	}
+</style>

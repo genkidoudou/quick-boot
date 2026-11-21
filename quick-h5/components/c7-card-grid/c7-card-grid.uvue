@@ -1,0 +1,375 @@
+<template>
+	<view class="c7-card-grid">
+		<view class="c7-card-grid__search" v-if="showSearchButton || showResetButton">
+			<slot name="search-extra"></slot>
+			<view class="c7-card-grid__search-ops">
+				<rice-button
+					v-if="showSearchButton"
+					type="primary"
+					size="small"
+					shape="round"
+					:text="searchButtonText"
+					@click="onSearch"
+				></rice-button>
+				<rice-button
+					v-if="showResetButton"
+					type="info"
+					plain
+					size="small"
+					shape="round"
+					:text="resetButtonText"
+					@click="onReset"
+				></rice-button>
+			</view>
+		</view>
+
+		<view class="c7-card-grid__toolbar" v-if="showToolbar">
+			<slot name="toolbar-left"></slot>
+			<text v-if="showAddResolved" class="c7-card-grid__add" @click="onAdd">{{ addButtonText }}</text>
+			<slot name="toolbar-right"></slot>
+		</view>
+
+		<view class="c7-card-grid__grid" :style="gridStyle">
+			<view v-if="showAddCardResolved" class="c7-card-grid__add-card" @click="onAddCard">
+				<slot name="add-card">
+					<text class="c7-card-grid__add-card-t">{{ addCardText }}</text>
+				</slot>
+			</view>
+			<template v-for="(row, index) in cardRows" :key="rowKeyOf(row, index)">
+				<slot name="card" :row="row" :index="index"></slot>
+			</template>
+		</view>
+
+		<view class="c7-card-grid__empty" v-if="!loading && cardRows.length == 0">
+			<text class="c7-card-grid__empty-t">{{ emptyText }}</text>
+		</view>
+
+		<c7-pagination
+			v-model:current-page="currentPage"
+			v-model:page-size="currentPageSize"
+			:total="total"
+			:page-sizes="pageSizes"
+			@change="onPageChange"
+		></c7-pagination>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7CardGrid（quick-h5）
+	 *
+	 * 移动端卡片网格列表壳：对齐桌面 `listFunction` + `#card` 心智，带查询/重置、
+	 * 工具栏新增、可选「新增卡片」、分页。
+	 *
+	 * **数据**
+	 * - `listFunction(q)` → `{ records, total }`（类型同 C7JsonTable）
+	 * - 查询参数在内部 `searchParam`，挂载时合并 `defaultSearchParam`
+	 *
+	 * **插槽**
+	 * - `#search-extra` / `#toolbar-left|right` / `#card` / `#add-card`
+	 *
+	 * **权限**
+	 * - `addButtonPermi` / `addCardPermi` 非空数组时走 `hasPermi`
+	 *
+	 * **暴露**：refreshData、getDataList、searchParam、分页与 cardRows
+	 *
+	 * **说明**：`rowsKey` / `totalKey` / `minCardWidth` 预留对齐桌面命名，当前实现直接读
+	 * `res.records` / `res.total`，网格宽度由样式百分比控制。
+	 */
+	import { hasPermi } from "@/utils/permission"
+	import { C7JsonTableQuery, C7JsonTableResult } from "@/components/c7-json-table/types.uts"
+
+	defineOptions({ name: "C7CardGrid" })
+
+	const props = withDefaults(defineProps<{
+		/** 列表请求 (query) => { records, total }；null 时不请求 */
+		listFunction : ((q : C7JsonTableQuery) => Promise<C7JsonTableResult>) | null
+		/** 搜索列配置（预留；实际筛选项由 #search-extra 自管） */
+		searchColumns : any | null
+		/** 初始/重置时的查询参数对象 */
+		defaultSearchParam : any | null
+		/** 列表字段路径（预留对齐桌面） */
+		rowsKey : string
+		/** 总数字段路径（预留对齐桌面） */
+		totalKey : string
+		/** 行主键字段名，用于 :key */
+		rowKey : string
+		/** 透传分页 page-sizes */
+		pageSizes : any | null
+		/** 初始每页条数 */
+		defaultPageSize : number
+		/** 空列表文案 */
+		emptyText : string
+		/** 卡片最小宽（预留） */
+		minCardWidth : number
+		/** 网格 gap（px），写入 gridStyle */
+		gridGap : number
+		/** 是否显示工具栏行 */
+		showToolbar : boolean
+		/** 是否显示查询按钮 */
+		showSearchButton : boolean
+		/** 是否显示重置按钮 */
+		showResetButton : boolean
+		/** 查询按钮文案 */
+		searchButtonText : string
+		/** 重置按钮文案 */
+		resetButtonText : string
+		/** 是否尝试显示工具栏「新增」 */
+		showAddButton : boolean
+		/** 新增按钮权限码数组；空/null 不校验 */
+		addButtonPermi : any | null
+		/** 工具栏新增文案 */
+		addButtonText : string
+		/** 是否尝试显示网格内「新增卡片」 */
+		showAddCard : boolean
+		/** 新增卡片权限码数组；空/null 不校验 */
+		addCardPermi : any | null
+		/** 新增卡片默认文案 */
+		addCardText : string
+	}>(), {
+		listFunction: null,
+		searchColumns: null,
+		defaultSearchParam: null,
+		rowsKey: "data.records",
+		totalKey: "data.total",
+		rowKey: "id",
+		pageSizes: null,
+		defaultPageSize: 12,
+		emptyText: "暂无数据",
+		minCardWidth: 160,
+		gridGap: 12,
+		showToolbar: true,
+		showSearchButton: true,
+		showResetButton: true,
+		searchButtonText: "查询",
+		resetButtonText: "重置",
+		showAddButton: false,
+		addButtonPermi: null,
+		addButtonText: "新增",
+		showAddCard: false,
+		addCardPermi: null,
+		addCardText: "新增"
+	})
+
+	const emit = defineEmits<{
+		/** 查询/重置后同步当前 searchParam */
+		"update:searchParam" : [v : UTSJSONObject]
+		/** 请求发出前 */
+		"before-fetch" : [q : C7JsonTableQuery]
+		/** 请求成功 */
+		"after-fetch" : [r : C7JsonTableResult]
+		/** 请求失败，错误字符串 */
+		"fetch-error" : [e : string]
+		/** 工具栏新增点击 */
+		"add-click" : []
+		/** 新增卡片点击 */
+		"add-card-click" : []
+		/** 点查询 */
+		"search-submit" : []
+		/** 点重置 */
+		"search-reset" : []
+	}>()
+
+	/** 列表加载中 */
+	const loading = ref(false)
+	/** 当前页卡片数据 */
+	const cardRows = ref([] as any[])
+	/** 总条数 */
+	const total = ref(0)
+	/** 当前页码（v-model 给分页） */
+	const currentPage = ref(1)
+	/** 当前每页条数 */
+	const currentPageSize = ref(props.defaultPageSize)
+	/** 当前查询参数 */
+	const searchParam = ref({} as UTSJSONObject)
+
+	/** 网格内联样式（gap） */
+	const gridStyle = computed(() : string => {
+		return `gap:${props.gridGap}px;`
+	})
+
+	/** 工具栏新增是否可见（含权限） */
+	const showAddResolved = computed(() : boolean => {
+		if (!props.showAddButton) {
+			return false
+		}
+		if (props.addButtonPermi != null && Array.isArray(props.addButtonPermi)) {
+			const arr = props.addButtonPermi as any[]
+			if (arr.length > 0) {
+				return hasPermi(arr.map((x) => `${x}`))
+			}
+		}
+		return true
+	})
+
+	/** 新增卡片是否可见（含权限） */
+	const showAddCardResolved = computed(() : boolean => {
+		if (!props.showAddCard) {
+			return false
+		}
+		if (props.addCardPermi != null && Array.isArray(props.addCardPermi)) {
+			const arr = props.addCardPermi as any[]
+			if (arr.length > 0) {
+				return hasPermi(arr.map((x) => `${x}`))
+			}
+		}
+		return true
+	})
+
+	/** 行 :key：优先 row[rowKey]，否则下标 */
+	function rowKeyOf(row : any, index : number) : string {
+		if (row != null && typeof row == "object") {
+			const v = (row as UTSJSONObject)[props.rowKey]
+			if (v != null) {
+				return `${v}`
+			}
+		}
+		return `${index}`
+	}
+
+	/** 用 defaultSearchParam 浅拷贝填充 searchParam */
+	function mergeDefaultParam() {
+		const out = {} as UTSJSONObject
+		if (props.defaultSearchParam != null && typeof props.defaultSearchParam == "object") {
+			const src = props.defaultSearchParam as UTSJSONObject
+			const keys = UTSJSONObject.keys(src)
+			for (let i = 0; i < keys.length; i++) {
+				out[keys[i]] = src[keys[i]]
+			}
+		}
+		searchParam.value = out
+	}
+
+	/**
+	 * 调用 listFunction 拉取当前页；更新 cardRows / total。
+	 */
+	async function fetchList() {
+		const fn = props.listFunction
+		if (fn == null) {
+			return
+		}
+		const q = {
+			current: currentPage.value,
+			size: currentPageSize.value,
+			param: searchParam.value
+		} as C7JsonTableQuery
+		emit("before-fetch", q)
+		loading.value = true
+		try {
+			const res = await fn(q)
+			cardRows.value = res.records
+			total.value = res.total
+			emit("after-fetch", res)
+		} catch (e) {
+			emit("fetch-error", `${e}`)
+		} finally {
+			loading.value = false
+		}
+	}
+
+	/** 对外刷新（保持当前页） */
+	function refreshData() : Promise<void> {
+		return fetchList()
+	}
+
+	/** 查询：回到第 1 页并刷新 */
+	function onSearch() {
+		currentPage.value = 1
+		emit("search-submit")
+		emit("update:searchParam", searchParam.value)
+		refreshData()
+	}
+
+	/** 重置：恢复 defaultSearchParam，回第 1 页并刷新 */
+	function onReset() {
+		mergeDefaultParam()
+		currentPage.value = 1
+		emit("search-reset")
+		emit("update:searchParam", searchParam.value)
+		refreshData()
+	}
+
+	function onAdd() {
+		emit("add-click")
+	}
+
+	function onAddCard() {
+		emit("add-card-click")
+	}
+
+	/** 分页变更后刷新（页码/页大小已由 v-model 更新） */
+	function onPageChange(_page : number, _size : number) {
+		refreshData()
+	}
+
+	/** 返回当前页数据快照 */
+	function getDataList() : any[] {
+		return cardRows.value
+	}
+
+	onMounted(() => {
+		mergeDefaultParam()
+		refreshData()
+	})
+
+	defineExpose({
+		refreshData,
+		getDataList,
+		searchParam,
+		currentPage,
+		currentPageSize,
+		total,
+		cardRows
+	})
+</script>
+
+<style>
+	.c7-card-grid__search-ops {
+		display: flex;
+		flex-direction: row;
+		gap: 8px;
+		margin-bottom: 10px;
+	}
+	.c7-card-grid__toolbar {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+	.c7-card-grid__add {
+		font-size: 14px;
+		color: #007aff;
+		margin-left: auto;
+	}
+	.c7-card-grid__grid {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	.c7-card-grid__add-card {
+		width: 48%;
+		min-height: 100px;
+		margin: 1%;
+		border-radius: 14px;
+		border-width: 1px;
+		border-style: dashed;
+		border-color: rgba(0, 122, 255, 0.35);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: rgba(0, 122, 255, 0.04);
+	}
+	.c7-card-grid__add-card-t {
+		color: #007aff;
+		font-size: 14px;
+	}
+	.c7-card-grid__empty {
+		padding: 24px 0;
+		align-items: center;
+	}
+	.c7-card-grid__empty-t {
+		font-size: 13px;
+		color: #8e8e93;
+		text-align: center;
+	}
+</style>

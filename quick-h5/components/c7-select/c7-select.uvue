@@ -1,0 +1,183 @@
+<template>
+	<!-- C7 选择器：触发条 + rice-popup 底部选项列表（非 EP Select） -->
+	<view class="c7-select">
+		<view class="c7-select__field" :class="disabled ? 'is-disabled' : ''" @tap="onOpen">
+			<text class="c7-select__text" :class="displayText.length == 0 ? 'is-placeholder' : ''">{{ displayText.length > 0 ? displayText : placeholder }}</text>
+			<text class="c7-select__arrow">›</text>
+		</view>
+		<rice-popup
+			v-model:show="show"
+			position="bottom"
+			:radius="16"
+			:closeable="true"
+			:safe-area-inset-bottom="true"
+			@open="emit('visible-change', true)"
+			@close="emit('visible-change', false)"
+		>
+			<view class="c7-select__sheet">
+				<text class="c7-select__sheet-title">{{ title }}</text>
+				<template v-for="(item, idx) in items" :key="idx">
+					<view
+						class="c7-select__opt"
+						:class="item.value == modelValue ? 'is-on' : ''"
+						@tap="onPick(item.value)"
+					>
+						<text class="c7-select__opt-t">{{ item.label }}</text>
+					</view>
+				</template>
+				<text v-if="items.length == 0" class="c7-select__empty">暂无选项</text>
+			</view>
+		</rice-popup>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Select（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Select` 的**常用单选**场景：`dataList` / `options` + `labelKey` / `valueKey`，
+	 * `v-model` 与 `change` / `visible-change` 事件心智一致。
+	 *
+	 * **交互实现（移动端）**
+	 * - 触发条展示当前 label（或 placeholder）
+	 * - 点击后打开 `rice-popup` 底部选项列表选中；**不是** Element Plus Select
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue`：当前选中 value（字符串）
+	 * - `dataList` / `options`：选项源（优先 dataList），经 `resolveC7Options` 归一化
+	 * - `change(v)`、`visible-change(show)`：选中与弹层显隐
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP 下拉、过滤、多选等桌面能力；本组件为单选底部列表
+	 * - `clearable` 已声明但对齐桌面命名预留，当前底部列表未做清空入口
+	 */
+	import { resolveC7Options, findOptionLabel, C7OptionItem } from "@/components/c7-shared/option.uts"
+
+	defineOptions({ name: "C7Select" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前选中值（字符串 value） */
+		modelValue : string
+		/** 选项列表（优先于 options），项结构由 labelKey/valueKey 指定 */
+		dataList : any | null
+		/** 备选选项列表；dataList 为空时使用 */
+		options : any | null
+		/** 选项文案字段名，默认 label */
+		labelKey : string
+		/** 选项值字段名，默认 value */
+		valueKey : string
+		/** 未选中时触发条占位文案 */
+		placeholder : string
+		/** 底部弹层标题 */
+		title : string
+		/** 是否禁用（不可打开弹层） */
+		disabled : boolean
+		/** 对齐桌面 clearable 命名（本实现未做清空 UI） */
+		clearable : boolean
+	}>(), {
+		modelValue: "",
+		dataList: null,
+		options: null,
+		labelKey: "label",
+		valueKey: "value",
+		placeholder: "请选择",
+		title: "请选择",
+		disabled: false,
+		clearable: false
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : string]
+		change : [v : string]
+		"visible-change" : [show : boolean]
+	}>()
+
+	/** 底部弹层是否展示 */
+	const show = ref(false)
+
+	/** 归一化后的选项 `{ label, value, disabled? }[]` */
+	const items = computed(() : C7OptionItem[] => {
+		return resolveC7Options(props.dataList, props.options, props.labelKey, props.valueKey)
+	})
+
+	/** 触发条展示文案：按 modelValue 匹配 label */
+	const displayText = computed(() : string => {
+		if (props.modelValue.length == 0) {
+			return ""
+		}
+		return findOptionLabel(items.value, props.modelValue)
+	})
+
+	/** 打开底部选项弹层（disabled 时忽略） */
+	function onOpen() {
+		if (props.disabled) {
+			return
+		}
+		show.value = true
+	}
+
+	/** 选中一项：同步 v-model / change 并关闭弹层 */
+	function onPick(val : string) {
+		emit("update:modelValue", val)
+		emit("change", val)
+		show.value = false
+	}
+</script>
+
+<style>
+	.c7-select__field {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 12px;
+		border-radius: 12px;
+		background-color: rgba(142, 142, 147, 0.12);
+	}
+	.c7-select__field.is-disabled {
+		opacity: 0.5;
+	}
+	.c7-select__text {
+		flex: 1;
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-select__text.is-placeholder {
+		color: #8e8e93;
+	}
+	.c7-select__arrow {
+		font-size: 18px;
+		color: #8e8e93;
+		margin-left: 8px;
+	}
+	.c7-select__sheet {
+		padding: 12px 0 20px;
+		max-height: 50vh;
+	}
+	.c7-select__sheet-title {
+		font-size: 16px;
+		font-weight: 600;
+		padding: 0 16px 10px;
+		color: var(--rice-text-color);
+	}
+	.c7-select__opt {
+		padding: 14px 16px;
+	}
+	.c7-select__opt.is-on {
+		background-color: rgba(0, 122, 255, 0.08);
+	}
+	.c7-select__opt-t {
+		font-size: 15px;
+		color: var(--rice-text-color);
+	}
+	.c7-select__opt.is-on .c7-select__opt-t {
+		color: #007aff;
+		font-weight: 600;
+	}
+	.c7-select__empty {
+		padding: 16px;
+		font-size: 13px;
+		color: #8e8e93;
+		text-align: center;
+	}
+</style>

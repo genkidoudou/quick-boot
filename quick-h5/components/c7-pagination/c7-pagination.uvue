@@ -1,0 +1,185 @@
+<template>
+	<!-- C7 分页：总数信息 + 上一页/下一页 + 可选每页条数 -->
+	<view class="c7-pagination">
+		<view class="c7-pagination__info">
+			<text class="c7-pagination__t">共 {{ total }} 条 · 第 {{ currentPage }}/{{ pageCount }} 页</text>
+		</view>
+		<view class="c7-pagination__ops">
+			<text class="c7-pagination__btn" :class="currentPage <= 1 ? 'is-disabled' : ''" @click="onPrev">上一页</text>
+			<text class="c7-pagination__btn" :class="currentPage >= pageCount ? 'is-disabled' : ''" @click="onNext">下一页</text>
+		</view>
+		<view class="c7-pagination__sizes" v-if="sizeOptions.length > 0">
+			<template v-for="(s, idx) in sizeOptions" :key="idx">
+				<text
+					class="c7-pagination__size"
+					:class="pageSize == s ? 'is-on' : ''"
+					@click="onSize(s)"
+				>{{ s }}/页</text>
+			</template>
+		</view>
+		<slot></slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Pagination（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Pagination` 的双绑与事件：`currentPage` / `pageSize` + `change`。
+	 * H5 为移动端简化 UI（上一页 / 下一页 + 可选 pageSizes），不做完整页码条。
+	 *
+	 * **事件**
+	 * - `update:currentPage` / `current-change` / `prev-click` / `next-click`
+	 * - `update:pageSize` / `size-change`
+	 * - `change(page, size)`：页码或条数变化时统一抛出
+	 *
+	 * **改 pageSize**：默认 `autoReset=true` 会回到第 1 页并同步 emit
+	 *
+	 * **layout**：对齐 packages 保留；H5 侧未按 layout 字符串裁剪区块
+	 */
+	defineOptions({ name: "C7Pagination" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前页（从 1 起） */
+		currentPage : number
+		/** 每页条数 */
+		pageSize : number
+		/** 总条数 */
+		total : number
+		/** 可选每页条数列表，如 [10, 20, 50] */
+		pageSizes : any | null
+		/** 对齐 packages 布局串（H5 未解析） */
+		layout : string
+		/** 改 pageSize 时是否重置到第 1 页 */
+		autoReset : boolean
+	}>(), {
+		currentPage: 1,
+		pageSize: 10,
+		total: 0,
+		pageSizes: null,
+		layout: "",
+		autoReset: true
+	})
+
+	const emit = defineEmits<{
+		"update:currentPage" : [v : number]
+		"update:pageSize" : [v : number]
+		"current-change" : [v : number]
+		"size-change" : [v : number]
+		"prev-click" : [v : number]
+		"next-click" : [v : number]
+		change : [page : number, size : number]
+	}>()
+
+	/** 规范化后的每页条数选项 */
+	const sizeOptions = computed(() : number[] => {
+		const out : number[] = []
+		if (props.pageSizes == null || !Array.isArray(props.pageSizes)) {
+			return out
+		}
+		const arr = props.pageSizes as any[]
+		for (let i = 0; i < arr.length; i++) {
+			out.push(parseInt(`${arr[i]}`))
+		}
+		return out
+	})
+
+	/** 总页数（至少 1） */
+	const pageCount = computed(() : number => {
+		if (props.pageSize <= 0) {
+			return 1
+		}
+		const n = Math.ceil(props.total / props.pageSize)
+		return n > 0 ? n : 1
+	})
+
+	/** 统一抛出 change(page, size) */
+	function emitChange(page : number, size : number) {
+		emit("change", page, size)
+	}
+
+	/** 上一页 */
+	function onPrev() {
+		if (props.currentPage <= 1) {
+			return
+		}
+		const p = props.currentPage - 1
+		emit("update:currentPage", p)
+		emit("current-change", p)
+		emit("prev-click", p)
+		emitChange(p, props.pageSize)
+	}
+
+	/** 下一页 */
+	function onNext() {
+		if (props.currentPage >= pageCount.value) {
+			return
+		}
+		const p = props.currentPage + 1
+		emit("update:currentPage", p)
+		emit("current-change", p)
+		emit("next-click", p)
+		emitChange(p, props.pageSize)
+	}
+
+	/**
+	 * 切换每页条数；autoReset 时回到第 1 页。
+	 */
+	function onSize(s : number) {
+		emit("update:pageSize", s)
+		emit("size-change", s)
+		let page = props.currentPage
+		if (props.autoReset) {
+			page = 1
+			emit("update:currentPage", 1)
+			emit("current-change", 1)
+		}
+		emitChange(page, s)
+	}
+</script>
+
+<style>
+	.c7-pagination {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 12px 0;
+	}
+	.c7-pagination__t {
+		font-size: 12px;
+		color: #8e8e93;
+	}
+	.c7-pagination__ops {
+		display: flex;
+		flex-direction: row;
+		margin-top: 8px;
+	}
+	.c7-pagination__btn {
+		margin: 0 8px;
+		padding: 6px 14px;
+		border-radius: 14px;
+		font-size: 13px;
+		color: #007aff;
+		background-color: rgba(0, 122, 255, 0.1);
+	}
+	.c7-pagination__btn.is-disabled {
+		opacity: 0.35;
+	}
+	.c7-pagination__sizes {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		margin-top: 8px;
+	}
+	.c7-pagination__size {
+		font-size: 12px;
+		color: #8e8e93;
+		padding: 4px 8px;
+		margin: 2px;
+		border-radius: 10px;
+	}
+	.c7-pagination__size.is-on {
+		color: #007aff;
+		background-color: rgba(0, 122, 255, 0.12);
+	}
+</style>

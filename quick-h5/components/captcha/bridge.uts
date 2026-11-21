@@ -1,0 +1,26 @@
+/**
+ * 验证码打开桥接：蒸汽模式下 template ref / defineExpose 常取不到方法，
+ * 由 captcha-h5 / captcha-native 在 onMounted 注册 open，页面直接调本模块。
+ */
+
+type CaptchaOpenFn = () => Promise<string>
+
+let opener : CaptchaOpenFn | null = null
+
+/**
+ * 注册当前页验证码 open（组件挂载时调用）。
+ */
+export function registerCaptchaOpen(fn : CaptchaOpenFn | null) : void {
+	opener = fn
+}
+
+/**
+ * 打开验证码，成功返回 uuid。
+ */
+export function openCaptcha() : Promise<string> {
+	const fn = opener
+	if (fn == null) {
+		return Promise.reject("验证码组件未就绪")
+	}
+	return fn()
+}

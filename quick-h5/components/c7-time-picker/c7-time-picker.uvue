@@ -1,0 +1,113 @@
+<template>
+	<!-- C7 时间选择：触发条 + rice-datetime-picker mode=time -->
+	<view class="c7-time-picker">
+		<view class="c7-time-picker__field" @click="onOpen">
+			<text class="c7-time-picker__text" :class="modelValue.length == 0 ? 'is-placeholder' : ''">{{ modelValue.length > 0 ? modelValue : placeholder }}</text>
+			<text class="c7-time-picker__arrow">›</text>
+		</view>
+		<rice-datetime-picker
+			v-model:show="show"
+			v-model="inner"
+			mode="time"
+			:title="title"
+			@confirm="onConfirm"
+			@cancel="onCancel"
+		></rice-datetime-picker>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7TimePicker（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7TimePicker` 的**时间字符串 v-model**：触发条展示，确认后写回。
+	 *
+	 * **交互实现**
+	 * - 底座为 RiceUI `rice-datetime-picker`，固定 `mode="time"`
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue`：时间字符串（如 `HH:mm` / 组件返回格式）
+	 * - `change(v)`：确认选择后抛出
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP TimePicker 的步进、范围等桌面能力；单值时间选择
+	 * - 值为字符串，不做 Date 互转
+	 */
+	defineOptions({ name: "C7TimePicker" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前时间字符串（空表示未选） */
+		modelValue : string
+		/** 未选中时触发条占位文案 */
+		placeholder : string
+		/** 选择器标题 */
+		title : string
+		/** 是否禁用（不可打开） */
+		disabled : boolean
+	}>(), {
+		modelValue: "",
+		placeholder: "请选择时间",
+		title: "选择时间",
+		disabled: false
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : string]
+		change : [v : string]
+	}>()
+
+	/** 选择器弹层是否展示 */
+	const show = ref(false)
+	/** 选择器内部临时值（确认前可取消） */
+	const inner = ref(props.modelValue)
+
+	watch(() : string => props.modelValue, (v : string) => {
+		inner.value = v
+	})
+
+	/** 打开选择器并同步当前值 */
+	function onOpen() {
+		if (props.disabled) {
+			return
+		}
+		inner.value = props.modelValue
+		show.value = true
+	}
+
+	/** 确认：写回 v-model / change 并关闭 */
+	function onConfirm(_e : any) {
+		const v = `${inner.value}`
+		emit("update:modelValue", v)
+		emit("change", v)
+		show.value = false
+	}
+
+	/** 取消：仅关闭，不改 modelValue */
+	function onCancel(_e : any) {
+		show.value = false
+	}
+</script>
+
+<style>
+	.c7-time-picker__field {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 12px;
+		border-radius: 12px;
+		background-color: rgba(142, 142, 147, 0.12);
+	}
+	.c7-time-picker__text {
+		flex: 1;
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-time-picker__text.is-placeholder {
+		color: #8e8e93;
+	}
+	.c7-time-picker__arrow {
+		font-size: 18px;
+		color: #8e8e93;
+	}
+</style>

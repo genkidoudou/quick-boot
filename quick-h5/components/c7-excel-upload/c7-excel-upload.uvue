@@ -1,0 +1,177 @@
+<template>
+	<view class="c7-excel-upload">
+		<rice-button
+			type="primary"
+			shape="round"
+			:text="uploading ? '导入中…' : '选择并导入'"
+			:loading="uploading"
+			:disabled="uploading"
+			@click="onPick"
+		></rice-button>
+		<text
+			v-if="templateDownloadFn != null"
+			class="c7-excel-upload__tpl"
+			@click="onTemplate"
+		>下载模板</text>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7ExcelUpload（quick-h5）
+	 *
+	 * Excel 导入入口：选文件 → `uploadFn(path, strategy)`。
+	 * H5 用 `uni.chooseFile`，非 H5 用 `uni.chooseMessageFile`。
+	 *
+	 * **v-model:uploading**
+	 * - 内外共享上传中状态；内部 `busy` 读写均走该双向绑定
+	 *
+	 * **模板下载**
+	 * - 配置 `templateDownloadFn` 时展示「下载模板」链接
+	 *
+	 * **事件**：success / error / cancel（取消选文件）
+	 *
+	 * **暴露**：uploading、reset（仅复位 busy）
+	 */
+	defineOptions({ name: "C7ExcelUpload" })
+
+	const props = withDefaults(defineProps<{
+		/** 接受扩展名说明（展示/约定用；实际选文件写死 xls/xlsx） */
+		accept : string
+		/** 体积上限（MB，预留对齐桌面；当前未在选文件后校验） */
+		maxSizeMb : number
+		/** 导入函数 (本地路径, strategy) => Promise；未传时 toast */
+		uploadFn? : (path : string, strategy : string) => Promise<any>
+		/** 下载导入模板；传入时显示「下载模板」 */
+		templateDownloadFn? : () => Promise<any>
+		/** 模板默认文件名（预留，实际下载由 templateDownloadFn 自行处理） */
+		templateFileName : string
+		/** v-model:uploading；导入进行中 */
+		uploading : boolean
+		/** 传给 uploadFn 的导入策略，如 ignore / cover */
+		strategy : string
+	}>(), {
+		accept: ".xls,.xlsx",
+		maxSizeMb: 10,
+		templateFileName: "import-template.xlsx",
+		uploading: false,
+		strategy: "ignore"
+	})
+
+	const emit = defineEmits<{
+		/** 同步 uploading */
+		"update:uploading" : [v : boolean]
+		/** 导入成功 */
+		success : [v : any]
+		/** 导入或模板下载失败 */
+		error : [v : any]
+		/** 用户取消选文件 */
+		cancel : []
+	}>()
+
+	/** 与 v-model:uploading 双向同步的忙碌状态 */
+	const busy = computed({
+		get : () : boolean => props.uploading,
+		set : (v : boolean) => emit("update:uploading", v)
+	})
+
+	/**
+	 * 打开系统选文件；成功后 doUpload，失败/空列表 emit cancel。
+	 */
+	function onPick() {
+		if (busy.value) {
+			return
+		}
+		// #ifdef H5
+		uni.chooseFile({
+			count: 1,
+			extension: ["xls", "xlsx"],
+			success: async (res) => {
+				const paths = res.tempFilePaths
+				if (paths == null || paths.length == 0) {
+					emit("cancel")
+					return
+				}
+				await doUpload(paths[0])
+			},
+			fail: () => emit("cancel")
+		})
+		// #endif
+		// #ifndef H5
+		uni.chooseMessageFile({
+			count: 1,
+			type: "file",
+			extension: ["xls", "xlsx"],
+			success: async (res) => {
+				const files = res.tempFiles
+				if (files == null || files.length == 0) {
+					emit("cancel")
+					return
+				}
+				const path = `${(files[0] as UTSJSONObject)["path"]}`
+				await doUpload(path)
+			},
+			fail: () => emit("cancel")
+		})
+		// #endif
+	}
+
+	/**
+	 * 调用 uploadFn(path, strategy)；管理 busy 与 toast。
+	 */
+	async function doUpload(path : string) {
+		const fn = props.uploadFn
+		if (fn == null) {
+			uni.showToast({ title: "未配置 uploadFn", icon: "none" })
+			return
+		}
+		busy.value = true
+		try {
+			const res = await fn(path, props.strategy)
+			emit("success", res)
+			uni.showToast({ title: "导入成功", icon: "none" })
+		} catch (e) {
+			emit("error", e)
+			uni.showToast({ title: "导入失败", icon: "none" })
+		} finally {
+			busy.value = false
+		}
+	}
+
+	/** 触发模板下载 */
+	async function onTemplate() {
+		const fn = props.templateDownloadFn
+		if (fn == null) {
+			return
+		}
+		try {
+			await fn()
+			uni.showToast({ title: "模板已下载", icon: "none" })
+		} catch (e) {
+			emit("error", e)
+		}
+	}
+
+	/** 仅复位 uploading=false（不清理其它状态） */
+	function reset() {
+		busy.value = false
+	}
+
+	defineExpose({
+		uploading: busy,
+		reset
+	})
+</script>
+
+<style>
+	.c7-excel-upload {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 12px;
+	}
+	.c7-excel-upload__tpl {
+		font-size: 13px;
+		color: #007aff;
+	}
+</style>

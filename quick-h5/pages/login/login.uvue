@@ -44,15 +44,18 @@
 				</view>
 			</view>
 		</view>
-		<captcha-host ref="captchaRef"></captcha-host>
+		<captcha-host></captcha-host>
 	</view>
 </template>
 
 <script setup lang="uts">
 	import { APP_TITLE } from "@/config/env"
-	import { loginByPassword, loginByPhone, sendSmsCode } from "@/api/login"
+	import { loginByPassword, loginByPhone, sendSmsCode, fetchUserInfo } from "@/api/login"
 	import { fetchCaptchaEnabled } from "@/api/captcha"
+	import { openCaptcha as openCaptchaBridge } from "@/components/captcha/bridge.uts"
 	import { setToken } from "@/store/user"
+	// captcha 在 components/captcha/ 下，autoscan 扫不到，显式注册
+	import CaptchaHost from "@/components/captcha/captcha-host.uvue"
 
 	const appTitle = APP_TITLE
 	const tabList = ["账号登录", "手机登录"]
@@ -64,7 +67,6 @@
 	const loginLoading = ref(false)
 	const smsCounting = ref(false)
 	const smsLeft = ref(0)
-	const captchaRef = ref<ComponentPublicInstance | null>(null)
 	let smsTimer : number = 0
 
 	const smsBtnText = computed(() : string => {
@@ -86,16 +88,21 @@
 		uni.reLaunch({ url: "/pages/index/index" })
 	}
 
+	function afterLogin(token : string) {
+		setToken(token)
+		fetchUserInfo().then((_info) => {
+			loginLoading.value = false
+			goHome()
+		}).catch((_e) => {
+			// 权限拉取失败仍进入首页，按钮会按无权限隐藏
+			loginLoading.value = false
+			goHome()
+		})
+	}
+
+	/** 经 bridge 打开（不依赖 template ref / defineExpose） */
 	function openCaptcha() : Promise<string> {
-		const inst = captchaRef.value
-		if (inst == null) {
-			return Promise.reject("验证码组件未就绪")
-		}
-		const anyInst = inst as any
-		if (anyInst.open == null) {
-			return Promise.reject("验证码 open 不可用")
-		}
-		return anyInst.open() as Promise<string>
+		return openCaptchaBridge()
 	}
 
 	function clearSmsTimer() {
@@ -143,9 +150,7 @@
 	function doPasswordLogin(uuid : string | null) {
 		loginLoading.value = true
 		loginByPassword(username.value.trim(), password.value, uuid).then((token) => {
-			setToken(token)
-			loginLoading.value = false
-			goHome()
+			afterLogin(token)
 		}).catch((_e) => {
 			loginLoading.value = false
 		})
@@ -173,7 +178,12 @@
 			loginLoading.value = false
 			openCaptcha().then((uuid) => {
 				doPasswordLogin(uuid)
-			}).catch((_e) => {})
+			}).catch((err) => {
+				const msg = `${err}`
+				if (msg.length > 0 && msg != "已取消验证") {
+					toast(msg)
+				}
+			})
 		}).catch((_e) => {
 			loginLoading.value = false
 		})
@@ -195,9 +205,7 @@
 		}
 		loginLoading.value = true
 		loginByPhone(p, code).then((token) => {
-			setToken(token)
-			loginLoading.value = false
-			goHome()
+			afterLogin(token)
 		}).catch((err) => {
 			loginLoading.value = false
 			const msg = `${err}`

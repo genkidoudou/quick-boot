@@ -1,0 +1,328 @@
+<template>
+	<view class="page">
+		<view class="content">
+			<view class="wb-head">
+				<text class="wb-ey">能力启动器</text>
+				<text class="wb-title">工作台</text>
+				<text class="wb-sub">按权限展示入口；无权限模块不显示。</text>
+			</view>
+
+			<template v-if="favItems.length > 0">
+				<text class="sec">常用</text>
+				<view class="fav-row">
+					<template v-for="(item, idx) in favItems" :key="idx">
+						<view class="fav" @click="go(item.path)">
+							<view class="fav-dot" :style="'background-color: ' + item.color">
+								<text class="fav-t">{{ item.short }}</text>
+							</view>
+							<text class="fav-l">{{ item.label }}</text>
+						</view>
+					</template>
+				</view>
+			</template>
+
+			<template v-if="sysItems.length > 0">
+				<view class="sec-h">
+					<text class="sec-strong">系统</text>
+					<text class="sec-muted">组织与配置</text>
+				</view>
+				<view class="wb-panel">
+					<view class="launch">
+						<template v-for="(item, idx) in sysItems" :key="idx">
+							<view class="item" @click="go(item.path)">
+								<view class="ico" :style="'background-color: ' + item.color">
+									<text class="ico-t">{{ item.short }}</text>
+								</view>
+								<text class="item-l">{{ item.label }}</text>
+							</view>
+						</template>
+					</view>
+				</view>
+			</template>
+
+			<template v-if="opsItems.length > 0">
+				<view class="sec-h">
+					<text class="sec-strong">运维</text>
+					<text class="sec-muted">任务与审计</text>
+				</view>
+				<view class="wb-panel">
+					<view class="launch">
+						<template v-for="(item, idx) in opsItems" :key="idx">
+							<view class="item" @click="go(item.path)">
+								<view class="ico" :style="'background-color: ' + item.color">
+									<text class="ico-t">{{ item.short }}</text>
+								</view>
+								<text class="item-l">{{ item.label }}</text>
+							</view>
+						</template>
+					</view>
+				</view>
+			</template>
+
+			<view class="wb-empty" v-if="allEmpty">
+				<text class="wb-empty-t">当前角色暂无可访问模块</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 工作台入口：对齐 PC 侧栏权限字符（sys_menu.perms），用 hasPermi 过滤。
+	 * 站内信「我的收件箱」后端登录即可访问，故不强制 list 权限。
+	 */
+	import { hasPermi } from "@/utils/permission"
+	import { ensureUserInfo } from "@/api/login"
+
+	type WbEntry = {
+		label : string
+		short : string
+		color : string
+		path : string
+		/** 空数组 = 登录即可；否则需具备任一权限 */
+		perms : string[]
+	}
+
+	const permTick = ref(0)
+
+	const FAV_ALL = [
+		{ label: "消息", short: "信", color: "#007aff", path: "/pages/msg/inbox/index", perms: [] as string[] } as WbEntry,
+		{ label: "定时任务", short: "任", color: "#d97706", path: "/pages/job/job/index", perms: ["job:job:list"] as string[] } as WbEntry,
+		{ label: "文件", short: "件", color: "#248a3d", path: "/pages/system/file/index", perms: ["system:file:list"] as string[] } as WbEntry,
+		{ label: "用户", short: "户", color: "#8d51f9", path: "/pages/system/user/index", perms: ["system:user:list"] as string[] } as WbEntry
+	] as WbEntry[]
+
+	const OPS_ALL = [
+		{ label: "定时任务", short: "任", color: "#d97706", path: "/pages/job/job/index", perms: ["job:job:list"] as string[] } as WbEntry,
+		{ label: "任务日志", short: "志", color: "#ea580c", path: "/pages/job/jobLog/index", perms: ["job:jobLog:list"] as string[] } as WbEntry,
+		{ label: "登录日志", short: "登", color: "#64748b", path: "/pages/system/logininfor/index", perms: ["system:logininfor:list"] as string[] } as WbEntry,
+		{ label: "操作日志", short: "操", color: "#475569", path: "/pages/system/operLog/index", perms: ["system:operLog:list"] as string[] } as WbEntry
+	] as WbEntry[]
+
+	const SYS_ALL = [
+		{ label: "文件", short: "件", color: "#248a3d", path: "/pages/system/file/index", perms: ["system:file:list"] as string[] } as WbEntry,
+		{ label: "用户", short: "户", color: "#8d51f9", path: "/pages/system/user/index", perms: ["system:user:list"] as string[] } as WbEntry,
+		{ label: "角色", short: "角", color: "#7c3aed", path: "/pages/system/role/index", perms: ["system:role:list"] as string[] } as WbEntry,
+		{ label: "部门", short: "部", color: "#4f46e5", path: "/pages/system/dept/index", perms: ["system:dept:list"] as string[] } as WbEntry,
+		{ label: "菜单", short: "菜", color: "#0891b2", path: "/pages/system/menu/index", perms: ["system:menu:list"] as string[] } as WbEntry,
+		{ label: "字典", short: "典", color: "#0284c7", path: "/pages/system/dict/type/index", perms: ["system:dictType:list"] as string[] } as WbEntry,
+		{ label: "参数", short: "参", color: "#0f766e", path: "/pages/system/config/index", perms: ["system:config:list"] as string[] } as WbEntry,
+		{ label: "OAuth", short: "授", color: "#db2777", path: "/pages/system/oauthClient/index", perms: ["system:oauthClient:list"] as string[] } as WbEntry,
+		{ label: "文件分类", short: "类", color: "#94a3b8", path: "/pages/system/fileClassify/index", perms: ["system:fileClassify:list"] as string[] } as WbEntry
+	] as WbEntry[]
+
+	function filterEntries(all : WbEntry[]) : WbEntry[] {
+		void permTick.value
+		const out : WbEntry[] = [] as WbEntry[]
+		for (let i = 0; i < all.length; i++) {
+			const e = all[i]
+			if (hasPermi(e.perms)) {
+				out.push(e)
+			}
+		}
+		return out
+	}
+
+	const favItems = computed(() : WbEntry[] => {
+		return filterEntries(FAV_ALL)
+	})
+
+	const opsItems = computed(() : WbEntry[] => {
+		return filterEntries(OPS_ALL)
+	})
+
+	const sysItems = computed(() : WbEntry[] => {
+		return filterEntries(SYS_ALL)
+	})
+
+	const allEmpty = computed(() : boolean => {
+		return favItems.value.length == 0
+			&& opsItems.value.length == 0
+			&& sysItems.value.length == 0
+	})
+
+	function bumpPerm() {
+		permTick.value = permTick.value + 1
+	}
+
+	function go(path : string) {
+		if (path.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: path })
+	}
+
+	onShow(() => {
+		ensureUserInfo(false).then(() => {
+			bumpPerm()
+		}).catch((_e) => {
+			bumpPerm()
+		})
+	})
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 12px 16px 28px;
+	}
+	.wb-head {
+		padding: 14px;
+		border-radius: 18px;
+		margin-bottom: 12px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: column;
+	}
+	.wb-ey {
+		font-size: 11px;
+		font-weight: 600;
+		color: #8d51f9;
+		margin-bottom: 4px;
+	}
+	.wb-title {
+		font-size: 20px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		margin-bottom: 4px;
+	}
+	.wb-sub {
+		font-size: 12px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.sec {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--rice-text-color-2, #666666);
+		margin: 4px 0 8px;
+	}
+	.sec-h {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin: 10px 2px 8px;
+	}
+	.sec-strong {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--rice-text-color);
+	}
+	.sec-muted {
+		font-size: 11px;
+		color: #8e8e93;
+	}
+	.fav-row {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		margin-bottom: 8px;
+	}
+	.fav {
+		width: 22%;
+		margin-right: 4%;
+		margin-bottom: 8px;
+		padding: 10px 4px 8px;
+		border-radius: 14px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		box-sizing: border-box;
+	}
+	.fav:nth-child(4n) {
+		margin-right: 0;
+	}
+	.fav-dot {
+		width: 36px;
+		height: 36px;
+		border-radius: 12px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 6px;
+	}
+	.fav-t {
+		font-size: 13px;
+		font-weight: 700;
+		color: #ffffff;
+	}
+	.fav-l {
+		font-size: 11px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.wb-panel {
+		padding: 12px 8px 10px;
+		border-radius: 18px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		margin-bottom: 4px;
+	}
+	.launch {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	.item {
+		width: 25%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 8px 0;
+	}
+	.ico {
+		width: 44px;
+		height: 44px;
+		border-radius: 13px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 6px;
+	}
+	.ico-t {
+		font-size: 14px;
+		font-weight: 700;
+		color: #ffffff;
+	}
+	.item-l {
+		font-size: 11px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.wb-empty {
+		margin-top: 24px;
+		padding: 28px 14px;
+		border-radius: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.wb-empty-t {
+		font-size: 13px;
+		color: var(--rice-text-color-2, #666666);
+	}
+</style>

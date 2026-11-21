@@ -1,0 +1,120 @@
+<template>
+	<view class="bell" :class="toneClass" @click="onTap">
+		<view class="bell-ring">
+			<rice-icon name="remind" :size="bellSize" :color="iconColor"></rice-icon>
+		</view>
+		<view class="bell-badge" v-if="showBadge">
+			<text class="bell-badge-t">{{ badgeText }}</text>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 消息铃铛：Rice remind 图标 + 未读角标，点击进消息中心。
+	 */
+	const props = withDefaults(defineProps<{
+		/** 未读数量；≤0 不显示角标 */
+		count : number
+		/** light=深色底；dark=浅色底 */
+		tone : string
+		/** 点击跳转路径 */
+		to : string
+	}>(), {
+		count: 0,
+		tone: "light",
+		to: "/pages/msg/inbox/index"
+	})
+
+	const toneClass = computed(() : string => {
+		return props.tone == "dark" ? "is-dark" : "is-light"
+	})
+
+	const iconColor = computed(() : string => {
+		return props.tone == "dark" ? "#52525b" : "#F4F0FF"
+	})
+
+	const bellSize = computed(() : string => {
+		return "20px"
+	})
+
+	const showBadge = computed(() : boolean => {
+		return props.count > 0
+	})
+
+	const badgeText = computed(() : string => {
+		if (props.count > 99) {
+			return "99+"
+		}
+		return `${props.count}`
+	})
+
+	function onTap() {
+		const url = props.to.trim()
+		if (url.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: url })
+	}
+</script>
+
+<style>
+	.bell {
+		position: relative;
+		width: 40px;
+		height: 40px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.bell-ring {
+		width: 40px;
+		height: 40px;
+		border-radius: 20px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		border-width: 1px;
+		border-style: solid;
+	}
+	.bell.is-light .bell-ring {
+		background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+		border-color: rgba(244, 240, 255, 0.28);
+	}
+	.bell.is-dark .bell-ring {
+		background-color: rgba(141, 81, 249, 0.08);
+		border-color: rgba(141, 81, 249, 0.18);
+	}
+	.bell-badge {
+		position: absolute;
+		top: -2px;
+		right: -2px;
+		min-width: 17px;
+		padding: 0 5px;
+		height: 17px;
+		border-radius: 9px;
+		background-color: #ef4444;
+		border-width: 2px;
+		border-style: solid;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		z-index: 2;
+	}
+	.bell.is-light .bell-badge {
+		border-color: #152033;
+	}
+	.bell.is-dark .bell-badge {
+		border-color: #ffffff;
+	}
+	.bell-badge-t {
+		font-size: 10px;
+		font-weight: 700;
+		color: #ffffff;
+		line-height: 12px;
+	}
+</style>

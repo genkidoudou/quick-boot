@@ -1,0 +1,26 @@
+import { request, RequestOptions } from "@/api/http"
+
+/**
+ * 按字典类型拉取启用项（对齐 quick-ui getDicts → GET /sys/dict/data/type/{dictType}）。
+ */
+export function fetchDictDataByType(dictType : string) : Promise<UTSJSONObject[]> {
+	const path = "/sys/dict/data/type/" + encodeURIComponent(dictType)
+	return request({
+		url: path,
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : UTSJSONObject[] => {
+		const data = res.getArray("data")
+		if (data == null) {
+			return [] as UTSJSONObject[]
+		}
+		const out : UTSJSONObject[] = []
+		for (let i = 0; i < data.length; i++) {
+			const item = data[i]
+			if (item instanceof UTSJSONObject) {
+				out.push(item as UTSJSONObject)
+			}
+		}
+		return out
+	})
+}

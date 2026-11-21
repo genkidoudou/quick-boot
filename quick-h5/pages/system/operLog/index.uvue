@@ -1,0 +1,80 @@
+<template>
+	<!-- 操作日志列表：仅查询，无新增/删除 -->
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageOperLog"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="false"
+			:enable-swipe-delete="false"
+			:edit-button-permi="['system:operLog:query']"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 操作日志列表（quick-h5）
+	 *
+	 * 对齐 quick-ui：仅 page / 详情；行点击进 detail。
+	 */
+	import {
+		pageOperLog,
+		OperLogPayload
+	} from "@/api/system/operLog"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "operName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "OPER_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "requestMethod", label: "请求方式", emptyText: "—" } as UTSJSONObject,
+		{ prop: "operUrl", label: "URL", emptyText: "—" } as UTSJSONObject,
+		{ prop: "ipAddr", label: "IP", emptyText: "—" } as UTSJSONObject,
+		{ prop: "costTime", label: "耗时(ms)", emptyText: "—" } as UTSJSONObject,
+		{ prop: "traceId", label: "链路ID", emptyText: "—" } as UTSJSONObject,
+		{ prop: "operTime", label: "操作时间", emptyText: "—" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "operName", label: "操作人", type: "input" } as UTSJSONObject,
+		{ prop: "operUrl", label: "URL", type: "input" } as UTSJSONObject,
+		{ prop: "traceId", label: "链路ID", type: "input" } as UTSJSONObject,
+		{ prop: "requestMethod", label: "请求方式", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "OPER_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function onRowClick(row : any) {
+		const payload = row as OperLogPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/system/operLog/detail?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

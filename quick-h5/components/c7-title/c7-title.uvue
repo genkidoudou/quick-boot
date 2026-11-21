@@ -1,0 +1,131 @@
+<template>
+	<!-- C7 区块标题：文案 + 可选底边装饰（packages 已 deprecated） -->
+	<view class="c7-title">
+		<view class="c7-title__row">
+			<slot name="icon"></slot>
+			<slot name="title">
+				<text class="c7-title__text" :style="textStyle">{{ displayLabel }}</text>
+			</slot>
+		</view>
+		<view
+			v-if="showBorder"
+			class="c7-title__border"
+			:style="'background-color:' + borderColor"
+		></view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Title（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Title` 的区块标题：左侧文案 + 可选彩色短底边。
+	 *
+	 * **注意**：quick-ui packages 侧该组件**已 deprecated**；H5 仍保留实现以便存量页
+	 * 与演示页继续使用，新页面优先用页面级标题 / `C7Card` 标题栏等替代。
+	 *
+	 * **文案优先级**：`label` 非空 → 用 label；否则用 `title`
+	 *
+	 * **底边颜色**：`decorationColor` → `labelColor` → 默认 `#007aff`
+	 *
+	 * **字号**：`labelSize` 支持 h1–h6 语义，或带 `px`/`rem` 的字面量
+	 *
+	 * **插槽**：`icon`、`title`（覆盖默认文案）
+	 */
+	defineOptions({ name: "C7Title" })
+
+	const props = withDefaults(defineProps<{
+		/** 语义标签（对齐 packages；H5 侧当前未单独渲染） */
+		tag : string
+		/** 主文案；优先于 title */
+		label : string
+		/** 备用文案（label 为空时） */
+		title : string
+		/** 字号：h1–h6 或带 px/rem 的字面量 */
+		labelSize : string
+		/** 底边装饰色；优先于 labelColor */
+		decorationColor : string
+		/** 底边色回退 / 文案相关色 */
+		labelColor : string
+		/** 是否显示底边短条 */
+		showBorder : boolean
+		/** 图标（对齐 packages；H5 侧请用 icon 插槽） */
+		icon : string
+	}>(), {
+		tag: "",
+		label: "",
+		title: "",
+		labelSize: "h4",
+		decorationColor: "",
+		labelColor: "",
+		showBorder: true,
+		icon: ""
+	})
+
+	/** 最终展示文案：label 优先，否则 title */
+	const displayLabel = computed(() : string => {
+		if (props.label.length > 0) {
+			return props.label
+		}
+		return props.title
+	})
+
+	/** 底边背景色 */
+	const borderColor = computed(() : string => {
+		if (props.decorationColor.length > 0) {
+			return props.decorationColor
+		}
+		if (props.labelColor.length > 0) {
+			return props.labelColor
+		}
+		return "#007aff"
+	})
+
+	/**
+	 * 根据 labelSize 生成内联 font-size / font-weight。
+	 */
+	const textStyle = computed(() : string => {
+		const size = props.labelSize
+		if (size == "h1") {
+			return "font-size:24px;font-weight:600;"
+		}
+		if (size == "h2") {
+			return "font-size:20px;font-weight:600;"
+		}
+		if (size == "h3") {
+			return "font-size:18px;font-weight:600;"
+		}
+		if (size == "h5") {
+			return "font-size:14px;"
+		}
+		if (size == "h6") {
+			return "font-size:12px;"
+		}
+		if (size.indexOf("px") >= 0 || size.indexOf("rem") >= 0) {
+			return "font-size:" + size + ";"
+		}
+		return "font-size:16px;font-weight:600;"
+	})
+</script>
+
+<style>
+	.c7-title {
+		display: flex;
+		flex-direction: column;
+		margin-bottom: 12px;
+	}
+	.c7-title__row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	.c7-title__text {
+		color: var(--rice-text-color);
+	}
+	.c7-title__border {
+		margin-top: 8px;
+		height: 2px;
+		width: 28px;
+		border-radius: 1px;
+	}
+</style>

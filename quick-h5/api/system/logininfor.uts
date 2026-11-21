@@ -1,0 +1,70 @@
+/**
+ * 登录日志 API，对齐 quick-ui `/api/system/logininfor.js` 与后端 `/sys/logininfor`。
+ * 仅分页与详情，无增删。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	readStr
+} from "@/api/shared/page.uts"
+
+const BASE = "/sys/logininfor"
+
+/** 列表行 / 详情载荷；id 全程 string */
+export type LogininforPayload = {
+	id : string
+	userName : string
+	userId : string
+	ipAddr : string
+	loginLocation : string
+	browser : string
+	os : string
+	status : string
+	clientId : string
+	traceId : string
+	loginTime : string
+}
+
+function emptyLogininfor() : LogininforPayload {
+	return {
+		id: "",
+		userName: "",
+		userId: "",
+		ipAddr: "",
+		loginLocation: "",
+		browser: "",
+		os: "",
+		status: "",
+		clientId: "",
+		traceId: "",
+		loginTime: ""
+	} as LogininforPayload
+}
+
+export function mapLogininforRow(row : UTSJSONObject) : LogininforPayload {
+	return {
+		id: readStr(row, "id"),
+		userName: readStr(row, "userName"),
+		userId: readStr(row, "userId"),
+		ipAddr: readStr(row, "ipAddr"),
+		loginLocation: readStr(row, "loginLocation"),
+		browser: readStr(row, "browser"),
+		os: readStr(row, "os"),
+		status: readStr(row, "status"),
+		clientId: readStr(row, "clientId"),
+		traceId: readStr(row, "traceId"),
+		loginTime: readStr(row, "loginTime")
+	} as LogininforPayload
+}
+
+/** 分页；可直接作 C7JsonTable listFunction */
+export function pageLogininfor(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapLogininforRow)
+}
+
+/** 详情 */
+export function getLogininfor(id : string) : Promise<LogininforPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapLogininforRow, emptyLogininfor()) as Promise<LogininforPayload>
+}

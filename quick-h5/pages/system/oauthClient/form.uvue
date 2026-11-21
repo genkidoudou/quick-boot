@@ -1,0 +1,347 @@
+<template>
+	<!-- OAuth 客户端新增/编辑：C7FormPage 内置 Soft Glass -->
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增OAuth客户端"
+		edit-title="修改OAuth客户端"
+		:show-delete="isEdit"
+		:add-button-permi="['system:oauthClient:add']"
+		:edit-button-permi="['system:oauthClient:edit']"
+		:delete-button-permi="['system:oauthClient:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="clientId" label="客户端ID" required>
+				<rice-input
+					v-model="form['clientId']"
+					placeholder="请输入客户端ID"
+					clearable
+					:maxlength="255"
+					:disabled="isEdit"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="clientName" label="客户端名称" required>
+				<rice-input
+					v-model="form['clientName']"
+					placeholder="请输入客户端名称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="clientType" label="客户端类型" required>
+				<c7-select
+					v-model="form['clientType']"
+					:options="clientTypeOpts"
+					placeholder="请选择客户端类型"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item name="grantTypes" label="授权类型" required>
+				<c7-checkbox
+					v-model="form['grantTypes']"
+					:options="grantTypeOpts"
+					:join-value="true"
+				></c7-checkbox>
+			</rice-form-item>
+
+			<rice-form-item name="tokenTimeout" label="Token时长(秒)">
+				<rice-input
+					v-model="form['tokenTimeout']"
+					placeholder="留空则用全局默认"
+					clearable
+					:maxlength="20"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="apiPathPatterns" label="接口路径" required>
+				<rice-textarea
+					v-model="form['apiPathPatterns']"
+					placeholder="Ant 路径，多条用英文逗号分隔，如 /api/**,/**"
+					:maxlength="1000"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * OAuth 客户端新增 / 编辑（quick-h5）
+	 * grantTypes：C7Checkbox + 字典 GRANT_TYPES，joinValue 逗号串提交。
+	 */
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import { c7Confirm } from "@/components/c7-message-box/index.uts"
+	import { loadDict } from "@/utils/dict"
+	import {
+		getOauthClient,
+		addOauthClient,
+		updateOauthClient,
+		removeOauthClient,
+		OauthClientPayload
+	} from "@/api/system/oauthClient"
+
+	type OauthClientFormModel = {
+		clientId : string
+		clientName : string
+		clientType : string
+		grantTypes : string
+		apiPathPatterns : string
+		tokenTimeout : string
+		status : string
+		remark : string
+	}
+
+	const clientTypeOpts = [
+		{ label: "public（公开）", value: "public" } as UTSJSONObject,
+		{ label: "confidential（机密）", value: "confidential" } as UTSJSONObject
+	] as any[]
+
+	const grantTypeOpts = ref([] as any[])
+
+	const id = ref("")
+	const form = ref({
+		clientId: "",
+		clientName: "",
+		clientType: "public",
+		grantTypes: "password",
+		apiPathPatterns: "/**",
+		tokenTimeout: "",
+		status: "0",
+		remark: ""
+	} as OauthClientFormModel)
+
+	const formRules = new Map<string, FormRules[]>([
+		["clientId", [{ required: true, message: "客户端ID不能为空", trigger: "blur" } as FormRules]],
+		["clientName", [{ required: true, message: "客户端名称不能为空", trigger: "blur" } as FormRules]],
+		["clientType", [{ required: true, message: "客户端类型不能为空", trigger: "change" } as FormRules]],
+		["grantTypes", [{ required: true, message: "授权类型不能为空", trigger: "change" } as FormRules]],
+		["apiPathPatterns", [{ required: true, message: "接口路径不能为空", trigger: "blur" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	function applyForm(row : OauthClientPayload) {
+		form.value = {
+			clientId: row.clientId,
+			clientName: row.clientName,
+			clientType: row.clientType.length > 0 ? row.clientType : "public",
+			grantTypes: row.grantTypes.length > 0 ? row.grantTypes : "password",
+			apiPathPatterns: row.apiPathPatterns.length > 0 ? row.apiPathPatterns : "/**",
+			tokenTimeout: row.tokenTimeout,
+			status: row.status.length > 0 ? row.status : "0",
+			remark: row.remark
+		} as OauthClientFormModel
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getOauthClient(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		loadDict("GRANT_TYPES").then((opts) => {
+			const mapped : any[] = []
+			for (let i = 0; i < opts.length; i++) {
+				mapped.push({
+					label: opts[i].label,
+					value: opts[i].value
+				} as UTSJSONObject)
+			}
+			grantTypeOpts.value = mapped
+		}).catch((_e) => {})
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function normalizeApiPaths(raw : string) : string {
+		const parts = raw.split(",")
+		const out : string[] = []
+		for (let i = 0; i < parts.length; i++) {
+			const p = parts[i].trim()
+			if (p.length > 0) {
+				out.push(p)
+			}
+		}
+		return out.join(",")
+	}
+
+	function buildPayload() : OauthClientPayload {
+		const f = form.value
+		const paths = normalizeApiPaths(f.apiPathPatterns)
+		return {
+			id: id.value,
+			clientId: f.clientId.trim(),
+			clientName: f.clientName.trim(),
+			clientType: f.clientType,
+			grantTypes: f.grantTypes.trim(),
+			apiPathPatterns: paths.length > 0 ? paths : "/**",
+			tokenTimeout: f.tokenTimeout.trim(),
+			status: f.status,
+			remark: f.remark.trim()
+		} as OauthClientPayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/oauthClient/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/oauthClient/index" })
+			}
+		})
+	}
+
+	async function showCreatedSecret(secret : string) {
+		const r = await c7Confirm("客户端密钥仅展示一次，请立即复制保存：\n\n" + secret, "密钥已生成")
+		if (r.action == "confirm") {
+			uni.setClipboardData({
+				data: secret,
+				success: () => {
+					uni.showToast({ title: "已复制密钥", icon: "success", duration: 800 })
+					goList()
+				},
+				fail: (_e) => {
+					goList()
+				}
+			})
+			return
+		}
+		goList()
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		if (isEdit.value) {
+			updateOauthClient(payload).then(() => {
+				saving.value = false
+				uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+				goList()
+			}).catch((_e) => {
+				saving.value = false
+			})
+			return
+		}
+		addOauthClient(payload).then((secret) => {
+			saving.value = false
+			if (secret.length > 0) {
+				showCreatedSecret(secret)
+				return
+			}
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.clientName.length > 0 ? form.value.clientName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除客户端「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				const ids : string[] = [id.value]
+				removeOauthClient(ids).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>

@@ -1,0 +1,1045 @@
+<template>
+	<view class="c7-json-table">
+		<!-- 顶栏：由 searchColumns 解析出的首个 input + 筛选入口 -->
+		<view class="c7-json-table__search-row" v-if="showSearchBar || showFilterBtn">
+			<view class="c7-json-table__search-main" v-if="showSearchBar">
+				<rice-search
+					v-model="keyword"
+					shape="round"
+					:placeholder="resolvedSearchPlaceholder"
+					clearable
+					show-action
+					:action-text="searchButtonText"
+					bg-color="rgba(255,255,255,0.92)"
+					@search="onSearch"
+					@clickAction="onSearch"
+				></rice-search>
+			</view>
+			<view class="c7-json-table__filter-btn" v-if="showFilterBtn" @click="openFilter">
+				<text class="c7-json-table__filter-t" :class="hasFilterBadge ? 'is-on' : ''">筛选</text>
+				<view class="c7-json-table__dot" v-if="hasFilterBadge"></view>
+			</view>
+		</view>
+
+		<view class="c7-json-table__chip-row" v-if="displayChipOptions.length > 0 || showAddResolved">
+			<view class="c7-json-table__chips" v-if="displayChipOptions.length > 0">
+				<template v-for="(opt, idx) in displayChipOptions" :key="idx">
+					<text
+						class="c7-json-table__chip"
+						:class="chipValue == opt.value ? 'is-on' : ''"
+						@click="onChip(opt.value)"
+					>{{ opt.label }}</text>
+				</template>
+			</view>
+			<view class="c7-json-table__add" v-if="showAddResolved" @click="onAdd">
+				<text class="c7-json-table__add-t">{{ addButtonText }}</text>
+			</view>
+		</view>
+
+		<view class="c7-json-table__meta" v-if="showCount">
+			<text class="c7-json-table__count">{{ total }} 项</text>
+		</view>
+
+		<!-- 列表 -->
+		<rice-swipe-actions v-if="list.length > 0" :accordion="true" :auto-close="true">
+			<template v-for="(row, index) in list" :key="rowKeyOf(row, index)">
+				<rice-swipe-actions-item
+					:name="rowKeyOf(row, index)"
+					:right-menu="showDeleteResolved ? deleteMenu : emptyMenu"
+					:custom-style="swipeItemStyle"
+					@click="onSwipeClick"
+				>
+					<slot name="item" :row="row" :index="index">
+						<!-- 未传 #item 且配置了 tableColumns 时，默认用列 JSON 渲染卡片 -->
+						<view v-if="hasTableColumns" class="c7-json-table__card">
+							<view class="c7-json-table__card-rail"></view>
+							<view class="c7-json-table__card-body">
+								<c7-json-table-column
+									:row="row"
+									:columns="tableColumns"
+								></c7-json-table-column>
+							</view>
+						</view>
+					</slot>
+				</rice-swipe-actions-item>
+			</template>
+		</rice-swipe-actions>
+
+		<view class="c7-json-table__empty" v-else-if="!loading">
+			<text class="c7-json-table__empty-t">{{ emptyTitle }}</text>
+			<text class="c7-json-table__empty-sub">{{ emptySub }}</text>
+			<view class="c7-json-table__empty-btn" v-if="showAddResolved">
+				<rice-button type="primary" size="small" :text="emptyAddText" shape="round" @click="onAdd"></rice-button>
+			</view>
+		</view>
+
+		<text class="c7-json-table__hint" v-if="loading">加载中…</text>
+		<text class="c7-json-table__hint" v-else-if="finished && list.length > 0">没有更多了</text>
+
+		<!-- 筛选抽屉 -->
+		<rice-popup
+			v-if="showFilterBtn"
+			v-model:show="filterShow"
+			position="bottom"
+			:radius="20"
+			:closeable="true"
+			:safe-area-inset-bottom="true"
+			:show-drag-bar="true"
+		>
+			<view class="c7-json-table__sheet">
+				<text class="c7-json-table__sheet-title">筛选</text>
+				<text class="c7-json-table__sheet-label" v-if="resolvedSearchProp.length > 0">{{ resolvedSearchSheetLabel }}</text>
+				<rice-input
+					v-if="resolvedSearchProp.length > 0"
+					v-model="draftSearch"
+					:placeholder="resolvedSearchPlaceholder"
+					clearable
+					shape="round"
+					bg-color="rgba(142,142,147,0.12)"
+					border="none"
+				></rice-input>
+
+				<template v-for="(field, fIdx) in extraFields" :key="fIdx">
+					<text class="c7-json-table__sheet-label">{{ field.label }}</text>
+					<rice-input
+						v-model="draftExtras[fIdx]"
+						:placeholder="extraPlaceholder(field)"
+						clearable
+						shape="round"
+						bg-color="rgba(142,142,147,0.12)"
+						border="none"
+					></rice-input>
+				</template>
+
+				<template v-if="displayChipOptions.length > 0 && resolvedChipProp.length > 0">
+					<text class="c7-json-table__sheet-label">{{ resolvedChipLabel }}</text>
+					<view class="c7-json-table__sheet-chips">
+						<template v-for="(opt, cIdx) in displayChipOptions" :key="cIdx">
+							<text
+								class="c7-json-table__chip"
+								:class="draftChip == opt.value ? 'is-on' : ''"
+								@click="draftChip = opt.value"
+							>{{ opt.label }}</text>
+						</template>
+					</view>
+				</template>
+
+				<view class="c7-json-table__sheet-actions">
+					<view class="c7-json-table__sheet-btn">
+						<rice-button type="info" plain text="重置" shape="round" width="100%" @click="onSheetReset"></rice-button>
+					</view>
+					<view class="c7-json-table__sheet-gap"></view>
+					<view class="c7-json-table__sheet-btn c7-json-table__sheet-btn--main">
+						<rice-button type="primary" text="确定" shape="round" width="100%" @click="onSheetConfirm"></rice-button>
+					</view>
+				</view>
+			</view>
+		</rice-popup>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7JsonTable（quick-h5）
+	 *
+	 * 对齐 quick-ui：listFunction / tableColumns / searchColumns / 增删权限。
+	 * 移动端交互：searchColumns → 顶栏搜索 + Chip + 筛选抽屉；左滑删除。
+	 *
+	 * **searchColumns 映射**
+	 * - 首个 input → 顶栏搜索；其余 input → 筛选抽屉
+	 * - 首个 select → Chip（dictType 或 dataList，自动加「全部」）
+	 *
+	 * **暴露**：refreshData、getDataList、loadMore、bumpPerm
+	 * **自刷新**：页面 onShow 内 ensureUserInfo + bumpPerm + refreshData
+	 * **页样板**：`table-page.uts` 的 bindC7TablePage（下拉/触底）
+	 */
+	import { showDialog } from "@/uni_modules/rice-ui"
+	import {
+		SwipeActionsMenu,
+		SwipeActionsItemClick
+	} from "@/uni_modules/rice-ui/components/rice-swipe-actions-item/type.uts"
+	import { resolveButtonVisible } from "@/utils/permission"
+	import { ensureUserInfo } from "@/api/login"
+	import { loadDict } from "@/utils/dict"
+	import {
+		C7JsonTableQuery,
+		C7JsonTableResult,
+		C7JsonTableChipOption,
+		C7JsonTableSearchColumn,
+		normalizeSearchColumn
+	} from "./types.uts"
+
+	defineOptions({ name: "C7JsonTable" })
+
+	const props = withDefaults(defineProps<{
+		/** 列表请求，对齐桌面 listFunction；(query) => { records, total } */
+		listFunction : ((q : C7JsonTableQuery) => Promise<C7JsonTableResult>) | null
+		/** 删除请求，入参 id 列表；null 时不展示左滑删除 */
+		deleteFunction : ((ids : string[]) => Promise<void>) | null
+		/**
+		 * 行字段 JSON（对齐 packages tableColumns）。
+		 * 未传 `#item` 时用 C7JsonTableColumn 渲染；支持 layout:"row" + children。
+		 */
+		tableColumns : any | null
+		/**
+		 * 搜索列（对齐 packages searchColumns；可写精简 JSON）。
+		 * input / select；见文件头映射说明。
+		 */
+		searchColumns : any[]
+		/** 行主键字段名，用于 :key / 左滑 name / 定位行 */
+		rowKey : string
+		/** 每页条数（请求 size） */
+		pageSize : number
+		/** 有顶栏 input 时是否显示搜索行 */
+		showSearch : boolean
+		/** 搜索按钮文案（rice-search action-text） */
+		searchButtonText : string
+		/** 有 searchColumns 时是否显示「筛选」入口 */
+		showFilter : boolean
+		/** 是否尝试显示「新增」 */
+		showAddButton : boolean
+		/** 新增按钮文案 */
+		addButtonText : string
+		/** 新增按钮权限；空数组不做权限过滤（对齐 quick-ui addButtonPermi） */
+		addButtonPermi : string[]
+		/** 行点击/编辑权限；空数组不拦截 */
+		editButtonPermi : string[]
+		/** 是否显示「共 N 条」 */
+		showCount : boolean
+		/** 是否启用左滑删除（仍需 deleteFunction + 权限） */
+		enableSwipeDelete : boolean
+		/** 删除按钮权限；空数组且 enableSwipeDelete 时展示 */
+		deleteButtonPermi : string[]
+		/** 空态主文案 */
+		emptyTitle : string
+		/** 空态副文案 */
+		emptySub : string
+		/** 空态「新增」按钮文案 */
+		emptyAddText : string
+		/** 删除确认框标题 */
+		deleteConfirmTitle : string
+		/** 删除确认文案优先取该字段（展示「确认删除「xxx」？」） */
+		deleteLabelProp : string
+	}>(), {
+		listFunction: null,
+		deleteFunction: null,
+		tableColumns: null,
+		searchColumns: () : any[] => [] as any[],
+		rowKey: "id",
+		pageSize: 10,
+		showSearch: true,
+		searchButtonText: "搜索",
+		showFilter: true,
+		showAddButton: false,
+		addButtonText: "新增",
+		addButtonPermi: () : string[] => [] as string[],
+		editButtonPermi: () : string[] => [] as string[],
+		showCount: true,
+		enableSwipeDelete: true,
+		deleteButtonPermi: () : string[] => [] as string[],
+		emptyTitle: "暂无数据",
+		emptySub: "试试调整筛选",
+		emptyAddText: "新增",
+		deleteConfirmTitle: "删除确认",
+		deleteLabelProp: ""
+	})
+
+	const emit = defineEmits<{
+		/** 点击新增 */
+		addClick : []
+		/** 点击行单元格（未打开左滑时） */
+		rowClick : [row : any]
+		/** 删除成功，携带 id */
+		deleteSuccess : [id : string]
+		/** 列表拉取完成后；rows 为当前已加载全量 */
+		afterFetch : [rows : any[], total : number]
+	}>()
+
+	/** 是否配置了可用的 tableColumns */
+	const hasTableColumns = computed(() : boolean => {
+		if (props.tableColumns == null || !Array.isArray(props.tableColumns)) {
+			return false
+		}
+		return (props.tableColumns as any[]).length > 0
+	})
+
+	function searchColType(col : C7JsonTableSearchColumn) : string {
+		const t = col.type.trim()
+		return t.length > 0 ? t : "input"
+	}
+
+	/** 归一化后的 searchColumns */
+	const resolvedSearchColumns = computed(() : C7JsonTableSearchColumn[] => {
+		const out : C7JsonTableSearchColumn[] = []
+		const cols = props.searchColumns
+		for (let i = 0; i < cols.length; i++) {
+			const n = normalizeSearchColumn(cols[i])
+			if (n != null) {
+				out.push(n)
+			}
+		}
+		return out
+	})
+
+	/** searchColumns 中的 input（含 type 空） */
+	const inputColumns = computed(() : C7JsonTableSearchColumn[] => {
+		const out : C7JsonTableSearchColumn[] = []
+		const cols = resolvedSearchColumns.value
+		for (let i = 0; i < cols.length; i++) {
+			if (searchColType(cols[i]) != "select") {
+				out.push(cols[i])
+			}
+		}
+		return out
+	})
+
+	/** 首个 select → Chip */
+	const selectColumn = computed(() : C7JsonTableSearchColumn | null => {
+		const cols = resolvedSearchColumns.value
+		for (let i = 0; i < cols.length; i++) {
+			if (searchColType(cols[i]) == "select") {
+				return cols[i]
+			}
+		}
+		return null
+	})
+
+	const primarySearch = computed(() : C7JsonTableSearchColumn | null => {
+		const inputs = inputColumns.value
+		return inputs.length > 0 ? inputs[0] : null
+	})
+
+	/** 除首个 input 外的文本筛选项 → 抽屉 */
+	const extraFields = computed(() : C7JsonTableSearchColumn[] => {
+		const inputs = inputColumns.value
+		if (inputs.length <= 1) {
+			return [] as C7JsonTableSearchColumn[]
+		}
+		return inputs.slice(1)
+	})
+
+	const resolvedSearchProp = computed(() : string => {
+		const p = primarySearch.value
+		return p != null ? p.prop : ""
+	})
+
+	const resolvedSearchSheetLabel = computed(() : string => {
+		const p = primarySearch.value
+		return p != null ? p.label : "关键词"
+	})
+
+	const resolvedSearchPlaceholder = computed(() : string => {
+		const p = primarySearch.value
+		if (p == null) {
+			return "搜索"
+		}
+		if (p.placeholder.length > 0) {
+			return p.placeholder
+		}
+		return "搜索" + p.label
+	})
+
+	const resolvedChipProp = computed(() : string => {
+		const s = selectColumn.value
+		return s != null ? s.prop : ""
+	})
+
+	const resolvedChipLabel = computed(() : string => {
+		const s = selectColumn.value
+		return s != null ? s.label : "状态"
+	})
+
+	const showSearchBar = computed(() : boolean => {
+		return props.showSearch && primarySearch.value != null
+	})
+
+	const showFilterBtn = computed(() : boolean => {
+		return props.showFilter && resolvedSearchColumns.value.length > 0
+	})
+
+	/** select 解析后的 Chip（含「全部」） */
+	const displayChipOptions = ref([] as C7JsonTableChipOption[])
+
+	/** 顶栏关键词（已生效） */
+	const keyword = ref("")
+	/** 顶栏 Chip 选中值（已生效） */
+	const chipValue = ref("")
+	/** 筛选抽屉草稿：关键词 */
+	const draftSearch = ref("")
+	/** 筛选抽屉草稿：额外筛选项，与 extraFields 下标对齐 */
+	const draftExtras = ref([] as string[])
+	/** 筛选抽屉草稿：Chip */
+	const draftChip = ref("")
+	/** 已生效的额外筛选，与 extraFields 下标对齐 */
+	const appliedExtras = ref([] as string[])
+	/** 筛选抽屉是否打开 */
+	const filterShow = ref(false)
+	/** 权限缓存非响应式，变更后 bump 以刷新按钮显隐 */
+	const permTick = ref(0)
+
+	/** 新增按钮是否可见（showAddButton + 权限） */
+	const showAddResolved = computed(() : boolean => {
+		void permTick.value
+		return resolveButtonVisible(props.showAddButton, props.addButtonPermi)
+	})
+
+	/** 左滑删除菜单是否可用 */
+	const showDeleteResolved = computed(() : boolean => {
+		void permTick.value
+		const enabled = props.enableSwipeDelete && props.deleteFunction != null
+		return resolveButtonVisible(enabled, props.deleteButtonPermi)
+	})
+
+	/** 行点击是否允许（editButtonPermi） */
+	const showEditResolved = computed(() : boolean => {
+		void permTick.value
+		return resolveButtonVisible(true, props.editButtonPermi)
+	})
+
+	/** 权限信息就绪或变更后调用，刷新显隐计算 */
+	function bumpPerm() {
+		permTick.value = permTick.value + 1
+	}
+
+	function extraPlaceholder(field : C7JsonTableSearchColumn) : string {
+		if (field.placeholder.length > 0) {
+			return field.placeholder
+		}
+		return "请输入" + field.label
+	}
+
+	function withAllOption(opts : C7JsonTableChipOption[]) : C7JsonTableChipOption[] {
+		const list : C7JsonTableChipOption[] = [
+			{ label: "全部", value: "" } as C7JsonTableChipOption
+		]
+		for (let i = 0; i < opts.length; i++) {
+			list.push(opts[i])
+		}
+		return list
+	}
+
+	/** 按 searchColumns 中的 select 加载 Chip */
+	function loadChipFromSearchColumns() {
+		const sel = selectColumn.value
+		if (sel == null) {
+			displayChipOptions.value = [] as C7JsonTableChipOption[]
+			return
+		}
+		if (sel.dataList.length > 0) {
+			displayChipOptions.value = withAllOption(sel.dataList)
+			return
+		}
+		const t = sel.dictType.trim()
+		if (t.length == 0) {
+			displayChipOptions.value = withAllOption([] as C7JsonTableChipOption[])
+			return
+		}
+		loadDict(t).then((opts) => {
+			const mapped : C7JsonTableChipOption[] = []
+			for (let i = 0; i < opts.length; i++) {
+				mapped.push({
+					label: opts[i].label,
+					value: opts[i].value
+				} as C7JsonTableChipOption)
+			}
+			displayChipOptions.value = withAllOption(mapped)
+		}).catch((_e) => {
+			displayChipOptions.value = withAllOption([] as C7JsonTableChipOption[])
+		})
+	}
+
+	/**
+	 * 保证 appliedExtras / draftExtras 长度与 extraFields 一致。
+	 */
+	function ensureExtraSlots() {
+		const n = extraFields.value.length
+		while (appliedExtras.value.length < n) {
+			appliedExtras.value.push("")
+		}
+		while (draftExtras.value.length < n) {
+			draftExtras.value.push("")
+		}
+		if (appliedExtras.value.length > n) {
+			appliedExtras.value = appliedExtras.value.slice(0, n)
+		}
+		if (draftExtras.value.length > n) {
+			draftExtras.value = draftExtras.value.slice(0, n)
+		}
+	}
+
+	ensureExtraSlots()
+
+	/** 已加载行列表（刷新替换 / 加载更多追加） */
+	const list = ref([] as any[])
+	/** 当前请求页码 */
+	const current = ref(1)
+	/** 总条数 */
+	const total = ref(0)
+	/** 是否请求中 */
+	const loading = ref(false)
+	/** 是否已无更多 */
+	const finished = ref(false)
+	/** 删除请求进行中，防重复 */
+	const removing = ref(false)
+
+	/** 左滑项外层样式 */
+	const swipeItemStyle = {
+		marginBottom: "14px",
+		borderRadius: "20px",
+		overflow: "hidden"
+	} as UTSJSONObject
+
+	/** 左滑右侧删除菜单 */
+	const deleteMenu = [
+		{
+			text: "删除",
+			style: {
+				color: "#ffffff",
+				backgroundColor: "#ee0a24",
+				fontSize: "14px",
+				paddingLeft: "20px",
+				paddingRight: "20px"
+			} as UTSJSONObject
+		} as SwipeActionsMenu
+	] as SwipeActionsMenu[]
+
+	/** 无删除权限时的空菜单 */
+	const emptyMenu = [] as SwipeActionsMenu[]
+
+	/** 筛选按钮角标：任一已生效额外筛选非空 */
+	const hasFilterBadge = computed(() : boolean => {
+		const extras = appliedExtras.value
+		for (let i = 0; i < extras.length; i++) {
+			if (extras[i].trim().length > 0) {
+				return true
+			}
+		}
+		return false
+	})
+
+	/** 行 :key / 左滑 name：优先 row[rowKey] */
+	function rowKeyOf(row : any, index : number) : string {
+		if (row == null) {
+			return `${index}`
+		}
+		const k = props.rowKey
+		const anyRow = row as UTSJSONObject
+		const v = anyRow[k]
+		if (v != null && `${v}`.length > 0) {
+			return `${v}`
+		}
+		return `${index}`
+	}
+
+	/**
+	 * 组装 listFunction 的 param：由 searchColumns 解析出的搜索 / Chip / 额外筛选。
+	 */
+	function buildParam() : UTSJSONObject {
+		ensureExtraSlots()
+		const param : UTSJSONObject = {}
+		const sp = resolvedSearchProp.value
+		if (sp.length > 0) {
+			param[sp] = keyword.value.trim()
+		}
+		const cp = resolvedChipProp.value
+		if (cp.length > 0) {
+			param[cp] = chipValue.value.trim()
+		}
+		const fields = extraFields.value
+		const extras = appliedExtras.value
+		for (let i = 0; i < fields.length; i++) {
+			const v = i < extras.length ? extras[i] : ""
+			param[fields[i].prop] = v.trim()
+		}
+		return param
+	}
+
+	/**
+	 * 拉取一页；replace=true 替换列表，false 追加。失败且为追加时回退页码。
+	 */
+	function fetchPage(replace : boolean) : Promise<void> {
+		const fn = props.listFunction
+		if (fn == null) {
+			return Promise.resolve()
+		}
+		if (loading.value) {
+			return Promise.resolve()
+		}
+		loading.value = true
+		const q = {
+			current: current.value,
+			size: props.pageSize,
+			param: buildParam()
+		} as C7JsonTableQuery
+		return fn(q).then((res) => {
+			const anyRes = res as any
+			let rows : any[] = [] as any[]
+			if (anyRes != null) {
+				const rawRows = anyRes.records != null ? anyRes.records : anyRes["records"]
+				if (rawRows != null && Array.isArray(rawRows)) {
+					rows = rawRows as any[]
+				} else if (rawRows != null) {
+					// UTS 部分数组 Array.isArray 为 false，按 length 拷贝
+					const maybe = rawRows as any[]
+					const len = maybe.length
+					if (typeof len == "number" && len >= 0) {
+						const copied : any[] = [] as any[]
+						for (let i = 0; i < len; i++) {
+							copied.push(maybe[i])
+						}
+						rows = copied
+					}
+				}
+			}
+			let totalNum = 0
+			if (anyRes != null) {
+				const rawTotal = anyRes.total != null ? anyRes.total : anyRes["total"]
+				if (typeof rawTotal == "number") {
+					totalNum = rawTotal as number
+				} else if (rawTotal != null) {
+					const parsed = parseFloat(`${rawTotal}`)
+					if (!isNaN(parsed)) {
+						totalNum = parsed
+					}
+				}
+			}
+			// 有数据但 total 丢失时，至少用当前已加载条数兜底展示
+			if (totalNum <= 0 && rows.length > 0) {
+				totalNum = replace ? rows.length : (list.value.length + rows.length)
+			}
+			total.value = totalNum
+			if (replace) {
+				list.value = rows
+			} else {
+				const merged = list.value.slice(0)
+				for (let i = 0; i < rows.length; i++) {
+					merged.push(rows[i])
+				}
+				list.value = merged
+			}
+			if (rows.length < props.pageSize || list.value.length >= total.value) {
+				finished.value = true
+			}
+			loading.value = false
+			emit("afterFetch", list.value, total.value)
+		}).catch((_e) => {
+			loading.value = false
+			if (!replace) {
+				current.value = current.value - 1
+			}
+		})
+	}
+
+	/** 重置到第 1 页并替换拉取（对外主刷新） */
+	function refreshData() : Promise<void> {
+		current.value = 1
+		finished.value = false
+		return fetchPage(true)
+	}
+
+	/** 对齐桌面命名的刷新别名 */
+	function getDataList() : Promise<void> {
+		return refreshData()
+	}
+
+	/** 加载下一页（追加）；loading/finished 时忽略 */
+	function loadMore() {
+		if (loading.value || finished.value) {
+			return
+		}
+		current.value = current.value + 1
+		fetchPage(false)
+	}
+
+	/** 顶栏搜索确认 */
+	function onSearch(_v : string = "") {
+		refreshData()
+	}
+
+	/** 顶栏 Chip 切换并刷新 */
+	function onChip(value : string) {
+		chipValue.value = value
+		refreshData()
+	}
+
+	function onAdd() {
+		emit("addClick")
+	}
+
+	/** 打开筛选抽屉：用已生效值填充草稿 */
+	function openFilter() {
+		ensureExtraSlots()
+		draftSearch.value = keyword.value
+		const next : string[] = []
+		for (let i = 0; i < appliedExtras.value.length; i++) {
+			next.push(appliedExtras.value[i])
+		}
+		draftExtras.value = next
+		draftChip.value = chipValue.value
+		filterShow.value = true
+	}
+
+	/** 筛选抽屉内重置草稿（未点确定前不生效） */
+	function onSheetReset() {
+		ensureExtraSlots()
+		draftSearch.value = ""
+		const next : string[] = []
+		const n = extraFields.value.length
+		for (let i = 0; i < n; i++) {
+			next.push("")
+		}
+		draftExtras.value = next
+		draftChip.value = ""
+	}
+
+	/** 筛选确定：草稿写入已生效字段并刷新 */
+	function onSheetConfirm() {
+		ensureExtraSlots()
+		keyword.value = draftSearch.value.trim()
+		const next : string[] = []
+		for (let i = 0; i < draftExtras.value.length; i++) {
+			next.push(draftExtras.value[i].trim())
+		}
+		appliedExtras.value = next
+		chipValue.value = draftChip.value
+		filterShow.value = false
+		refreshData()
+	}
+
+	/** 按 rowKey 在当前 list 中找行 */
+	function findRowById(id : string) : any | null {
+		const rows = list.value
+		for (let i = 0; i < rows.length; i++) {
+			if (rowKeyOf(rows[i], i) == id) {
+				return rows[i]
+			}
+		}
+		return null
+	}
+
+	/**
+	 * 左滑项点击：cell → rowClick（需编辑权限）；right → 确认删除。
+	 */
+	function onSwipeClick(e : SwipeActionsItemClick) {
+		const nameAny = e.name
+		if (nameAny == null) {
+			return
+		}
+		const id = `${nameAny}`
+		if (e.position == "cell") {
+			if (!e.opened) {
+				if (!showEditResolved.value) {
+					uni.showToast({ title: "无编辑权限", icon: "none" })
+					return
+				}
+				const row = findRowById(id)
+				if (row != null) {
+					emit("rowClick", row)
+				}
+			}
+			return
+		}
+		if (e.position == "right" && showDeleteResolved.value) {
+			confirmRemove(id)
+		}
+	}
+
+	/**
+	 * 弹出删除确认；文案优先 deleteLabelProp 字段值。
+	 */
+	function confirmRemove(id : string) {
+		if (removing.value || props.deleteFunction == null) {
+			return
+		}
+		const row = findRowById(id)
+		let label = id
+		if (row != null && props.deleteLabelProp.length > 0) {
+			const anyRow = row as UTSJSONObject
+			const name = anyRow[props.deleteLabelProp]
+			if (name != null && `${name}`.length > 0) {
+				label = `${name}`
+			}
+		}
+		showDialog({
+			title: props.deleteConfirmTitle,
+			message: `确认删除「${label}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				doRemove(id)
+			}
+		})
+	}
+
+	/** 执行 deleteFunction([id])，成功后 refreshData */
+	function doRemove(id : string) {
+		const fn = props.deleteFunction
+		if (fn == null) {
+			return
+		}
+		removing.value = true
+		const ids : string[] = [id]
+		fn(ids).then(() => {
+			removing.value = false
+			uni.showToast({ title: "已删除", icon: "success" })
+			emit("deleteSuccess", id)
+			refreshData()
+		}).catch((_e) => {
+			removing.value = false
+		})
+	}
+
+	defineExpose({
+		refreshData,
+		getDataList,
+		loadMore,
+		bumpPerm
+	})
+
+	/**
+	 * 对齐桌面：组件自己负责权限刷新 + 拉列表。
+	 * 挂在页面 onShow 上（含子组件），从表单返回也会再刷。
+	 */
+	function syncPermAndRefresh() {
+		ensureUserInfo(false).then(() => {
+			bumpPerm()
+			refreshData()
+		}).catch((_e) => {
+			bumpPerm()
+			refreshData()
+		})
+	}
+
+	onShow(() => {
+		syncPermAndRefresh()
+	})
+
+	onMounted(() => {
+		loadChipFromSearchColumns()
+		// #ifdef WEB
+		const current = getCurrentInstance()
+		if (current != null && current.proxy != null) {
+			const proxy = current.proxy as any
+			proxy.refreshData = refreshData
+			proxy.getDataList = getDataList
+			proxy.loadMore = loadMore
+			proxy.bumpPerm = bumpPerm
+		}
+		// #endif
+	})
+</script>
+
+<style>
+	/**
+	 * Soft Glass 通用列表壳：背景与内边距放在组件内，
+	 * 业务页只需包一层 flex 页面即可。
+	 */
+	.c7-json-table {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		width: 100%;
+		box-sizing: border-box;
+		padding: 12px 14px 36px;
+		background-color: #f3f1f8;
+		/* #ifdef WEB */
+		min-height: 100vh;
+		background-image: linear-gradient(165deg, #efeaf8 0%, #f5f4f8 42%, #eef2fb 100%);
+		/* #endif */
+		/* #ifdef APP */
+		/* #endif */
+	}
+	.c7-json-table__search-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	.c7-json-table__search-main {
+		flex: 1;
+		min-width: 0;
+		border-radius: 999px;
+		/* #ifdef WEB */
+		box-shadow: 0 4px 14px rgba(88, 70, 140, 0.06);
+		/* #endif */
+		overflow: hidden;
+	}
+	.c7-json-table__filter-btn {
+		margin-left: 10px;
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		flex-shrink: 0;
+		position: relative;
+		border-radius: 999px;
+		background-color: rgba(255, 255, 255, 0.92);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.06);
+	}
+	.c7-json-table__filter-t {
+		font-size: 13px;
+		font-weight: 600;
+		color: #52525b;
+	}
+	.c7-json-table__filter-t.is-on {
+		color: #8d51f9;
+	}
+	.c7-json-table__dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 3px;
+		background-color: #8d51f9;
+		margin-left: 4px;
+	}
+	.c7-json-table__chip-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10px;
+	}
+	.c7-json-table__chips {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+		padding: 4px;
+		border-radius: 14px;
+		background-color: rgba(255, 255, 255, 0.7);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.05);
+	}
+	.c7-json-table__chip {
+		font-size: 12px;
+		font-weight: 600;
+		padding: 7px 12px;
+		border-radius: 10px;
+		margin-right: 2px;
+		color: #71717a;
+	}
+	.c7-json-table__chip.is-on {
+		color: #5b21b6;
+		background-color: #ffffff;
+		/* #ifdef WEB */
+		box-shadow: 0 2px 8px rgba(88, 70, 140, 0.10);
+		/* #endif */
+	}
+	.c7-json-table__add {
+		margin-left: 10px;
+		padding: 8px 14px;
+		border-radius: 999px;
+		background-color: #8d51f9;
+		flex-shrink: 0;
+	}
+	.c7-json-table__add-t {
+		font-size: 13px;
+		font-weight: 600;
+		color: #ffffff;
+	}
+	.c7-json-table__meta {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 10px;
+		padding-left: 2px;
+	}
+	.c7-json-table__count {
+		font-size: 12px;
+		color: #8b8796;
+	}
+	.c7-json-table__card {
+		display: flex;
+		flex-direction: row;
+		align-items: stretch;
+		background-color: #ffffff;
+		border-radius: 20px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.05);
+		overflow: hidden;
+		/* #ifdef WEB */
+		box-shadow: 0 10px 28px rgba(70, 55, 110, 0.06);
+		/* #endif */
+	}
+	.c7-json-table__card-rail {
+		width: 4px;
+		background-color: #8d51f9;
+		flex-shrink: 0;
+	}
+	.c7-json-table__card-body {
+		flex: 1;
+		min-width: 0;
+		padding: 12px 14px 12px 12px;
+	}
+	.c7-json-table__empty {
+		padding: 48px 16px 24px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.c7-json-table__empty-t {
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--rice-text-color);
+		margin-bottom: 6px;
+	}
+	.c7-json-table__empty-sub {
+		font-size: 12px;
+		color: #8e8e93;
+		margin-bottom: 16px;
+	}
+	.c7-json-table__empty-btn {
+		display: flex;
+		flex-direction: row;
+	}
+	.c7-json-table__hint {
+		margin-top: 12px;
+		text-align: center;
+		font-size: 12px;
+		color: #8e8e93;
+	}
+	.c7-json-table__sheet {
+		padding: 8px 20px 16px;
+		display: flex;
+		flex-direction: column;
+	}
+	.c7-json-table__sheet-title {
+		font-size: 17px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		text-align: center;
+		margin-bottom: 16px;
+	}
+	.c7-json-table__sheet-label {
+		font-size: 13px;
+		font-weight: 600;
+		color: #71717a;
+		margin-bottom: 8px;
+		margin-top: 12px;
+	}
+	.c7-json-table__sheet-chips {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+	.c7-json-table__sheet-actions {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-top: 24px;
+	}
+	.c7-json-table__sheet-btn {
+		flex: 1;
+	}
+	.c7-json-table__sheet-btn--main {
+		flex: 1.4;
+	}
+	.c7-json-table__sheet-gap {
+		width: 12px;
+	}
+</style>

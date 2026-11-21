@@ -1,0 +1,112 @@
+/**
+ * 全局登录守卫（对齐 quick-ui `src/permission.js` 心智）。
+ * - 拦截 navigateTo / redirectTo / reLaunch / switchTab
+ * - App onShow 兜底：当前页需登录且无 token 时跳转登录
+ */
+import { hasToken } from "@/store/user"
+
+const LOGIN_PATH = "pages/login/login"
+const LOGIN_URL = "/" + LOGIN_PATH
+
+/** 无需登录即可访问的页面 route（无前导 /） */
+const WHITE_LIST = [
+	LOGIN_PATH
+] as string[]
+
+let redirecting = false
+
+/**
+ * 去掉 query，统一成无前导 / 的 route。
+ */
+export function normalizeRoute(url : string) : string {
+	let u = url.trim()
+	const q = u.indexOf("?")
+	if (q >= 0) {
+		u = u.substring(0, q)
+	}
+	if (u.startsWith("/")) {
+		u = u.substring(1)
+	}
+	return u
+}
+
+export function isAuthWhiteRoute(route : string) : boolean {
+	const r = normalizeRoute(route)
+	for (let i = 0; i < WHITE_LIST.length; i++) {
+		if (WHITE_LIST[i] == r) {
+			return true
+		}
+	}
+	return false
+}
+
+function goLogin() {
+	if (redirecting) {
+		return
+	}
+	redirecting = true
+	uni.reLaunch({
+		url: LOGIN_URL,
+		complete: () => {
+			redirecting = false
+		}
+	})
+}
+
+/**
+ * 导航拦截：目标非白名单且无 token → 跳登录并取消本次导航。
+ */
+function guardNavigation(args : any) : boolean {
+	if (args == null) {
+		return true
+	}
+	const raw = args.url
+	const url = raw != null ? `${raw}` : ""
+	if (url.length == 0) {
+		return true
+	}
+	if (isAuthWhiteRoute(url)) {
+		return true
+	}
+	if (hasToken()) {
+		return true
+	}
+	goLogin()
+	return false
+}
+
+/**
+ * 注册 uni 路由拦截；在 App onLaunch 调用一次即可。
+ */
+export function setupAuthGuard() {
+	const apis = ["navigateTo", "redirectTo", "reLaunch", "switchTab"] as string[]
+	for (let i = 0; i < apis.length; i++) {
+		uni.addInterceptor(apis[i], {
+			invoke: (args : any) : boolean => {
+				return guardNavigation(args)
+			}
+		})
+	}
+}
+
+/**
+ * 校验当前栈顶页：非白名单且无 token 则跳登录。
+ * 放在 App onShow，覆盖杀进程恢复、清 token 后仍停在业务页等场景。
+ */
+export function ensureCurrentPageAuth() {
+	const pages = getCurrentPages()
+	if (pages.length == 0) {
+		return
+	}
+	const route = pages[pages.length - 1].route
+	if (route == null || `${route}`.length == 0) {
+		return
+	}
+	if (isAuthWhiteRoute(`${route}`)) {
+		return
+	}
+	if (hasToken()) {
+		return
+	}
+	goLogin()
+}

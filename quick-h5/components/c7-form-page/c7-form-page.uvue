@@ -1,0 +1,238 @@
+<template>
+	<!-- Soft Glass 整页表单壳：背景 + 卡片 + 底栏（权限对齐 C7JsonTable） -->
+	<view class="c7-form-page">
+		<view class="c7-form-page__body">
+			<view class="c7-form-page__card">
+				<slot></slot>
+			</view>
+
+			<view class="c7-form-page__actions" v-if="showActions">
+				<slot name="actions">
+					<rice-button
+						v-if="showSaveResolved"
+						type="primary"
+						:text="saveButtonText"
+						:loading="saving"
+						:disabled="saving || loading"
+						width="100%"
+						shape="round"
+						@click="onSave"
+					></rice-button>
+					<view class="c7-form-page__gap" v-if="showSaveResolved && showDeleteResolved"></view>
+					<rice-button
+						v-if="showDeleteResolved"
+						type="error"
+						plain
+						:text="deleteText"
+						:disabled="saving || loading"
+						width="100%"
+						shape="round"
+						@click="onDelete"
+					></rice-button>
+				</slot>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7FormPage（quick-h5）
+	 *
+	 * 整页表单壳：对齐 packages `C7FormDialog` 的壳角色 + 列表页权限心智。
+	 * Soft Glass 背景/卡片/底栏；`*-button-permi` + 内部 ensureUserInfo / bumpPerm。
+	 *
+	 * **用法**
+	 * ```
+	 * <c7-form-page
+	 *   :is-edit="isEdit"
+	 *   add-title="新增参数"
+	 *   edit-title="修改参数"
+	 *   :show-delete="isEdit"
+	 *   :add-button-permi="['system:xxx:add']"
+	 *   :edit-button-permi="['system:xxx:edit']"
+	 *   :delete-button-permi="['system:xxx:remove']"
+	 *   @save="onSave" @delete="onRemove"
+	 * >
+	 *   <rice-form>...</rice-form>
+	 * </c7-form-page>
+	 * ```
+	 *
+	 * 导航标题：`addTitle` / `editTitle` + `isEdit`，onShow / isEdit 变化时自动 setNavigationBarTitle。
+	 * 控件外观：App 级 `soft-glass.css` 下 `.c7-form-page .rice-input|textarea`。
+	 * 自定义底栏用 `#actions`。
+	 */
+	import { resolveButtonVisible } from "@/utils/permission"
+	import { ensureUserInfo } from "@/api/login"
+
+	defineOptions({ name: "C7FormPage" })
+
+	const props = withDefaults(defineProps<{
+		/** 保存中（按钮 loading / disabled） */
+		saving : boolean
+		/** 加载中（按钮 disabled，如拉详情） */
+		loading : boolean
+		/** 是否编辑态：决定保存权限与导航标题 */
+		isEdit : boolean
+		/** 新增态导航标题；空则不改 title */
+		addTitle : string
+		/** 编辑态导航标题；空则不改 title */
+		editTitle : string
+		/** 是否尝试显示「保存」 */
+		showSave : boolean
+		/** 保存按钮文案；空则 saving 时用「保存中…」 */
+		saveText : string
+		/** 是否尝试显示「删除」（通常 = isEdit） */
+		showDelete : boolean
+		/** 删除按钮文案 */
+		deleteText : string
+		/** 新增保存权限；空数组不做过滤 */
+		addButtonPermi : string[]
+		/** 编辑保存权限；空数组不做过滤 */
+		editButtonPermi : string[]
+		/** 删除权限；空数组不做过滤 */
+		deleteButtonPermi : string[]
+		/** 强制保留 actions 区（自定义 #actions 时） */
+		forceActions : boolean
+	}>(), {
+		saving: false,
+		loading: false,
+		isEdit: false,
+		addTitle: "",
+		editTitle: "",
+		showSave: true,
+		saveText: "保存",
+		showDelete: false,
+		deleteText: "删除",
+		addButtonPermi: () : string[] => [] as string[],
+		editButtonPermi: () : string[] => [] as string[],
+		deleteButtonPermi: () : string[] => [] as string[],
+		forceActions: false
+	})
+
+	const emit = defineEmits<{
+		save : []
+		delete : []
+	}>()
+
+	/** 权限缓存非响应式，bump 后刷新按钮显隐 */
+	const permTick = ref(0)
+
+	function bumpPerm() {
+		permTick.value = permTick.value + 1
+	}
+
+	const saveButtonText = computed(() : string => {
+		if (props.saving) {
+			return "保存中…"
+		}
+		return props.saveText.length > 0 ? props.saveText : "保存"
+	})
+
+	const showSaveResolved = computed(() : boolean => {
+		void permTick.value
+		const permi = props.isEdit ? props.editButtonPermi : props.addButtonPermi
+		return resolveButtonVisible(props.showSave, permi)
+	})
+
+	const showDeleteResolved = computed(() : boolean => {
+		void permTick.value
+		return resolveButtonVisible(props.showDelete, props.deleteButtonPermi)
+	})
+
+	const showActions = computed(() : boolean => {
+		if (props.forceActions) {
+			return true
+		}
+		return showSaveResolved.value || showDeleteResolved.value
+	})
+
+	function onSave() {
+		if (props.saving || props.loading) {
+			return
+		}
+		if (!showSaveResolved.value) {
+			uni.showToast({ title: "无保存权限", icon: "none" })
+			return
+		}
+		emit("save")
+	}
+
+	function onDelete() {
+		if (props.saving || props.loading) {
+			return
+		}
+		if (!showDeleteResolved.value) {
+			uni.showToast({ title: "无删除权限", icon: "none" })
+			return
+		}
+		emit("delete")
+	}
+
+	/** 按 isEdit 设置导航栏标题；标题为空则跳过 */
+	function applyNavTitle() {
+		const title = props.isEdit ? props.editTitle : props.addTitle
+		if (title.length == 0) {
+			return
+		}
+		uni.setNavigationBarTitle({ title: title })
+	}
+
+	onShow(() => {
+		applyNavTitle()
+		ensureUserInfo(false).then(() => {
+			bumpPerm()
+		}).catch((_e) => {
+			bumpPerm()
+		})
+	})
+
+	watch(() : boolean => props.isEdit, (_v : boolean) => {
+		applyNavTitle()
+	})
+
+	defineExpose({
+		bumpPerm
+	})
+</script>
+
+<style>
+	.c7-form-page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		width: 100%;
+		box-sizing: border-box;
+		background-color: var(--rice-background, #f3f1f8);
+	}
+
+	.c7-form-page__body {
+		padding: 12px 16px 28px;
+		box-sizing: border-box;
+	}
+
+	.c7-form-page__card {
+		padding: 4px 12px 12px;
+		border-radius: 18px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		box-sizing: border-box;
+	}
+
+	.c7-form-page__actions {
+		margin-top: 20px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.c7-form-page__gap {
+		height: 12px;
+	}
+</style>

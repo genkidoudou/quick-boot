@@ -1,0 +1,219 @@
+<template>
+	<!-- C7 树选择：触发条 + rice-popup 扁平缩进列表 -->
+	<view class="c7-tree-select">
+		<view class="c7-tree-select__field" @click="onOpen">
+			<text class="c7-tree-select__text" :class="displayText.length == 0 ? 'is-placeholder' : ''">{{ displayText.length > 0 ? displayText : placeholder }}</text>
+			<text class="c7-tree-select__arrow">›</text>
+		</view>
+		<rice-popup
+			v-model:show="show"
+			position="bottom"
+			:radius="16"
+			:closeable="true"
+			:safe-area-inset-bottom="true"
+			@open="emitVisible(true)"
+			@close="emitVisible(false)"
+		>
+			<view class="c7-tree-select__sheet">
+				<text class="c7-tree-select__title">{{ title }}</text>
+				<scroll-view scroll-y class="c7-tree-select__scroll">
+					<template v-for="(node, idx) in flatNodes" :key="idx">
+						<view class="c7-tree-select__node" :style="'padding-left:' + (12 + node.depth * 16) + 'px'" @click.stop="onPick(node)">
+							<text class="c7-tree-select__node-t" :class="node.value == modelValue ? 'is-on' : ''">{{ node.label }}</text>
+						</view>
+					</template>
+				</scroll-view>
+			</view>
+		</rice-popup>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7TreeSelect（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7TreeSelect` 的**树数据单选**：`dataList` / `options` +
+	 * `labelKey` / `valueKey` / `childrenKey`，`v-model` 为节点 value。
+	 *
+	 * **交互实现**
+	 * - 将树 DFS 扁平化为带 `depth` 的列表，在 `rice-popup` 底部滚动区展示缩进行
+	 * - 点击某行即选中该节点 value（非级联路径）
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue` / `change` / `visible-change`
+	 * - `load-error` / `loading-change`：对齐桌面命名预留（本组件未做异步加载）
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP TreeSelect 的过滤、多选、勾选框；移动端扁平列表选择
+	 * - 与 C7Cascader 不同：不走 rice-cascader，也不返回路径，只取节点 value
+	 */
+	type FlatNode = {
+		label : string
+		value : string
+		depth : number
+	}
+
+	defineOptions({ name: "C7TreeSelect" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前选中节点 value（字符串） */
+		modelValue : string
+		/** 树形数据（优先于 options） */
+		dataList : any | null
+		/** 备选树形数据；dataList 为空时使用 */
+		options : any | null
+		/** 节点文案字段名，默认 label */
+		labelKey : string
+		/** 节点值字段名，默认 value */
+		valueKey : string
+		/** 子节点字段名，默认 children */
+		childrenKey : string
+		/** 未选中时触发条占位文案 */
+		placeholder : string
+		/** 底部弹层标题 */
+		title : string
+		/** 是否禁用（不可打开） */
+		disabled : boolean
+	}>(), {
+		modelValue: "",
+		dataList: null,
+		options: null,
+		labelKey: "label",
+		valueKey: "value",
+		childrenKey: "children",
+		placeholder: "请选择",
+		title: "请选择",
+		disabled: false
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : string]
+		change : [v : string]
+		"visible-change" : [v : boolean]
+		"load-error" : [e : string]
+		"loading-change" : [v : boolean]
+	}>()
+
+	/** 底部弹层是否展示 */
+	const show = ref(false)
+
+	/** DFS：把树压平为带 depth 的 FlatNode 列表 */
+	function walk(list : any[], depth : number, out : FlatNode[]) {
+		for (let i = 0; i < list.length; i++) {
+			const row = list[i]
+			if (row == null) {
+				continue
+			}
+			if (typeof row != "object") {
+				const s = `${row}`
+				out.push({ label: s, value: s, depth: depth } as FlatNode)
+				continue
+			}
+			const o = row as UTSJSONObject
+			const label = o[props.labelKey] != null ? `${o[props.labelKey]}` : (o["text"] != null ? `${o["text"]}` : "")
+			const value = o[props.valueKey] != null ? `${o[props.valueKey]}` : label
+			out.push({ label: label, value: value, depth: depth } as FlatNode)
+			const kids = o[props.childrenKey]
+			if (kids != null && Array.isArray(kids)) {
+				walk(kids as any[], depth + 1, out)
+			}
+		}
+	}
+
+	/** 扁平化后的可选节点 */
+	const flatNodes = computed(() : FlatNode[] => {
+		let raw : any | null = props.dataList
+		if (raw == null) {
+			raw = props.options
+		}
+		const out : FlatNode[] = []
+		if (raw != null && Array.isArray(raw)) {
+			walk(raw as any[], 0, out)
+		}
+		return out
+	})
+
+	/** 触发条展示：按 modelValue 匹配 label，未匹配则回显原值 */
+	const displayText = computed(() : string => {
+		if (props.modelValue.length == 0) {
+			return ""
+		}
+		const list = flatNodes.value
+		for (let i = 0; i < list.length; i++) {
+			if (list[i].value == props.modelValue) {
+				return list[i].label
+			}
+		}
+		return props.modelValue
+	})
+
+	/** 打开底部列表（disabled 时忽略） */
+	function onOpen() {
+		if (props.disabled) {
+			return
+		}
+		show.value = true
+	}
+
+	/** 转发 visible-change */
+	function emitVisible(v : boolean) {
+		emit("visible-change", v)
+	}
+
+	/** 选中节点：写回 v-model / change 并关闭 */
+	function onPick(node : FlatNode) {
+		emit("update:modelValue", node.value)
+		emit("change", node.value)
+		show.value = false
+	}
+</script>
+
+<style>
+	.c7-tree-select__field {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 12px;
+		border-radius: 12px;
+		background-color: rgba(142, 142, 147, 0.12);
+	}
+	.c7-tree-select__text {
+		flex: 1;
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-tree-select__text.is-placeholder {
+		color: #8e8e93;
+	}
+	.c7-tree-select__arrow {
+		font-size: 18px;
+		color: #8e8e93;
+	}
+	.c7-tree-select__sheet {
+		padding: 12px 0 20px;
+		max-height: 60vh;
+	}
+	.c7-tree-select__title {
+		font-size: 16px;
+		font-weight: 600;
+		padding: 0 16px 10px;
+		color: var(--rice-text-color);
+	}
+	.c7-tree-select__scroll {
+		max-height: 50vh;
+	}
+	.c7-tree-select__node {
+		padding-top: 12px;
+		padding-bottom: 12px;
+		padding-right: 16px;
+	}
+	.c7-tree-select__node-t {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-tree-select__node-t.is-on {
+		color: #007aff;
+		font-weight: 600;
+	}
+</style>

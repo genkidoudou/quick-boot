@@ -1,0 +1,469 @@
+<template>
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增用户"
+		edit-title="修改用户"
+		:show-delete="isEdit"
+		:add-button-permi="['system:user:add']"
+		:edit-button-permi="['system:user:edit']"
+		:delete-button-permi="['system:user:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="userName" label="用户名" required>
+				<rice-input
+					v-model="form['userName']"
+					placeholder="字母或数字"
+					clearable
+					:maxlength="255"
+					:disabled="isEdit"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="password" label="密码" :required="!isEdit">
+				<rice-input
+					v-model="form['password']"
+					type="password"
+					show-password
+					:placeholder="isEdit ? '不修改请留空' : '请输入密码'"
+					clearable
+					:maxlength="64"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="nickName" label="昵称" required>
+				<rice-input
+					v-model="form['nickName']"
+					placeholder="请输入昵称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="roleIds" label="角色">
+				<c7-checkbox
+					v-model="form['roleIds']"
+					:data-list="roleOpts"
+					label-key="roleName"
+					value-key="id"
+				></c7-checkbox>
+			</rice-form-item>
+
+			<rice-form-item name="deptId" label="部门">
+				<c7-tree-select
+					v-model="form['deptId']"
+					:options="deptTreeOpts"
+					label-key="deptName"
+					value-key="id"
+					children-key="children"
+					placeholder="请选择部门"
+					title="选择部门"
+				></c7-tree-select>
+			</rice-form-item>
+
+			<rice-form-item name="phonenumber" label="手机号">
+				<rice-input
+					v-model="form['phonenumber']"
+					placeholder="手机号码"
+					clearable
+					:maxlength="11"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="email" label="邮箱">
+				<rice-input
+					v-model="form['email']"
+					placeholder="邮箱"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="userType" label="用户类型" required>
+				<c7-select
+					v-model="form['userType']"
+					:options="userTypeOpts"
+					placeholder="请选择用户类型"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item name="sex" label="性别">
+				<rice-radio-group v-model="form['sex']" direction="row">
+					<rice-radio label="女" value="0"></rice-radio>
+					<rice-radio label="男" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 用户新增 / 编辑（quick-h5）
+	 * 角色多选、部门树选、用户类型字典；密码新增必填、编辑留空不改。
+	 */
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import { loadDict } from "@/utils/dict"
+	import { isPhone, isEmail, isStrongPassword } from "@/utils/validate"
+	import {
+		getUser,
+		addUser,
+		updateUser,
+		removeUser,
+		UserPayload
+	} from "@/api/system/user"
+	import { assignableRoles, RoleOption } from "@/api/system/role"
+	import { treeselectDept } from "@/api/system/dept"
+
+	type UserFormModel = {
+		userName : string
+		nickName : string
+		phonenumber : string
+		email : string
+		sex : string
+		status : string
+		userType : string
+		deptId : string
+		remark : string
+		password : string
+		roleIds : string[]
+	}
+
+	const id = ref("")
+	const form = ref({
+		userName: "",
+		nickName: "",
+		phonenumber: "",
+		email: "",
+		sex: "1",
+		status: "0",
+		userType: "0",
+		deptId: "",
+		remark: "",
+		password: "",
+		roleIds: [] as string[]
+	} as UserFormModel)
+
+	const roleOpts = ref([] as any[])
+	const lockedRoleIds = ref([] as string[])
+	/** 可授权角色原始列表（不含锁定项） */
+	const assignableRaw = ref([] as any[])
+	/** 详情里的角色名，供锁定项展示 */
+	const detailRoleNames = ref([] as string[])
+	const deptTreeOpts = ref([] as any[])
+	const userTypeOpts = ref([] as any[])
+
+	const formRules = new Map<string, FormRules[]>([
+		["userName", [{ required: true, message: "用户名不能为空", trigger: "blur" } as FormRules]],
+		["nickName", [{ required: true, message: "昵称不能为空", trigger: "blur" } as FormRules]],
+		["userType", [{ required: true, message: "用户类型不能为空", trigger: "change" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	/** 可授权 + 已有但无权调整的角色（disabled） */
+	function rebuildRoleOpts(selected : string[], roleNames : string[]) {
+		const grantable = new Map<string, boolean>()
+		const out : any[] = []
+		for (let i = 0; i < assignableRaw.value.length; i++) {
+			const o = assignableRaw.value[i] as UTSJSONObject
+			const rid = o["id"] != null ? `${o["id"]}` : ""
+			if (rid.length == 0) {
+				continue
+			}
+			grantable.set(rid, true)
+			out.push({
+				id: rid,
+				roleName: o["roleName"] != null ? `${o["roleName"]}` : rid,
+				disabled: false
+			} as UTSJSONObject)
+		}
+		const locked : string[] = []
+		for (let i = 0; i < selected.length; i++) {
+			const rid = selected[i]
+			if (rid.length == 0 || grantable.get(rid) == true) {
+				continue
+			}
+			const nm = i < roleNames.length && roleNames[i].length > 0 ? roleNames[i] : rid
+			out.push({
+				id: rid,
+				roleName: nm + "（无权调整）",
+				disabled: true
+			} as UTSJSONObject)
+			locked.push(rid)
+		}
+		lockedRoleIds.value = locked
+		roleOpts.value = out
+	}
+
+	function ensureLockedRoles() {
+		const locked = lockedRoleIds.value
+		if (locked.length == 0) {
+			return
+		}
+		const current = form.value.roleIds
+		const have = new Map<string, boolean>()
+		for (let i = 0; i < current.length; i++) {
+			have.set(`${current[i]}`, true)
+		}
+		let changed = false
+		const next : string[] = []
+		for (let i = 0; i < current.length; i++) {
+			next.push(`${current[i]}`)
+		}
+		for (let i = 0; i < locked.length; i++) {
+			if (have.get(locked[i]) != true) {
+				next.push(locked[i])
+				changed = true
+			}
+		}
+		if (changed) {
+			form.value.roleIds = next
+		}
+	}
+
+	watch(() : string[] => {
+		return form.value.roleIds
+	}, (_v) => {
+		ensureLockedRoles()
+	})
+
+	function loadOptions() {
+		assignableRoles().then((list : RoleOption[]) => {
+			const opts : any[] = []
+			for (let i = 0; i < list.length; i++) {
+				opts.push({
+					id: list[i].id,
+					roleName: list[i].roleName,
+					disabled: false
+				} as UTSJSONObject)
+			}
+			assignableRaw.value = opts
+			rebuildRoleOpts(form.value.roleIds, detailRoleNames.value)
+		}).catch((_e) => {})
+		treeselectDept().then((tree) => {
+			deptTreeOpts.value = tree
+		}).catch((_e) => {})
+		loadDict("user_type").then((opts) => {
+			const mapped : any[] = []
+			for (let i = 0; i < opts.length; i++) {
+				mapped.push({
+					label: opts[i].label,
+					value: opts[i].value
+				} as UTSJSONObject)
+			}
+			userTypeOpts.value = mapped
+		}).catch((_e) => {})
+	}
+
+	function applyForm(row : UserPayload) {
+		const roles : string[] = []
+		for (let i = 0; i < row.roleIds.length; i++) {
+			roles.push(row.roleIds[i])
+		}
+		form.value = {
+			userName: row.userName,
+			nickName: row.nickName,
+			phonenumber: row.phonenumber,
+			email: row.email,
+			sex: row.sex.length > 0 ? row.sex : "1",
+			status: row.status.length > 0 ? row.status : "0",
+			userType: row.userType.length > 0 ? row.userType : "0",
+			deptId: row.deptId,
+			remark: row.remark,
+			password: "",
+			roleIds: roles
+		} as UserFormModel
+		detailRoleNames.value = row.roleNames
+		rebuildRoleOpts(roles, row.roleNames)
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getUser(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		loadOptions()
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : UserPayload {
+		const f = form.value
+		const roles : string[] = []
+		const raw = f.roleIds
+		if (raw != null) {
+			for (let i = 0; i < raw.length; i++) {
+				roles.push(`${raw[i]}`)
+			}
+		}
+		return {
+			id: id.value,
+			userName: f.userName.trim(),
+			nickName: f.nickName.trim(),
+			phonenumber: f.phonenumber.trim(),
+			email: f.email.trim(),
+			sex: f.sex,
+			status: f.status,
+			userType: f.userType,
+			deptId: f.deptId,
+			remark: f.remark.trim(),
+			password: f.password,
+			avatar: "",
+			roleIds: roles,
+			roleNames: [] as string[]
+		} as UserPayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/user/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/user/index" })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateUser(payload) : addUser(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		ensureLockedRoles()
+		const phone = form.value.phonenumber.trim()
+		if (!isPhone(phone)) {
+			uni.showToast({ title: "手机号格式不正确", icon: "none" })
+			return
+		}
+		const email = form.value.email.trim()
+		if (!isEmail(email)) {
+			uni.showToast({ title: "邮箱格式不正确", icon: "none" })
+			return
+		}
+		const pwd = form.value.password.trim()
+		if (!isEdit.value && pwd.length == 0) {
+			uni.showToast({ title: "密码不能为空", icon: "none" })
+			return
+		}
+		if (pwd.length > 0 && !isStrongPassword(pwd)) {
+			uni.showToast({ title: "密码至少8位，且须含大小写、数字与特殊字符", icon: "none" })
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.userName.length > 0 ? form.value.userName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除用户「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				const ids : string[] = [id.value]
+				removeUser(ids).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>

@@ -1,0 +1,106 @@
+/**
+ * 字典数据 API，对齐 quick-ui `/api/system/dict/data.js` 与后端 `/sys/dict/data`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr
+} from "@/api/shared/page.uts"
+
+const BASE = "/sys/dict/data"
+
+/** 列表行 / 表单载荷；id 全程 string */
+export type DictDataPayload = {
+	id : string
+	dictType : string
+	dictLabel : string
+	dictValue : string
+	dictSort : string
+	status : string
+	remark : string
+	listClass : string
+	cssClass : string
+	isDefault : string
+}
+
+function emptyDictData() : DictDataPayload {
+	return {
+		id: "",
+		dictType: "",
+		dictLabel: "",
+		dictValue: "",
+		dictSort: "0",
+		status: "0",
+		remark: "",
+		listClass: "default",
+		cssClass: "",
+		isDefault: "1"
+	} as DictDataPayload
+}
+
+export function mapDictDataRow(row : UTSJSONObject) : DictDataPayload {
+	return {
+		id: readStr(row, "id"),
+		dictType: readStr(row, "dictType"),
+		dictLabel: readStr(row, "dictLabel"),
+		dictValue: readStr(row, "dictValue"),
+		dictSort: readStr(row, "dictSort"),
+		status: readStr(row, "status"),
+		remark: readStr(row, "remark"),
+		listClass: readStr(row, "listClass"),
+		cssClass: readStr(row, "cssClass"),
+		isDefault: readStr(row, "isDefault")
+	} as DictDataPayload
+}
+
+/** 分页；可直接作 C7JsonTable listFunction */
+export function pageDictData(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapDictDataRow)
+}
+
+/** 详情 */
+export function getDictData(id : string) : Promise<DictDataPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapDictDataRow, emptyDictData()) as Promise<DictDataPayload>
+}
+
+/** 新增 */
+export function addDictData(payload : DictDataPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		dictType: payload.dictType,
+		dictLabel: payload.dictLabel,
+		dictValue: payload.dictValue,
+		dictSort: payload.dictSort,
+		status: payload.status,
+		remark: payload.remark,
+		listClass: payload.listClass,
+		cssClass: payload.cssClass,
+		isDefault: payload.isDefault
+	}
+	return postBody(BASE + "/add", body)
+}
+
+/** 修改 */
+export function updateDictData(payload : DictDataPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		dictType: payload.dictType,
+		dictLabel: payload.dictLabel,
+		dictValue: payload.dictValue,
+		dictSort: payload.dictSort,
+		status: payload.status,
+		remark: payload.remark,
+		listClass: payload.listClass,
+		cssClass: payload.cssClass,
+		isDefault: payload.isDefault
+	}
+	return postBody(BASE + "/update", body)
+}
+
+/** 批量删除 */
+export function removeDictData(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}

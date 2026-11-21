@@ -1,0 +1,114 @@
+<template>
+	<!-- Soft Glass 列表视觉由 C7JsonTable 内置；本页只配业务 props -->
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="listDictData"
+			:delete-function="removeDictData"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:dictData:add']"
+			:edit-button-permi="['system:dictData:edit']"
+			:delete-button-permi="['system:dictData:remove']"
+			delete-label-prop="dictLabel"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 字典数据列表（quick-h5）
+	 *
+	 * 路由 ?dictType= 固定筛选；对齐 quick-ui dict/data。
+	 */
+	import {
+		pageDictData,
+		removeDictData,
+		DictDataPayload
+	} from "@/api/system/dict/data"
+	import { PageQuery, PageResult } from "@/api/shared/page.uts"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+	/** 来自路由的固定字典类型 */
+	const fixedDictType = ref("")
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "dictLabel", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "dictValue", label: "字典值" } as UTSJSONObject,
+		{ prop: "dictSort", label: "排序", emptyText: "—" } as UTSJSONObject,
+		{ prop: "dictType", label: "字典类型" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "dictLabel", label: "字典标签", type: "input" } as UTSJSONObject,
+		{ prop: "dictValue", label: "字典值", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	/** 注入路由 dictType 后再分页 */
+	function listDictData(query : PageQuery) : Promise<PageResult> {
+		const param = query.param
+		if (fixedDictType.value.length > 0) {
+			param["dictType"] = fixedDictType.value
+		}
+		return pageDictData({
+			current: query.current,
+			size: query.size,
+			param: param
+		} as PageQuery)
+	}
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const dt = query["dictType"]
+		if (dt != null && `${dt}`.length > 0) {
+			fixedDictType.value = `${dt}`
+		}
+	})
+
+	function goAdd() {
+		let url = "/pages/system/dict/data/form"
+		if (fixedDictType.value.length > 0) {
+			url = url + "?dictType=" + encodeURIComponent(fixedDictType.value)
+		}
+		uni.navigateTo({ url: url })
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as DictDataPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/system/dict/data/form?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

@@ -1,0 +1,244 @@
+<template>
+	<!-- C7 对话框：基于 rice-popup；header / body / footer -->
+	<rice-popup
+		v-model:show="visibleInner"
+		:position="popupPosition"
+		:radius="16"
+		:closeable="true"
+		:safe-area-inset-bottom="true"
+		@open="onOpen"
+		@close="onClose"
+		@closed="onClosed"
+	>
+		<view class="c7-dialog">
+			<view class="c7-dialog__header">
+				<slot name="header">
+					<slot name="title">
+						<text class="c7-dialog__title">{{ title }}</text>
+					</slot>
+					<slot name="extra"></slot>
+				</slot>
+			</view>
+			<view class="c7-dialog__body">
+				<slot></slot>
+			</view>
+			<view class="c7-dialog__footer" v-if="footer">
+				<slot name="footer">
+					<view class="c7-dialog__ops">
+						<view class="c7-dialog__btn">
+							<rice-button type="info" plain shape="round" width="100%" :text="cancelText" @click="onCancel"></rice-button>
+						</view>
+						<view class="c7-dialog__gap"></view>
+						<view class="c7-dialog__btn c7-dialog__btn--main">
+							<rice-button
+								type="primary"
+								shape="round"
+								width="100%"
+								:text="confirmText"
+								:loading="confirmBusy"
+								@click="onConfirmClick"
+							></rice-button>
+						</view>
+					</view>
+				</slot>
+			</view>
+		</view>
+	</rice-popup>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Dialog（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Dialog` 的常用弹层：标题、正文、取消/确定。
+	 * **底座为 RiceUI `rice-popup`**（非 Element Plus Dialog）。
+	 *
+	 * **显隐双绑**：`modelValue` 或 `visible` 任一为 true 即显示；
+	 * 关闭时同时 emit `update:modelValue` 与 `update:visible`。
+	 *
+	 * **位置**：`mode=drawer` 或默认 → `bottom`；`mobileMode=fullscreen` → `center`
+	 *
+	 * **确定按钮**
+	 * - 传入 `onConfirm`：await 成功后关窗；reject 不关；loading 用内部或 `confirmLoading`
+	 * - 未传：emit `confirm` + `submit`，由父组件自行关窗
+	 *
+	 * **插槽**：`header` / `title` / `extra` / 默认 body / `footer`
+	 *
+	 * **width / size**：对齐 packages 保留；H5 弹层宽度由 rice-popup 底栏样式决定
+	 */
+	defineOptions({ name: "C7Dialog" })
+
+	const props = withDefaults(defineProps<{
+		/** v-model 显隐 */
+		modelValue : boolean
+		/** 兼容 visible 双绑；与 modelValue 任一为 true 即显示 */
+		visible : boolean
+		/** dialog / drawer；drawer 时 popup 底部弹出 */
+		mode : string
+		/** 标题文案 */
+		title : string
+		/** 是否显示底部按钮区 */
+		footer : boolean
+		/** 取消按钮文案 */
+		cancelText : string
+		/** 确定按钮文案 */
+		confirmText : string
+		/** 外部控制确定按钮 loading；null 时用内部 loading */
+		confirmLoading : boolean | null
+		/** 确定回调；返回 Promise 时 await，成功关窗、失败不关 */
+		onConfirm : (() => Promise<any> | any) | null
+		/** 对齐 packages 宽度（H5 底栏未直接使用） */
+		width : string
+		/** 对齐 packages 尺寸（H5 未解析） */
+		size : string
+		/** 移动端模式：drawer 底栏 / fullscreen 居中等 */
+		mobileMode : string
+	}>(), {
+		modelValue: false,
+		visible: false,
+		mode: "dialog",
+		title: "",
+		footer: true,
+		cancelText: "取消",
+		confirmText: "确定",
+		confirmLoading: null,
+		onConfirm: null,
+		width: "520px",
+		size: "",
+		mobileMode: "drawer"
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : boolean]
+		"update:visible" : [v : boolean]
+		open : []
+		opened : []
+		close : []
+		closed : []
+		cancel : []
+		confirm : []
+		submit : []
+	}>()
+
+	/** onConfirm 执行中的内部 loading */
+	const innerLoading = ref(false)
+
+	/** modelValue 或 visible 任一为 true */
+	const shown = computed(() : boolean => {
+		return props.modelValue || props.visible
+	})
+
+	/** 绑定 rice-popup 的 show；set 时双 emit */
+	const visibleInner = computed({
+		get : () : boolean => shown.value,
+		set : (v : boolean) => {
+			emit("update:modelValue", v)
+			emit("update:visible", v)
+		}
+	})
+
+	/** rice-popup position：bottom / center */
+	const popupPosition = computed(() : string => {
+		if (props.mode == "drawer") {
+			return "bottom"
+		}
+		if (props.mobileMode == "fullscreen") {
+			return "center"
+		}
+		return "bottom"
+	})
+
+	/** 确定按钮是否 loading */
+	const confirmBusy = computed(() : boolean => {
+		if (props.confirmLoading != null) {
+			return props.confirmLoading as boolean
+		}
+		return innerLoading.value
+	})
+
+	/** 关闭弹层（双绑 false） */
+	function close() {
+		emit("update:modelValue", false)
+		emit("update:visible", false)
+	}
+
+	/** rice-popup open → 同时 emit open / opened */
+	function onOpen() {
+		emit("open")
+		emit("opened")
+	}
+
+	function onClose() {
+		emit("close")
+	}
+
+	function onClosed() {
+		emit("closed")
+	}
+
+	/** 取消：emit cancel 并关窗 */
+	function onCancel() {
+		emit("cancel")
+		close()
+	}
+
+	/**
+	 * 确定：有 onConfirm 则 await（成功关窗 / 失败不关）；否则 emit confirm + submit。
+	 */
+	async function onConfirmClick() {
+		const fn = props.onConfirm
+		if (fn != null) {
+			innerLoading.value = true
+			try {
+				await fn()
+				close()
+			} catch (_e) {
+				// reject 不关闭
+			} finally {
+				innerLoading.value = false
+			}
+			return
+		}
+		emit("confirm")
+		emit("submit")
+	}
+</script>
+
+<style>
+	.c7-dialog {
+		padding: 16px 16px 20px;
+		max-height: 80vh;
+	}
+	.c7-dialog__header {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	.c7-dialog__title {
+		font-size: 17px;
+		font-weight: 600;
+		color: var(--rice-text-color);
+		flex: 1;
+	}
+	.c7-dialog__body {
+		display: flex;
+		flex-direction: column;
+	}
+	.c7-dialog__footer {
+		margin-top: 16px;
+	}
+	.c7-dialog__ops {
+		display: flex;
+		flex-direction: row;
+	}
+	.c7-dialog__btn {
+		flex: 1;
+	}
+	.c7-dialog__btn--main {
+		flex: 1.2;
+	}
+	.c7-dialog__gap {
+		width: 12px;
+	}
+</style>

@@ -1,0 +1,81 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="listMenu"
+			:delete-function="removeMenu"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:menu:add']"
+			:edit-button-permi="['system:menu:edit']"
+			:delete-button-permi="['system:menu:remove']"
+			delete-label-prop="menuName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 菜单管理列表（树已展平）
+	 */
+	import {
+		listMenu,
+		removeMenu,
+		MenuPayload
+	} from "@/api/system/menu"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "menuName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "menuType", label: "类型" } as UTSJSONObject,
+		{ prop: "path", label: "路由", emptyText: "—" } as UTSJSONObject,
+		{ prop: "perms", label: "权限", emptyText: "—" } as UTSJSONObject,
+		{ prop: "orderNum", label: "排序" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "menuName", label: "菜单名称", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/system/menu/form" })
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as MenuPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/system/menu/form?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

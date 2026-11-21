@@ -1,0 +1,66 @@
+/**
+ * 字典内存缓存（对齐 quick-ui Pinia dict store，无过期；登出可 cleanDict）。
+ */
+
+export type DictOption = {
+	label : string
+	value : string
+	elTagType : string
+	elTagClass : string
+}
+
+type DictCacheEntry = {
+	key : string
+	value : DictOption[]
+}
+
+const cache : DictCacheEntry[] = []
+
+/**
+ * 读取缓存；未命中返回 null。
+ */
+export function getDict(dictType : string) : DictOption[] | null {
+	if (dictType.length == 0) {
+		return null
+	}
+	for (let i = 0; i < cache.length; i++) {
+		if (cache[i].key == dictType) {
+			return cache[i].value
+		}
+	}
+	return null
+}
+
+/**
+ * 写入缓存（同 key 先移除再追加）。
+ */
+export function setDict(dictType : string, options : DictOption[]) : void {
+	if (dictType.length == 0) {
+		return
+	}
+	removeDict(dictType)
+	cache.push({
+		key: dictType,
+		value: options
+	} as DictCacheEntry)
+}
+
+/**
+ * 移除某类型。
+ */
+export function removeDict(dictType : string) : boolean {
+	for (let i = 0; i < cache.length; i++) {
+		if (cache[i].key == dictType) {
+			cache.splice(i, 1)
+			return true
+		}
+	}
+	return false
+}
+
+/**
+ * 清空全部（登录切换用户后建议调用）。
+ */
+export function cleanDict() : void {
+	cache.splice(0, cache.length)
+}

@@ -1,0 +1,189 @@
+/**
+ * 角色 API，对齐 quick-ui `/api/system/role.js` 与后端 `/sys/role`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr,
+	toRowObject
+} from "@/api/shared/page"
+import { request, RequestOptions, enc } from "@/api/http"
+
+const BASE = "/sys/role"
+
+/** 列表行 / 表单载荷；id 全程 string */
+export type RolePayload = {
+	id : string
+	roleName : string
+	roleCode : string
+	roleSort : string
+	dataScope : string
+	status : string
+	remark : string
+	menuIds : string[]
+	assignableRoleIds : string[]
+	deptIds : string[]
+}
+
+function emptyRole() : RolePayload {
+	return {
+		id: "",
+		roleName: "",
+		roleCode: "",
+		roleSort: "0",
+		dataScope: "1",
+		status: "0",
+		remark: "",
+		menuIds: [] as string[],
+		assignableRoleIds: [] as string[],
+		deptIds: [] as string[]
+	} as RolePayload
+}
+
+function readIdList(row : UTSJSONObject, key : string) : string[] {
+	const out : string[] = []
+	const arr = row.getArray(key)
+	if (arr != null) {
+		for (let i = 0; i < arr.length; i++) {
+			const v = arr[i]
+			if (v != null) {
+				out.push(`${v}`)
+			}
+		}
+		return out
+	}
+	const anyRow = row as any
+	const plain = anyRow[key]
+	if (plain != null && Array.isArray(plain)) {
+		const list = plain as any[]
+		for (let i = 0; i < list.length; i++) {
+			const v = list[i]
+			if (v != null) {
+				out.push(`${v}`)
+			}
+		}
+	}
+	return out
+}
+
+export function mapRoleRow(row : UTSJSONObject) : RolePayload {
+	return {
+		id: readStr(row, "id"),
+		roleName: readStr(row, "roleName"),
+		roleCode: readStr(row, "roleCode"),
+		roleSort: readStr(row, "roleSort"),
+		dataScope: readStr(row, "dataScope"),
+		status: readStr(row, "status"),
+		remark: readStr(row, "remark"),
+		menuIds: readIdList(row, "menuIds"),
+		assignableRoleIds: readIdList(row, "assignableRoleIds"),
+		deptIds: readIdList(row, "deptIds")
+	} as RolePayload
+}
+
+/** 分页；可直接作 C7JsonTable listFunction */
+export function pageRole(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapRoleRow)
+}
+
+/** 详情 */
+export function getRole(id : string) : Promise<RolePayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapRoleRow, emptyRole()) as Promise<RolePayload>
+}
+
+/** 新增 */
+export function addRole(payload : RolePayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		roleName: payload.roleName,
+		roleCode: payload.roleCode,
+		roleSort: payload.roleSort,
+		dataScope: payload.dataScope,
+		status: payload.status,
+		remark: payload.remark,
+		menuIds: payload.menuIds,
+		assignableRoleIds: payload.assignableRoleIds,
+		deptIds: payload.dataScope == "2" ? payload.deptIds : ([] as string[])
+	}
+	return postBody(BASE + "/add", body)
+}
+
+/** 修改 */
+export function updateRole(payload : RolePayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		roleName: payload.roleName,
+		roleCode: payload.roleCode,
+		roleSort: payload.roleSort,
+		dataScope: payload.dataScope,
+		status: payload.status,
+		remark: payload.remark,
+		menuIds: payload.menuIds,
+		assignableRoleIds: payload.assignableRoleIds,
+		deptIds: payload.dataScope == "2" ? payload.deptIds : ([] as string[])
+	}
+	return postBody(BASE + "/update", body)
+}
+
+/** 批量删除 */
+export function removeRole(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+/** 角色选项（可授权 / 用户分配） */
+export type RoleOption = {
+	id : string
+	roleName : string
+}
+
+function mapRoleOptions(res : UTSJSONObject) : RoleOption[] {
+	let raw = res.getArray("data")
+	if (raw == null) {
+		const anyRes = res as any
+		const plain = anyRes["data"]
+		if (plain != null && Array.isArray(plain)) {
+			raw = plain as any[]
+		}
+	}
+	const out : RoleOption[] = []
+	if (raw == null) {
+		return out
+	}
+	for (let i = 0; i < raw.length; i++) {
+		const row = toRowObject(raw[i])
+		if (row == null) {
+			continue
+		}
+		out.push({
+			id: readStr(row, "id"),
+			roleName: readStr(row, "roleName")
+		} as RoleOption)
+	}
+	return out
+}
+
+/** 当前登录用户可分配的角色列表（用户表单） */
+export function assignableRoles() : Promise<RoleOption[]> {
+	return request({
+		url: BASE + "/assignable",
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : RoleOption[] => mapRoleOptions(res))
+}
+
+/** 可授权角色候选（不含自己）；新增时 roleId 传空 */
+export function authRoleList(roleId : string) : Promise<RoleOption[]> {
+	let query = ""
+	if (roleId.length > 0) {
+		query = "roleId=" + enc(roleId)
+	}
+	return request({
+		url: BASE + "/authRoleList",
+		method: "GET",
+		query: query,
+		needToken: true
+	} as RequestOptions).then((res) : RoleOption[] => mapRoleOptions(res))
+}

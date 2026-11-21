@@ -1,0 +1,332 @@
+<template>
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增部门"
+		edit-title="修改部门"
+		:show-delete="isEdit && !isRootDept"
+		:add-button-permi="['system:dept:add']"
+		:edit-button-permi="['system:dept:edit']"
+		:delete-button-permi="['system:dept:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item v-if="!isRootDept" name="parentId" label="上级部门" required>
+				<c7-tree-select
+					v-model="form['parentId']"
+					:options="parentTreeOpts"
+					label-key="deptName"
+					value-key="id"
+					children-key="children"
+					placeholder="请选择上级部门"
+					title="选择上级部门"
+				></c7-tree-select>
+			</rice-form-item>
+
+			<rice-form-item name="deptName" label="部门名称" required>
+				<rice-input
+					v-model="form['deptName']"
+					placeholder="请输入部门名称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="orderNum" label="显示排序" required>
+				<rice-input
+					v-model="form['orderNum']"
+					placeholder="数字，越小越靠前"
+					clearable
+					:maxlength="8"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="leader" label="负责人">
+				<rice-input
+					v-model="form['leader']"
+					placeholder="负责人"
+					clearable
+					:maxlength="20"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="phone" label="联系电话">
+				<rice-input
+					v-model="form['phone']"
+					placeholder="联系电话"
+					clearable
+					:maxlength="20"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="email" label="邮箱">
+				<rice-input
+					v-model="form['email']"
+					placeholder="请输入邮箱"
+					clearable
+					:maxlength="50"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import { isEmail, isPhone } from "@/utils/validate"
+	import {
+		getDept,
+		addDept,
+		updateDept,
+		removeDept,
+		treeselectDept,
+		DeptPayload
+	} from "@/api/system/dept"
+
+	type DeptFormModel = {
+		parentId : string
+		deptName : string
+		orderNum : string
+		leader : string
+		phone : string
+		email : string
+		status : string
+	}
+
+	const id = ref("")
+	const form = ref({
+		parentId: "0",
+		deptName: "",
+		orderNum: "0",
+		leader: "",
+		phone: "",
+		email: "",
+		status: "0"
+	} as DeptFormModel)
+
+	const parentTreeOpts = ref([] as any[])
+
+	const formRules = new Map<string, FormRules[]>([
+		["parentId", [{ required: true, message: "上级部门不能为空", trigger: "change" } as FormRules]],
+		["deptName", [{ required: true, message: "部门名称不能为空", trigger: "blur" } as FormRules]],
+		["orderNum", [{ required: true, message: "排序不能为空", trigger: "blur" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	/** 根部门（parentId=0）编辑时不展示上级，与桌面一致 */
+	const isRootDept = computed(() : boolean => {
+		return isEdit.value && (form.value.parentId == "0" || form.value.parentId.length == 0)
+	})
+
+	function applyForm(row : DeptPayload) {
+		form.value = {
+			parentId: row.parentId.length > 0 ? row.parentId : "0",
+			deptName: row.deptName,
+			orderNum: row.orderNum.length > 0 ? row.orderNum : "0",
+			leader: row.leader,
+			phone: row.phone,
+			email: row.email,
+			status: row.status.length > 0 ? row.status : "0"
+		} as DeptFormModel
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getDept(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	function excludeSelfAndDescendants(nodes : any[], selfId : string) : any[] {
+		if (selfId.length == 0) {
+			return nodes
+		}
+		const out : any[] = []
+		for (let i = 0; i < nodes.length; i++) {
+			const row = nodes[i]
+			if (row == null) {
+				continue
+			}
+			const o = row as UTSJSONObject
+			const nid = o["id"] != null ? `${o["id"]}` : ""
+			if (nid == selfId) {
+				continue
+			}
+			const kids = o["children"]
+			let nextKids : any[] = []
+			if (kids != null && Array.isArray(kids)) {
+				nextKids = excludeSelfAndDescendants(kids as any[], selfId)
+			}
+			const copy = JSON.parseObject(JSON.stringify(o)!)
+			if (copy != null) {
+				copy["children"] = nextKids
+				out.push(copy)
+			}
+		}
+		return out
+	}
+
+	function loadParentTree(excludeId : string) {
+		treeselectDept().then((tree) => {
+			const filtered = excludeSelfAndDescendants(tree, excludeId)
+			const root = {
+				id: "0",
+				deptName: "根部门",
+				children: filtered
+			} as UTSJSONObject
+			parentTreeOpts.value = [root] as any[]
+		}).catch((_e) => {})
+	}
+
+	onLoad((query) => {
+		let excludeId = ""
+		if (query != null) {
+			const qid = query["id"]
+			if (qid != null && `${qid}`.length > 0) {
+				id.value = `${qid}`
+				excludeId = id.value
+				loadDetail()
+			}
+		}
+		loadParentTree(excludeId)
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : DeptPayload {
+		const f = form.value
+		return {
+			id: id.value,
+			parentId: f.parentId.trim().length > 0 ? f.parentId.trim() : "0",
+			deptName: f.deptName.trim(),
+			orderNum: f.orderNum.trim(),
+			leader: f.leader.trim(),
+			phone: f.phone.trim(),
+			email: f.email.trim(),
+			status: f.status,
+			remark: ""
+		} as DeptPayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/dept/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/dept/index" })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateDept(payload) : addDept(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		if (!isPhone(form.value.phone.trim())) {
+			uni.showToast({ title: "手机号格式不正确", icon: "none" })
+			return
+		}
+		if (!isEmail(form.value.email.trim())) {
+			uni.showToast({ title: "邮箱格式不正确", icon: "none" })
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		if (isRootDept.value) {
+			uni.showToast({ title: "根部门不可删除", icon: "none" })
+			return
+		}
+		const name = form.value.deptName.length > 0 ? form.value.deptName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除部门「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				removeDept([id.value]).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>

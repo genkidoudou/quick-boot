@@ -1,0 +1,137 @@
+<template>
+	<!-- C7 开关：rice-switch；文案可来自 activeText/inactiveText 或 dictList -->
+	<view class="c7-switch">
+		<rice-switch
+			v-model="inner"
+			:active-value="activeValue"
+			:inactive-value="inactiveValue"
+			:active-text="mergedActiveText"
+			:inactive-text="mergedInactiveText"
+			:disabled="disabled"
+			:loading="loading"
+			:active-color="activeColor"
+			:inactive-color="inactiveColor"
+			@change="onChange"
+		></rice-switch>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Switch（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Switch` 的**开关键心智**：`activeValue` / `inactiveValue`、
+	 * 双侧文案，以及可选 `dictList` 按 value 匹配 label。
+	 *
+	 * **交互实现**
+	 * - 底座为 RiceUI `rice-switch`
+	 * - 文案优先 `dictList` 中与 active/inactive value 匹配的 label，否则用 activeText/inactiveText
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue` + `update:modelValue` / `change(newVal, oldVal)`
+	 * - `confirmMessage`：桌面侧常用于二次确认；本实现仅保留 prop，**不拦截提交**（业务可自包 MessageBox）
+	 * - `cancel`：对齐桌面事件名预留（当前未主动 emit）
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP Switch 的 before-change / async 确认流；confirmMessage 不阻断切换
+	 * - 颜色、loading、disabled 直接透传 rice-switch
+	 */
+	defineOptions({ name: "C7Switch" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前开关值（可与 active/inactiveValue 任意类型对齐） */
+		modelValue : any
+		/** 打开态对应的值，默认 true */
+		activeValue : any
+		/** 关闭态对应的值，默认 false */
+		inactiveValue : any
+		/** 打开侧文案（dictList 未命中时使用） */
+		activeText : string
+		/** 关闭侧文案（dictList 未命中时使用） */
+		inactiveText : string
+		/** 字典选项 `{ label, value }[]`，用于覆盖双侧文案 */
+		dictList : any | null
+		/** 是否禁用 */
+		disabled : boolean
+		/** 是否展示 loading */
+		loading : boolean
+		/** 打开态颜色（透传 rice-switch） */
+		activeColor : string
+		/** 关闭态颜色（透传 rice-switch） */
+		inactiveColor : string
+		/** 桌面二次确认文案；本组件不拦截，仅保留命名对齐 */
+		confirmMessage : string
+	}>(), {
+		modelValue: false,
+		activeValue: true,
+		inactiveValue: false,
+		activeText: "",
+		inactiveText: "",
+		dictList: null,
+		disabled: false,
+		loading: false,
+		activeColor: "",
+		inactiveColor: "",
+		confirmMessage: ""
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : any]
+		change : [newVal : any, oldVal : any]
+		cancel : []
+	}>()
+
+	/** 打开侧最终展示文案（dict 优先） */
+	const mergedActiveText = computed(() : string => {
+		const fromDict = dictLabel(props.activeValue)
+		return fromDict.length > 0 ? fromDict : props.activeText
+	})
+
+	/** 关闭侧最终展示文案（dict 优先） */
+	const mergedInactiveText = computed(() : string => {
+		const fromDict = dictLabel(props.inactiveValue)
+		return fromDict.length > 0 ? fromDict : props.inactiveText
+	})
+
+	/** 在 dictList 中按 value 查找 label */
+	function dictLabel(val : any) : string {
+		if (props.dictList == null || !Array.isArray(props.dictList)) {
+			return ""
+		}
+		const arr = props.dictList as any[]
+		const target = `${val}`
+		for (let i = 0; i < arr.length; i++) {
+			const row = arr[i] as UTSJSONObject
+			if (`${row["value"]}` == target) {
+				return `${row["label"] ?? ""}`
+			}
+		}
+		return ""
+	}
+
+	/** 双向绑定到 rice-switch */
+	const inner = computed({
+		get : () : any => props.modelValue,
+		set : (v : any) => {
+			emit("update:modelValue", v)
+		}
+	})
+
+	/** 切换回调：同步 v-model 与 change(new, old)；confirmMessage 不阻断 */
+	function onChange(v : any) {
+		const oldVal = props.modelValue
+		if (props.confirmMessage.trim().length > 0 && v != oldVal) {
+			// 简化：仍提交，业务可用 confirmMessage 配 MessageBox 自行包一层
+		}
+		emit("update:modelValue", v)
+		emit("change", v, oldVal)
+	}
+</script>
+
+<style>
+	.c7-switch {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+</style>

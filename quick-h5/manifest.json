@@ -1,0 +1,45 @@
+{
+	"name": "quick-h5",
+	"appid": "__UNI__QUICKH5",
+	"description": "quick-h5 uni-app x + RiceUI",
+	"versionName": "1.0.0",
+	"versionCode": "100",
+	"uni-app-x": {
+		"styleIsolationVersion": "2",
+		"vapor": true,
+		"vapor-render-target": "bytecode",
+		"vapor-default-script-lang": "uts"
+	},
+	"vueVersion": "3",
+	"uniStatistics": {
+		"enable": false
+	},
+	"mp-weixin": {
+		"appid": "",
+		"setting": {
+			"urlCheck": false,
+			"es6": true,
+			"postcss": true,
+			"minified": true
+		},
+		"usingComponents": true,
+		"darkmode": true
+	},
+	"mp-alipay": {
+		"usingComponents": true
+	},
+	"mp-baidu": {
+		"usingComponents": true
+	},
+	"mp-toutiao": {
+		"usingComponents": true
+	},
+	"web": {
+		"darkmode": true,
+		"router": {
+			"mode": "hash",
+			"base": "./"
+		},
+		"title": "quick-h5"
+	}
+}

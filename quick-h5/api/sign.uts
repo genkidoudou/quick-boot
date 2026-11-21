@@ -1,0 +1,167 @@
+/**
+ * 请求加签（对齐 quick-ui sign.ts / 后端 SignUtils）。
+ * sign = v1. + base64url(clientId|ts|nonce|hmacHex)
+ */
+import { SIGN_CLIENT_ID, SIGN_CLIENT_SECRET } from "@/config/env"
+import { hmacSha256Hex, textToBase64Url } from "@/api/hmac-sha256"
+
+const TICKET_PREFIX = "v1."
+
+/**
+ * 与 Java URLEncoder 对齐：空格为 +。
+ */
+export function formEncode(s : string) : string {
+	return encodeURIComponent(s).replace(/%20/g, "+")
+}
+
+/**
+ * 签名原文：clientId\\nMETHOD\\npathAndQuery\\nts\\nnonce\\nbody
+ */
+export function buildSignBody(
+	clientId : string,
+	method : string,
+	pathAndQuery : string,
+	timestamp : string,
+	nonce : string,
+	rawBody : string
+) : string {
+	const m = method.toUpperCase()
+	return clientId + "\n" + m + "\n" + pathAndQuery + "\n" + timestamp + "\n" + nonce + "\n" + rawBody
+}
+
+/**
+ * 对 query 按 key 排序并统一编码（对齐后端 queryParams）。
+ */
+export function canonicalQuery(rawQuery : string) : string {
+	if (rawQuery.length == 0) {
+		return ""
+	}
+	const pairs = rawQuery.split("&")
+	const keys : string[] = []
+	const vals : string[] = []
+	for (let i = 0; i < pairs.length; i++) {
+		const pair = pairs[i]
+		if (pair.length == 0) {
+			continue
+		}
+		const eq = pair.indexOf("=")
+		let k = ""
+		let v = ""
+		if (eq < 0) {
+			k = decodeURIComponent(pair.replace(/\+/g, " "))
+			v = ""
+		} else {
+			k = decodeURIComponent(pair.substring(0, eq).replace(/\+/g, " "))
+			v = decodeURIComponent(pair.substring(eq + 1).replace(/\+/g, " "))
+		}
+		keys.push(k)
+		vals.push(v)
+	}
+	// 按 key 插入排序（稳定、UTS 友好）
+	for (let i = 1; i < keys.length; i++) {
+		const ck = keys[i]
+		const cv = vals[i]
+		let j = i - 1
+		while (j >= 0 && keys[j] > ck) {
+			keys[j + 1] = keys[j]
+			vals[j + 1] = vals[j]
+			j--
+		}
+		keys[j + 1] = ck
+		vals[j + 1] = cv
+	}
+	const out : string[] = []
+	for (let i = 0; i < keys.length; i++) {
+		out.push(formEncode(keys[i]) + "=" + formEncode(vals[i]))
+	}
+	return out.join("&")
+}
+
+/**
+ * 从完整 URL 提取签名用 path（含排序后 query），去掉协议主机与 API 代理前缀。
+ */
+export function pathAndQueryForSign(fullUrl : string) : string {
+	let u = fullUrl
+	const scheme = u.indexOf("://")
+	if (scheme >= 0) {
+		const slash = u.indexOf("/", scheme + 3)
+		u = slash >= 0 ? u.substring(slash) : "/"
+	}
+	// 去掉开发/生产代理前缀，对齐后端 getRequestURI()
+	if (u.startsWith("/dev-api")) {
+		u = u.substring("/dev-api".length)
+		if (u.length == 0 || !u.startsWith("/")) {
+			u = "/" + u
+		}
+	} else if (u.startsWith("/prod-api")) {
+		u = u.substring("/prod-api".length)
+		if (u.length == 0 || !u.startsWith("/")) {
+			u = "/" + u
+		}
+	}
+	const qIdx = u.indexOf("?")
+	if (qIdx < 0) {
+		return u.length > 0 ? u : "/"
+	}
+	const path = u.substring(0, qIdx)
+	const query = canonicalQuery(u.substring(qIdx + 1))
+	if (query.length == 0) {
+		return path
+	}
+	return path + "?" + query
+}
+
+function packHmac(clientId : string, timestamp : string, nonce : string, hmacHex : string) : string {
+	const plain = clientId + "|" + timestamp + "|" + nonce + "|" + hmacHex
+	return TICKET_PREFIX + textToBase64Url(plain)
+}
+
+function packIdentity(clientId : string) : string {
+	return TICKET_PREFIX + textToBase64Url(clientId)
+}
+
+function makeNonce() : string {
+	const r = Math.floor(Math.random() * 1e9)
+	return `${Date.now()}${r}`
+}
+
+/**
+ * 生成请求 sign 头。有 SECRET 时打 HMAC；否则仅 clientId 标识。
+ */
+export function buildRequestSign(method : string, fullUrl : string, rawBody : string) : string {
+	const clientId = SIGN_CLIENT_ID
+	const secret = SIGN_CLIENT_SECRET
+	if (clientId.length == 0) {
+		return ""
+	}
+	if (secret.length == 0) {
+		return packIdentity(clientId)
+	}
+	const timestamp = `${Date.now()}`
+	const nonce = makeNonce()
+	const path = pathAndQueryForSign(fullUrl)
+	const payload = buildSignBody(clientId, method, path, timestamp, nonce, rawBody)
+	const hmacHex = hmacSha256Hex(secret, payload)
+	return packHmac(clientId, timestamp, nonce, hmacHex)
+}
+
+/**
+ * 序列化 body 供加签（与 Content-Type: application/json 一致）。
+ */
+export function resolveRawBody(method : string, data : any | null) : string {
+	const m = method.toUpperCase()
+	if (m == "GET" || m == "HEAD") {
+		return ""
+	}
+	if (data == null) {
+		return ""
+	}
+	if (typeof data == "string") {
+		return data as string
+	}
+	try {
+		return JSON.stringify(data)
+	} catch (e) {
+		return ""
+	}
+}

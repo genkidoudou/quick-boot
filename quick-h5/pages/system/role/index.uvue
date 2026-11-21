@@ -1,0 +1,85 @@
+<template>
+	<!-- Soft Glass 列表视觉由 C7JsonTable 内置；本页只配业务 props -->
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageRole"
+			:delete-function="removeRole"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:role:add']"
+			:edit-button-permi="['system:role:edit']"
+			:delete-button-permi="['system:role:remove']"
+			delete-label-prop="roleName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 角色管理列表（quick-h5）
+	 *
+	 * 对齐 quick-ui：pageRole / tableColumns / searchColumns / removeRole。
+	 * H5 表单仅核心字段，不含菜单/部门树。
+	 */
+	import {
+		pageRole,
+		removeRole,
+		RolePayload
+	} from "@/api/system/role"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "roleName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "roleCode", label: "角色编码" } as UTSJSONObject,
+		{ prop: "roleSort", label: "排序", emptyText: "—" } as UTSJSONObject,
+		{ prop: "dataScope", label: "数据权限", columnType: "tag", dictType: "USER_DATA_SCOPE" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "roleName", label: "角色名称", type: "input" } as UTSJSONObject,
+		{ prop: "roleCode", label: "角色编码", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/system/role/form" })
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as RolePayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/system/role/form?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

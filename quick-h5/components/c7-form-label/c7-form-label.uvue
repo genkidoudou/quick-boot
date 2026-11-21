@@ -1,0 +1,76 @@
+<template>
+	<!-- C7 表单标签：文案 + tip 问号；点击 tip 用 toast（无桌面 hover） -->
+	<view class="c7-form-label" @click="onTip">
+		<slot>
+			<text class="c7-form-label__text">{{ text }}</text>
+		</slot>
+		<text v-if="tip.length > 0" class="c7-form-label__q">?</text>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7FormLabel（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7FormLabel` 的**表单项标题 + 说明**：默认展示 `text`，
+	 * 有 `tip` 时显示问号，点击弹出说明。
+	 *
+	 * **交互实现**
+	 * - 移动端无 hover：点击整块标签，`uni.showToast` 展示 tip
+	 * - 支持默认插槽覆盖标题文案
+	 *
+	 * **关键 props**
+	 * - `text`：标题文案（无插槽时使用）
+	 * - `tip`：说明文案；空则不显示问号、点击无操作
+	 *
+	 * **与 quick-ui 差异**
+	 * - 桌面多为 tooltip/hover；H5 改为 toast
+	 * - 本组件无 emit，仅展示与 tip 提示
+	 */
+	defineOptions({ name: "C7FormLabel" })
+
+	const props = withDefaults(defineProps<{
+		/** 标签标题文案（可被默认插槽覆盖） */
+		text : string
+		/** 说明文案；非空时显示「?」，点击 toast */
+		tip : string
+	}>(), {
+		text: "",
+		tip: ""
+	})
+
+	/** 有 tip 时 toast 展示说明 */
+	function onTip() {
+		if (props.tip.length == 0) {
+			return
+		}
+		uni.showToast({
+			title: props.tip,
+			icon: "none",
+			duration: 2500
+		})
+	}
+</script>
+
+<style>
+	.c7-form-label {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	.c7-form-label__text {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-form-label__q {
+		margin-left: 4px;
+		width: 16px;
+		height: 16px;
+		line-height: 16px;
+		text-align: center;
+		border-radius: 8px;
+		font-size: 11px;
+		color: #8e8e93;
+		background-color: rgba(142, 142, 147, 0.18);
+	}
+</style>

@@ -1,0 +1,261 @@
+/**
+ * 分页 API 公共工具（对齐 config.uts 解析约定）。
+ */
+import { request, RequestOptions } from "@/api/http"
+
+export type PageQuery = {
+	current : number
+	size : number
+	param : UTSJSONObject
+}
+
+export type PageResult = {
+	records : any[]
+	total : number
+	current : number
+	size : number
+	pages : number
+}
+
+export function readStr(row : UTSJSONObject, key : string) : string {
+	const s = row.getString(key)
+	if (s != null) {
+		return s
+	}
+	const n = row.getNumber(key)
+	if (n != null) {
+		return `${n}`
+	}
+	const anyRow = row as any
+	const raw = anyRow[key]
+	if (raw != null) {
+		return `${raw}`
+	}
+	return ""
+}
+
+export function readNum(row : UTSJSONObject, key : string, fallback : number) : number {
+	const n = row.getNumber(key)
+	if (n != null) {
+		return n
+	}
+	const s = row.getString(key)
+	if (s != null && s.length > 0) {
+		const parsed = parseFloat(s)
+		if (!isNaN(parsed)) {
+			return parsed
+		}
+	}
+	const anyRow = row as any
+	const raw = anyRow[key]
+	if (typeof raw == "number") {
+		return raw as number
+	}
+	if (raw != null) {
+		const parsed2 = parseFloat(`${raw}`)
+		if (!isNaN(parsed2)) {
+			return parsed2
+		}
+	}
+	return fallback
+}
+
+export function toRowObject(item : any | null) : UTSJSONObject | null {
+	if (item == null) {
+		return null
+	}
+	if (item instanceof UTSJSONObject) {
+		return item as UTSJSONObject
+	}
+	try {
+		return JSON.parseObject(JSON.stringify(item)!)
+	} catch (_e) {
+		return null
+	}
+}
+
+/** 去掉空字符串筛选字段 */
+export function cleanParam(raw : UTSJSONObject) : UTSJSONObject {
+	const param : UTSJSONObject = {}
+	const keys = UTSJSONObject.keys(raw)
+	for (let i = 0; i < keys.length; i++) {
+		const key = keys[i]
+		const v = raw[key]
+		if (v == null) {
+			continue
+		}
+		const s = `${v}`.trim()
+		if (s.length > 0) {
+			param[key] = s
+		}
+	}
+	return param
+}
+
+export function readRecordsArray(data : UTSJSONObject) : any[] {
+	let recordsRaw = data.getArray("records")
+	if (recordsRaw == null) {
+		const anyData = data as any
+		const plain = anyData["records"]
+		if (Array.isArray(plain)) {
+			recordsRaw = plain as any[]
+		}
+	}
+	if (recordsRaw == null) {
+		// 部分树接口直接 data 为数组
+		const anyData2 = data as any
+		if (Array.isArray(anyData2)) {
+			return anyData2 as any[]
+		}
+		return [] as any[]
+	}
+	return recordsRaw as any[]
+}
+
+/**
+ * 从 R 包装响应中取出数组型 data（菜单/部门树等）。
+ * 兼容 getArray / 下标访问 / stringify 再 parse；空 getArray 不短路兜底。
+ */
+export function readResponseDataArray(res : UTSJSONObject) : any[] {
+	const anyRes = res as any
+	const plain = anyRes["data"]
+	if (plain != null && Array.isArray(plain) && (plain as any[]).length > 0) {
+		return plain as any[]
+	}
+	let raw = res.getArray("data")
+	if (raw != null && (raw as any[]).length > 0) {
+		return raw as any[]
+	}
+	// data 偶发被当成 JSON 对象（含 records）
+	const dataObj = res.getJSON("data")
+	if (dataObj != null) {
+		const fromRecords = readRecordsArray(dataObj)
+		if (fromRecords.length > 0) {
+			return fromRecords
+		}
+	}
+	// stringify 再 parse：规避 UTS 对嵌套数组识别失败
+	if (plain != null) {
+		try {
+			const again = JSON.parse(JSON.stringify(plain)!)
+			if (Array.isArray(again) && (again as any[]).length > 0) {
+				return again as any[]
+			}
+		} catch (_e) {
+		}
+	}
+	try {
+		const whole = JSON.parse(JSON.stringify(res)!)
+		const d = (whole as any)["data"]
+		if (Array.isArray(d)) {
+			return d as any[]
+		}
+	} catch (_e2) {
+	}
+	if (plain != null && Array.isArray(plain)) {
+		return plain as any[]
+	}
+	if (raw != null) {
+		return raw as any[]
+	}
+	return [] as any[]
+}
+
+/**
+ * POST /page，mapRow 把每行转成业务对象。
+ */
+export function postPage(
+	url : string,
+	query : PageQuery,
+	mapRow : (row : UTSJSONObject) => any
+) : Promise<PageResult> {
+	const body : UTSJSONObject = {
+		current: query.current,
+		size: query.size,
+		param: cleanParam(query.param)
+	}
+	return request({
+		url: url,
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((res) : PageResult => {
+		const data = res.getJSON("data")
+		const empty = {
+			records: [] as any[],
+			total: 0,
+			current: query.current,
+			size: query.size,
+			pages: 0
+		} as PageResult
+		if (data == null) {
+			return empty
+		}
+		const raw = readRecordsArray(data)
+		const records : any[] = []
+		for (let i = 0; i < raw.length; i++) {
+			const rowObj = toRowObject(raw[i])
+			if (rowObj != null) {
+				records.push(mapRow(rowObj))
+			}
+		}
+		return {
+			records: records,
+			total: readNum(data, "total", records.length),
+			current: readNum(data, "current", query.current),
+			size: readNum(data, "size", query.size),
+			pages: readNum(data, "pages", 0)
+		} as PageResult
+	})
+}
+
+export function getById(
+	url : string,
+	mapRow : (row : UTSJSONObject) => any,
+	empty : any
+) : Promise<any> {
+	return request({
+		url: url,
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : any => {
+		const data = res.getJSON("data")
+		if (data == null) {
+			return empty
+		}
+		return mapRow(data)
+	})
+}
+
+export function postBody(url : string, body : any) : Promise<void> {
+	return request({
+		url: url,
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}
+
+export function removeIds(url : string, ids : string[]) : Promise<void> {
+	return postBody(url, ids)
+}
+
+/**
+ * 树节点展平（children 字段），便于移动端列表展示。
+ */
+export function flattenTree(nodes : any[], childrenKey : string = "children") : any[] {
+	const out : any[] = []
+	function walk(list : any[]) {
+		for (let i = 0; i < list.length; i++) {
+			const node = list[i]
+			out.push(node)
+			const anyNode = node as any
+			const kids = anyNode[childrenKey]
+			if (kids != null && Array.isArray(kids)) {
+				walk(kids as any[])
+			}
+		}
+	}
+	walk(nodes)
+	return out
+}

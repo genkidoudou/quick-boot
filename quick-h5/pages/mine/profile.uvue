@@ -1,0 +1,355 @@
+<template>
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="true"
+		add-title="个人资料"
+		edit-title="个人资料"
+		:show-delete="false"
+		@save="onSave"
+	>
+		<view class="avatar-block" @click="onPickAvatar">
+			<image v-if="avatarUrl.length > 0" class="avatar" :src="avatarUrl" mode="aspectFill"></image>
+			<view v-else class="avatar placeholder">
+				<text class="avatar-t">头像</text>
+			</view>
+			<text class="avatar-tip">{{ avatarUploading ? "上传中…" : "点击更换头像" }}</text>
+		</view>
+
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="nickName" label="昵称" required>
+				<rice-input
+					v-model="form['nickName']"
+					placeholder="昵称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="phonenumber" label="手机号">
+				<rice-input
+					v-model="form['phonenumber']"
+					placeholder="手机号码"
+					clearable
+					:maxlength="11"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="email" label="邮箱">
+				<rice-input
+					v-model="form['email']"
+					placeholder="邮箱"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="sex" label="性别">
+				<rice-radio-group v-model="form['sex']" direction="row">
+					<rice-radio label="女" value="0"></rice-radio>
+					<rice-radio label="男" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+		</rice-form>
+
+		<view class="pwd-block">
+			<text class="pwd-title">修改密码</text>
+			<rice-form :model="pwd" label-position="top" :border-bottom="false">
+				<rice-form-item name="oldPassword" label="旧密码">
+					<rice-input
+						v-model="pwd['oldPassword']"
+						type="password"
+						show-password
+						placeholder="当前密码"
+						clearable
+						border="none"
+					></rice-input>
+				</rice-form-item>
+				<rice-form-item name="newPassword" label="新密码">
+					<rice-input
+						v-model="pwd['newPassword']"
+						type="password"
+						show-password
+						placeholder="至少8位，含大小写、数字与特殊字符"
+						clearable
+						border="none"
+					></rice-input>
+				</rice-form-item>
+				<rice-form-item name="confirmPassword" label="确认密码">
+					<rice-input
+						v-model="pwd['confirmPassword']"
+						type="password"
+						show-password
+						placeholder="再次输入新密码"
+						clearable
+						border="none"
+					></rice-input>
+				</rice-form-item>
+			</rice-form>
+			<view class="pwd-btn" @click="onChangePwd">
+				<text class="pwd-btn-t">{{ pwdSaving ? "提交中…" : "更新密码" }}</text>
+			</view>
+		</view>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 个人资料：头像 / getUserProfile / updateUserProfile；可选改密（强密码）。
+	 */
+	import { FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import { isPhone, isEmail, isStrongPassword } from "@/utils/validate"
+	import {
+		getUserProfile,
+		updateUserProfile,
+		updatePassword,
+		uploadAvatar,
+		UserPayload
+	} from "@/api/system/user"
+
+	type ProfileForm = {
+		nickName : string
+		phonenumber : string
+		email : string
+		sex : string
+	}
+
+	type PwdForm = {
+		oldPassword : string
+		newPassword : string
+		confirmPassword : string
+	}
+
+	const form = ref({
+		nickName: "",
+		phonenumber: "",
+		email: "",
+		sex: "1"
+	} as ProfileForm)
+
+	const pwd = ref({
+		oldPassword: "",
+		newPassword: "",
+		confirmPassword: ""
+	} as PwdForm)
+
+	const avatarUrl = ref("")
+	const avatarUploading = ref(false)
+
+	const formRules = new Map<string, FormRules[]>([
+		["nickName", [{ required: true, message: "昵称不能为空", trigger: "blur" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const pwdSaving = ref(false)
+	const detailLoaded = ref(false)
+
+	function applyForm(row : UserPayload) {
+		form.value = {
+			nickName: row.nickName,
+			phonenumber: row.phonenumber,
+			email: row.email,
+			sex: row.sex.length > 0 ? row.sex : "1"
+		} as ProfileForm
+		avatarUrl.value = row.avatar
+		formKey.value = formKey.value + 1
+	}
+
+	function loadProfile() {
+		if (loading.value) {
+			return
+		}
+		loading.value = true
+		getUserProfile().then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载资料失败", icon: "none" })
+		})
+	}
+
+	onLoad((_q) => {
+		loadProfile()
+	})
+
+	onShow(() => {
+		if (!detailLoaded.value && !loading.value) {
+			loadProfile()
+		}
+	})
+
+	function onPickAvatar() {
+		if (avatarUploading.value) {
+			return
+		}
+		uni.chooseImage({
+			count: 1,
+			success: (res) => {
+				const paths = res.tempFilePaths
+				if (paths == null || paths.length == 0) {
+					return
+				}
+				avatarUploading.value = true
+				uploadAvatar(paths[0]).then((row) => {
+					avatarUploading.value = false
+					if (row.avatar.length > 0) {
+						avatarUrl.value = row.avatar
+					}
+					uni.showToast({ title: "头像已更新", icon: "success" })
+				}).catch((_e) => {
+					avatarUploading.value = false
+				})
+			}
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const phone = form.value.phonenumber.trim()
+		if (!isPhone(phone)) {
+			uni.showToast({ title: "手机号格式不正确", icon: "none" })
+			return
+		}
+		const email = form.value.email.trim()
+		if (!isEmail(email)) {
+			uni.showToast({ title: "邮箱格式不正确", icon: "none" })
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok != true) {
+			if (ok == null) {
+				uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+			}
+			return
+		}
+		saving.value = true
+		const f = form.value
+		const body = {
+			nickName: f.nickName.trim(),
+			phonenumber: phone,
+			email: email,
+			sex: f.sex
+		} as UTSJSONObject
+		updateUserProfile(body).then(() => {
+			saving.value = false
+			uni.showToast({ title: "已保存", icon: "success" })
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	function onChangePwd() {
+		if (pwdSaving.value) {
+			return
+		}
+		const oldP = pwd.value.oldPassword.trim()
+		const newP = pwd.value.newPassword.trim()
+		const confirmP = pwd.value.confirmPassword.trim()
+		if (oldP.length == 0 || newP.length == 0) {
+			uni.showToast({ title: "请填写旧密码与新密码", icon: "none" })
+			return
+		}
+		if (confirmP.length == 0) {
+			uni.showToast({ title: "请填写确认密码", icon: "none" })
+			return
+		}
+		if (newP != confirmP) {
+			uni.showToast({ title: "两次新密码不一致", icon: "none" })
+			return
+		}
+		if (!isStrongPassword(newP)) {
+			uni.showToast({ title: "密码至少8位，且须含大小写、数字与特殊字符", icon: "none" })
+			return
+		}
+		pwdSaving.value = true
+		const body = {
+			oldPassword: oldP,
+			newPassword: newP
+		} as UTSJSONObject
+		updatePassword(body).then(() => {
+			pwdSaving.value = false
+			pwd.value = { oldPassword: "", newPassword: "", confirmPassword: "" } as PwdForm
+			uni.showToast({ title: "密码已更新", icon: "success" })
+		}).catch((_e) => {
+			pwdSaving.value = false
+		})
+	}
+</script>
+
+<style>
+	.avatar-block {
+		padding: 8px 4px 16px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.avatar {
+		width: 72px;
+		height: 72px;
+		border-radius: 36px;
+		background-color: #e5e5ea;
+	}
+	.placeholder {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.avatar-t {
+		font-size: 13px;
+		color: #8e8e93;
+	}
+	.avatar-tip {
+		margin-top: 8px;
+		font-size: 12px;
+		color: #007aff;
+	}
+	.pwd-block {
+		margin-top: 8px;
+		padding: 12px 4px 28px;
+		display: flex;
+		flex-direction: column;
+	}
+	.pwd-title {
+		font-size: 15px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		margin-bottom: 8px;
+	}
+	.pwd-btn {
+		margin-top: 8px;
+		height: 40px;
+		border-radius: 10px;
+		background-color: rgba(0, 122, 255, 0.12);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.pwd-btn-t {
+		font-size: 14px;
+		font-weight: 600;
+		color: #007aff;
+	}
+</style>

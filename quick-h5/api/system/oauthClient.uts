@@ -1,0 +1,140 @@
+/**
+ * OAuth 客户端 API，对齐 quick-ui `/api/system/oauthClient.js` 与后端 `/sys/oauthclient`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr
+} from "@/api/shared/page.uts"
+import { request, RequestOptions } from "@/api/http"
+
+export type OauthCredential = {
+	clientId : string
+	clientName : string
+	clientSecret : string
+}
+
+const BASE = "/sys/oauthclient"
+
+/** 列表行 / 表单载荷；id 全程 string；grantTypes / apiPathPatterns 为逗号串 */
+export type OauthClientPayload = {
+	id : string
+	clientId : string
+	clientName : string
+	clientType : string
+	grantTypes : string
+	apiPathPatterns : string
+	tokenTimeout : string
+	status : string
+	remark : string
+}
+
+function emptyOauthClient() : OauthClientPayload {
+	return {
+		id: "",
+		clientId: "",
+		clientName: "",
+		clientType: "public",
+		grantTypes: "password",
+		apiPathPatterns: "/**",
+		tokenTimeout: "",
+		status: "0",
+		remark: ""
+	} as OauthClientPayload
+}
+
+export function mapOauthClientRow(row : UTSJSONObject) : OauthClientPayload {
+	return {
+		id: readStr(row, "id"),
+		clientId: readStr(row, "clientId"),
+		clientName: readStr(row, "clientName"),
+		clientType: readStr(row, "clientType"),
+		grantTypes: readStr(row, "grantTypes"),
+		apiPathPatterns: readStr(row, "apiPathPatterns"),
+		tokenTimeout: readStr(row, "tokenTimeout"),
+		status: readStr(row, "status"),
+		remark: readStr(row, "remark")
+	} as OauthClientPayload
+}
+
+function toBody(payload : OauthClientPayload, withId : boolean) : UTSJSONObject {
+	const body : UTSJSONObject = {
+		clientId: payload.clientId,
+		clientName: payload.clientName,
+		clientType: payload.clientType,
+		grantTypes: payload.grantTypes,
+		apiPathPatterns: payload.apiPathPatterns,
+		tokenTimeout: payload.tokenTimeout,
+		status: payload.status,
+		remark: payload.remark
+	}
+	if (withId) {
+		body["id"] = payload.id
+	}
+	return body
+}
+
+/** 分页；可直接作 C7JsonTable listFunction */
+export function pageOauthClient(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapOauthClientRow)
+}
+
+/** 详情 */
+export function getOauthClient(id : string) : Promise<OauthClientPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapOauthClientRow, emptyOauthClient()) as Promise<OauthClientPayload>
+}
+
+/**
+ * 新增；返回明文 clientSecret（仅此一次）。
+ */
+export function addOauthClient(payload : OauthClientPayload) : Promise<string> {
+	return request({
+		url: BASE + "/add",
+		method: "POST",
+		data: toBody(payload, false),
+		needToken: true
+	} as RequestOptions).then((res) : string => {
+		const data = res.getJSON("data")
+		if (data == null) {
+			return ""
+		}
+		return readStr(data, "clientSecret")
+	})
+}
+
+/** 查看凭证（含明文 clientSecret） */
+export function getOauthClientCredential(id : string) : Promise<OauthCredential> {
+	return request({
+		url: BASE + "/" + encodeURIComponent(id) + "/credential",
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : OauthCredential => {
+		const data = res.getJSON("data")
+		if (data == null) {
+			return {
+				clientId: "",
+				clientName: "",
+				clientSecret: ""
+			} as OauthCredential
+		}
+		return {
+			clientId: readStr(data, "clientId"),
+			clientName: readStr(data, "clientName"),
+			clientSecret: readStr(data, "clientSecret")
+		} as OauthCredential
+	})
+}
+
+/** 修改 */
+export function updateOauthClient(payload : OauthClientPayload) : Promise<void> {
+	return postBody(BASE + "/update", toBody(payload, true))
+}
+
+/** 批量删除 */
+export function removeOauthClient(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}

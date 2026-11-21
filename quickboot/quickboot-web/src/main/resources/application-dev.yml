@@ -11,6 +11,16 @@ spring:
     password: rootroot
 qc:
   captcha:
+    # 本地 API 冒烟 / 自动化联调可关；日常联调行为验证码可改回 true
     enabled: false
   file:
     view-url-base: http://localhost:8800/dev-api/sys/file/view
+  # 开发态允许 H5 / 管理端本地源跨域（生产勿照搬 *）
+  security:
+    firewall:
+      cors:
+        enabled: true
+        allowed-origins:
+          - http://localhost:*
+          - http://127.0.0.1:*
+

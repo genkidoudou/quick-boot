@@ -1,34 +1,29 @@
 <template>
-	<!-- #ifdef WEB -->
-	<captcha-h5 ref="innerRef"></captcha-h5>
+	<!-- H5 / WEB 走 TAC；其它端走原生滑块 -->
+	<!-- #ifdef H5 || WEB -->
+	<captcha-h5></captcha-h5>
 	<!-- #endif -->
+	<!-- #ifndef H5 -->
 	<!-- #ifndef WEB -->
-	<captcha-native ref="innerRef"></captcha-native>
+	<captcha-native></captcha-native>
+	<!-- #endif -->
 	<!-- #endif -->
 </template>
 
 <script setup lang="uts">
 	/**
 	 * 多端验证码入口：H5 走官方 TAC，其它端走原生滑块。
+	 * 打开方式：子组件 onMounted 注册到 bridge.uts，页面调 openCaptcha()。
+	 * 子组件同目录，autoscan 扫不到，需显式 import。
 	 */
-	const innerRef = ref<ComponentPublicInstance | null>(null)
+	// #ifdef H5 || WEB
+	import CaptchaH5 from "@/components/captcha/captcha-h5.uvue"
+	// #endif
+	// #ifndef H5
+	// #ifndef WEB
+	import CaptchaNative from "@/components/captcha/captcha-native.uvue"
+	// #endif
+	// #endif
 
-	/**
-	 * 打开验证码，成功返回 uuid。
-	 */
-	function open() : Promise<string> {
-		const inst = innerRef.value
-		if (inst == null) {
-			return Promise.reject("验证码组件未就绪")
-		}
-		const anyInst = inst as any
-		if (anyInst.open == null) {
-			return Promise.reject("验证码 open 不可用")
-		}
-		return anyInst.open() as Promise<string>
-	}
-
-	defineExpose({
-		open
-	})
+	defineOptions({ name: "CaptchaHost" })
 </script>

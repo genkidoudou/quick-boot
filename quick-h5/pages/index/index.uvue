@@ -1,63 +1,245 @@
 <template>
 	<view class="page">
 		<view class="content">
-			<rice-tag text="RiceUI" type="primary"></rice-tag>
-			<view class="gap"></view>
-			<rice-button type="primary" text="主要按钮" @click="onPrimaryClick"></rice-button>
-			<view class="gap"></view>
-			<rice-button type="info" :text="themeButtonText" @click="onToggleTheme"></rice-button>
-			<view class="gap"></view>
-			<rice-button type="warning" text="打开 Dialog" @click="onOpenDialog"></rice-button>
-			<view class="gap"></view>
-			<rice-button type="error" text="退出登录" @click="onLogout"></rice-button>
+			<view class="hero">
+				<view class="hero-top">
+					<text class="hero-ey">{{ heroEyebrow }}</text>
+					<c7-inbox-bell :count="unreadCount" tone="light"></c7-inbox-bell>
+				</view>
+				<text class="hero-title">你好，{{ displayName }}</text>
+				<text class="hero-sub">从待办与常用入口开始，而不是从一张空表格开始。</text>
+			</view>
+
+			<text class="sec">今日关注</text>
+			<view class="attn-grid">
+				<view class="attn-card" @click="goJobLog">
+					<text class="attn-title">定时任务</text>
+					<text class="attn-desc">{{ jobDesc }}</text>
+					<text class="badge badge-warn">运维</text>
+				</view>
+				<view class="attn-card attn-ops" @click="onOpsClick">
+					<text class="attn-title ops-title">运行状态</text>
+					<text class="attn-desc ops-desc">登录日志 · 操作审计</text>
+				</view>
+			</view>
+
+			<view class="sec-h">
+				<text class="sec">最近消息</text>
+				<text class="sec-more" @click="goInbox">全部</text>
+			</view>
+			<view class="feed-card" v-if="feedList.length > 0">
+				<view
+					class="feed-row"
+					v-for="(item, idx) in feedList"
+					:key="item.id"
+					:class="idx == feedList.length - 1 ? 'feed-row-last' : ''"
+					@click="goFeed(item)"
+				>
+					<view class="av" :class="item.unread ? '' : 'av-muted'">
+						<view class="av-dot" v-if="item.unread"></view>
+						<text class="av-t">信</text>
+					</view>
+					<view class="feed-body">
+						<text class="feed-title" :class="item.unread ? 'is-unread' : ''">{{ item.title }}</text>
+						<text class="feed-sub">{{ item.sub }}</text>
+					</view>
+					<text class="feed-time">{{ item.time }}</text>
+				</view>
+			</view>
+			<view class="feed-empty" v-else>
+				<text class="feed-empty-t">{{ feedEmptyText }}</text>
+			</view>
 		</view>
 	</view>
 </template>
 
 <script setup lang="uts">
-	import { showDialog } from "@/uni_modules/rice-ui"
-	import { themeState, toggleTheme } from "@/store/theme"
-	import { hasToken, clearToken } from "@/store/user"
+	/**
+	 * 首页：问候 + 铃铛未读 + 运维关注 + 最近消息预览。
+	 */
+	import { getUserProfile } from "@/api/system/user"
+	import {
+		unreadInboxCount,
+		pageMineInbox,
+		InboxPayload
+	} from "@/api/msg/inbox"
+	import { pageJobLog } from "@/api/job/jobLog"
 
-	const themeButtonText = computed(() : string => {
-		return themeState.isDark ? '切换为浅色' : '切换为暗黑'
+	type FeedItem = {
+		id : string
+		title : string
+		sub : string
+		time : string
+		unread : boolean
+	}
+
+	const displayName = ref("…")
+	const heroEyebrow = ref("今天 · 产品工作台")
+	const unreadCount = ref(0)
+	const jobFailCount = ref(0)
+	const feedList = ref<FeedItem[]>([] as FeedItem[])
+	const loading = ref(false)
+	const feedEmptyText = ref("加载中…")
+
+	const jobDesc = computed(() : string => {
+		const n = jobFailCount.value
+		if (n <= 0) {
+			return "近期无失败"
+		}
+		return `${n} 个失败`
 	})
+
+	function formatEyebrow() : string {
+		const d = new Date()
+		const m = d.getMonth() + 1
+		const day = d.getDate()
+		return `${m}月${day}日 · 产品工作台`
+	}
+
+	function shortTime(raw : string) : string {
+		const t = raw.trim()
+		if (t.length == 0) {
+			return ""
+		}
+		if (t.length >= 16) {
+			return t.substring(5, 16)
+		}
+		if (t.length > 10) {
+			return t.substring(0, 10)
+		}
+		return t
+	}
+
+	function mapFeed(row : InboxPayload) : FeedItem {
+		const unread = row.readFlag != "1"
+		let sub = row.content.trim()
+		if (sub.length > 36) {
+			sub = sub.substring(0, 36) + "…"
+		}
+		if (sub.length == 0) {
+			sub = unread ? "未读消息" : "已读消息"
+		}
+		return {
+			id: row.id,
+			title: row.title.length > 0 ? row.title : "系统通知",
+			sub: sub,
+			time: shortTime(row.createTime),
+			unread: unread
+		} as FeedItem
+	}
+
+	function loadHome() : Promise<void> {
+		if (loading.value) {
+			return Promise.resolve()
+		}
+		loading.value = true
+		heroEyebrow.value = formatEyebrow()
+
+		const pProfile = getUserProfile().then((u) => {
+			let name = u.nickName.trim()
+			if (name.length == 0) {
+				name = u.userName.trim()
+			}
+			displayName.value = name.length > 0 ? name : "用户"
+		}).catch((_e) => {
+			if (displayName.value == "…") {
+				displayName.value = "用户"
+			}
+		})
+
+		const pUnread = unreadInboxCount().then((n) => {
+			unreadCount.value = n
+		}).catch((_e) => {
+			unreadCount.value = 0
+		})
+
+		const jobQuery = {
+			current: 1,
+			size: 1,
+			param: { status: "2" } as UTSJSONObject
+		}
+		const pJob = pageJobLog(jobQuery).then((res) => {
+			jobFailCount.value = res.total
+		}).catch((_e) => {
+			jobFailCount.value = 0
+		})
+
+		const inboxQuery = {
+			current: 1,
+			size: 5,
+			param: {} as UTSJSONObject
+		}
+		const pFeed = pageMineInbox(inboxQuery).then((res) => {
+			const rows = res.records
+			const out : FeedItem[] = [] as FeedItem[]
+			if (rows != null) {
+				const len = rows.length
+				for (let i = 0; i < len; i++) {
+					const row = rows[i] as InboxPayload
+					if (row != null && row.id.length > 0) {
+						out.push(mapFeed(row))
+					}
+				}
+			}
+			feedList.value = out
+			feedEmptyText.value = "暂时没有消息"
+		}).catch((_e) => {
+			feedList.value = [] as FeedItem[]
+			feedEmptyText.value = "消息加载失败"
+		})
+
+		return Promise.all([pProfile, pUnread, pJob, pFeed] as any[]).then((_arr) : void => {
+			loading.value = false
+			uni.stopPullDownRefresh()
+		}).catch((_e) : void => {
+			loading.value = false
+			uni.stopPullDownRefresh()
+		})
+	}
+
+	function goInbox() {
+		uni.navigateTo({ url: "/pages/msg/inbox/index" })
+	}
+
+	function goJobLog() {
+		uni.navigateTo({ url: "/pages/job/jobLog/index" })
+	}
+
+	function goLogininfor() {
+		uni.navigateTo({ url: "/pages/system/logininfor/index" })
+	}
+
+	function goOperLog() {
+		uni.navigateTo({ url: "/pages/system/operLog/index" })
+	}
+
+	function onOpsClick() {
+		uni.showActionSheet({
+			itemList: ["登录日志", "操作日志"],
+			success: (res) => {
+				if (res.tapIndex == 0) {
+					goLogininfor()
+				} else if (res.tapIndex == 1) {
+					goOperLog()
+				}
+			}
+		})
+	}
+
+	function goFeed(item : FeedItem) {
+		if (item.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/msg/inbox/detail?id=" + encodeURIComponent(item.id) })
+	}
 
 	onShow(() => {
-		if (!hasToken()) {
-			uni.reLaunch({ url: "/pages/login/login" })
-		}
+		loadHome()
 	})
 
-	const onPrimaryClick = () => {
-		uni.showToast({
-			title: '点击了按钮',
-			icon: 'none'
-		})
-	}
-
-	const onToggleTheme = () => {
-		toggleTheme()
-	}
-
-	const onOpenDialog = () => {
-		showDialog({
-			title: '提示',
-			message: 'Dialog 页面注册成功',
-			confirm: () => {
-				uni.showToast({
-					title: '确定',
-					icon: 'none'
-				})
-			},
-			cancel: () => {}
-		})
-	}
-
-	const onLogout = () => {
-		clearToken()
-		uni.reLaunch({ url: "/pages/login/login" })
-	}
+	onPullDownRefresh(() => {
+		loadHome()
+	})
 </script>
 
 <style>
@@ -73,9 +255,214 @@
 		background-color: var(--rice-background);
 	}
 	.content {
-		padding: 16px;
+		padding: 12px 16px 28px;
 	}
-	.gap {
-		height: 12px;
+	.hero {
+		padding: 18px 18px 20px;
+		border-radius: 20px;
+		margin-bottom: 14px;
+		background-image: linear-gradient(145deg, #182235, #0b1322 62%, #1a2740);
+		display: flex;
+		flex-direction: column;
+	}
+	.hero-top {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10px;
+	}
+	.hero-ey {
+		font-size: 12px;
+		color: rgba(248, 250, 252, 0.72);
+		flex: 1;
+		margin-right: 12px;
+	}
+	.hero-title {
+		font-size: 22px;
+		font-weight: 700;
+		color: #f8fafc;
+		margin-bottom: 8px;
+	}
+	.hero-sub {
+		font-size: 13px;
+		color: rgba(248, 250, 252, 0.78);
+		line-height: 20px;
+	}
+	.sec-h {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin: 6px 0 10px;
+	}
+	.sec {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--rice-text-color-2, #666666);
+		margin: 0;
+	}
+	.sec-more {
+		font-size: 12px;
+		color: #8d51f9;
+		font-weight: 600;
+	}
+	.attn-grid {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		margin-bottom: 8px;
+	}
+	.attn-card {
+		width: 48%;
+		margin-right: 4%;
+		margin-bottom: 10px;
+		padding: 14px;
+		border-radius: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: column;
+	}
+	.attn-ops {
+		width: 48%;
+		margin-right: 0;
+		background-image: linear-gradient(135deg, #2a1f4a, #0b1322);
+		border-width: 0;
+	}
+	.attn-title {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--rice-text-color);
+		margin-bottom: 4px;
+	}
+	.attn-desc {
+		font-size: 12px;
+		color: var(--rice-text-color-2, #666666);
+		margin-bottom: 8px;
+	}
+	.ops-title {
+		color: #f8fafc;
+	}
+	.ops-desc {
+		color: rgba(248, 250, 252, 0.75);
+		margin-bottom: 0;
+	}
+	.badge {
+		align-self: flex-start;
+		font-size: 11px;
+		font-weight: 600;
+		padding: 2px 8px;
+		border-radius: 999px;
+	}
+	.badge-warn {
+		background-color: rgba(217, 119, 6, 0.12);
+		color: #d97706;
+	}
+	.feed-card {
+		border-radius: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		padding: 4px 14px;
+	}
+	.feed-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 12px 0;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: rgba(24, 24, 27, 0.06);
+	}
+	.feed-row-last {
+		border-bottom-width: 0;
+	}
+	.feed-empty {
+		border-radius: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		padding: 28px 14px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.feed-empty-t {
+		font-size: 13px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.av {
+		position: relative;
+		width: 38px;
+		height: 38px;
+		border-radius: 12px;
+		background-color: rgba(0, 122, 255, 0.12);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin-right: 12px;
+	}
+	.av-muted {
+		background-color: rgba(100, 116, 139, 0.16);
+	}
+	.av-dot {
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		width: 8px;
+		height: 8px;
+		border-radius: 4px;
+		background-color: #ff3b30;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #ffffff;
+	}
+	.av-t {
+		font-size: 13px;
+		font-weight: 700;
+		color: #007aff;
+	}
+	.av-muted .av-t {
+		color: #64748b;
+	}
+	.feed-body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.feed-title {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--rice-text-color);
+		margin-bottom: 2px;
+		lines: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.feed-title.is-unread {
+		font-weight: 700;
+	}
+	.feed-sub {
+		font-size: 12px;
+		color: var(--rice-text-color-2, #666666);
+		lines: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.feed-time {
+		font-size: 11px;
+		color: #8e8e93;
+		margin-left: 8px;
+		flex-shrink: 0;
 	}
 </style>

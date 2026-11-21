@@ -1,0 +1,74 @@
+/**
+ * 轻量校验，对齐 quick-ui `src/utils/validate.js` 常用规则。
+ */
+
+/** 中国大陆手机号 */
+export function isPhone(phone : string) : boolean {
+	if (phone.length == 0) {
+		return true
+	}
+	if (phone.length != 11) {
+		return false
+	}
+	if (phone.charAt(0) != "1") {
+		return false
+	}
+	const second = phone.charAt(1)
+	if (second < "3" || second > "9") {
+		return false
+	}
+	for (let i = 2; i < 11; i++) {
+		const c = phone.charAt(i)
+		if (c < "0" || c > "9") {
+			return false
+		}
+	}
+	return true
+}
+
+/** 简单邮箱（允许空） */
+export function isEmail(email : string) : boolean {
+	if (email.length == 0) {
+		return true
+	}
+	const at = email.indexOf("@")
+	if (at <= 0) {
+		return false
+	}
+	const dot = email.indexOf(".", at + 1)
+	if (dot <= at + 1) {
+		return false
+	}
+	if (email.indexOf(" ") >= 0) {
+		return false
+	}
+	return true
+}
+
+/**
+ * 强密码：至少 8 位，含大小写、数字、特殊字符。
+ * 对齐后台 PatternConstants / quick-ui PATTERNS.password。
+ */
+export function isStrongPassword(password : string) : boolean {
+	if (password.length < 8) {
+		return false
+	}
+	let hasLower = false
+	let hasUpper = false
+	let hasDigit = false
+	let hasSpecial = false
+	for (let i = 0; i < password.length; i++) {
+		const c = password.charAt(i)
+		const code = password.charCodeAt(i)
+		if (code >= 97 && code <= 122) {
+			hasLower = true
+		} else if (code >= 65 && code <= 90) {
+			hasUpper = true
+		} else if (code >= 48 && code <= 57) {
+			hasDigit = true
+		} else {
+			hasSpecial = true
+		}
+	}
+	return hasLower && hasUpper && hasDigit && hasSpecial
+}

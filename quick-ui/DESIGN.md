@@ -1,16 +1,21 @@
 # QuickBoot 视觉设计
 
-改动用户看得到的界面之前先读本文。这里记录 QuickBoot（quick-ui）管理端的视觉方向、全局设计令牌与七类业务表面的统一规范。观感对标 MoviePilot v3：同一套画布明度阶梯、玻璃/平面材质与圆角尺度。组件栈为 **Element Plus 组件壳 + `--qb-*` 语义令牌 + `glass` / `plain` 材质**；令牌真值定义于 `src/assets/styles/tokens.scss`，经 `src/utils/theme.js` 与 `src/theme/packages/` 写入 Element Plus（`--el-color-*`、`--el-bg-color` 等），几何与卡片骨架落在 `src/assets/styles/common.scss`，玻璃主题落在 `src/assets/styles/themes/glass.scss`，壁纸与轻量光学见 `src/utils/wallpaper.js`、`src/components/theme/`。Tailwind（`tailwind.config.js`）语义类名（`bg-background`、`bg-card`、`text-foreground` 等）映射同一组 `--qb-*`。本文说明每个令牌用在哪里、为什么这样定。
+改动用户看得到的界面之前先读本文。这里记录 QuickBoot（quick-ui）的视觉方向、全局设计令牌与七类业务表面的统一规范。默认气质为 **Soft Glass**：消费级产品壳 + 安静运维面，观感对标 MoviePilot v3 / Apple 向玻璃产品，而不是传统管理后台。组件栈为 **Element Plus 组件壳 + `--qb-*` 语义令牌 + `glass` / `plain` 材质**；令牌真值定义于 `src/assets/styles/tokens.scss`，经 `src/utils/theme.js` 与 `src/theme/packages/` 写入 Element Plus（`--el-color-*`、`--el-bg-color` 等），几何与卡片骨架落在 `src/assets/styles/common.scss`，玻璃主题落在 `src/assets/styles/themes/glass.scss`，壳层见 `src/assets/styles/sidebar.scss` 与 `src/layout/components/Navbar.vue`，壁纸与轻量光学见 `src/utils/wallpaper.js`、`src/components/theme/`。Tailwind（`tailwind.config.js`）语义类名（`bg-background`、`bg-card`、`text-foreground` 等）映射同一组 `--qb-*`。
+
+静态对照预览（实现前 / 回归对照）：
+
+- `design-previews/consumer-styles.html` → Soft Glass App（方案 1）
+- `design-previews/layout-b-vs-c.html` → 布局力度 B（换皮 + 壳层；表格仍是表格）
 
 ## 方向
 
-默认材质为 Soft Glass：新用户与未写入本地覆盖的配置下 `glassEnabled` 为 true；侧栏浅色玻璃、工作台横幅与入口卡承担产品温度，列表/表单保持安静运维面与 C7 交互骨架。
+默认材质为 Soft Glass：新用户与未写入本地覆盖的配置下 `glassEnabled` 为 true；侧栏浅色玻璃、工作台横幅与入口卡承担产品温度，列表/表单保持安静运维面与 C7 交互骨架（搜 → 表 → `C7FormDialog`）。**不做**摘要卡/双栏列表结构，**不**新建独立 Soft Glass 主题包，**不**换字体栈。
 
 QuickBoot 同时承载品牌登录/工作台入口与全天候后台运维。登录品牌区、仪表横幅与可选背景壁纸负责视觉温度；侧栏导航、管理卡片、表格与表单保持安静克制，靠表面明度阶梯、留白与细线分组。主题强调色与状态色只留给可交互控件、选中态和需要用户处理的信号，其余区域退回中性灰阶，让用户一眼看到亮起的颜色就知道哪里能点、哪里需要关注。
 
 整套界面由同一组语义令牌同时驱动「玻璃透射（`glass`）」与「精致平面（`plain`）」两种材质，并完整支持浅色、深色与跟随系统。网页端与后续独立壳/移动端套壳共用同一套页面令牌与卡片结构；壳层只接管系统顶栏、底部标签栏、操作菜单与弹出层容器，不在业务组件（如 `C7JsonTable`、`C7FormDialog`）里分支第二套视觉样式。
 
-现有主题包（`default` / `linear` / `stripe` / `notion` 等）定位为 **主色预设**：可切换 primary，但画布、卡片、前景与边框层级一律以本文统一令牌为准，禁止各包再维护一套灰阶。
+现有主题包（`default` / `linear` / `stripe` / `notion` 等）定位为 **主色预设**：可切换 primary，但画布、卡片、前景与边框层级一律以本文统一令牌为准，禁止各包再维护一套灰阶。默认主色仍为 `#8D51F9`。
 
 ## 令牌
 
@@ -31,15 +36,81 @@ QuickBoot 同时承载品牌登录/工作台入口与全天候后台运维。登
 | `banner-tint`（`--qb-card-accent-rgb`）        | 品牌色 14% 至 5% 柔和浅彩渐变                 | 品牌色 28% 至 10% 柔光渐变（玻璃态走三档透光色层） | OAuth 客户端卡、应用摘要卡与配置摘要卡的品牌染色头部，前景统一走 `foreground` 与 `muted-foreground`                                                     |
 | `border` / `border-subtle` / `input`           | 深墨 8% / 5% / 14%                            | 纯白 8% / 5% / 14%（玻璃态随反光强度微调）         | 平面卡片细描边、内部分隔线、输入框与次要按钮边框                                                                                                        |
 | `ring`（`--qb-ring`）                          | 主色 68% 混合透明                             | 主色 68% 混合透明                                  | 键盘可见焦点环唯一来源                                                                                                                                  |
-| `radius`（五档）                               | 表面 `8 / 12 / 20 / 24 / 28px`                | 表面 `8 / 12 / 20 / 24 / 28px`                     | 平面与玻璃共用同一套五档几何尺度，输入框按 `8 / 12 / 16 / 20 / 24px`、内部控件与图标框按 `8 / 10 / 14 / 16 / 18px` 同心递减，切换玻璃开关不发生几何跳变 |
-| `shadow`                                       | 浅色双层极轻微投影 / 玻璃光边投影             | 深色平面无黑影靠明度与细线分层 / 玻璃光边投影      | 卡片与浮层立体感，卡片内部嵌套子表面一律清除外阴影                                                                                                      |
+| `radius`（五档）                               | 表面 `8 / 12 / 20 / 24 / 28px`                | 表面 `8 / 12 / 20 / 24 / 28px`                     | 平面与玻璃共用同一套五档几何尺度；`--qb-radius` 默认 `12px`（`md`）。输入框按 `8 / 12 / 16 / 20 / 24px`、内部控件与图标框按 `8 / 10 / 14 / 16 / 18px` 同心递减 |
+| `shadow`                                       | 浅色双层极轻微投影 / Soft Glass 光边投影      | 深色平面无黑影靠明度与细线分层 / 玻璃光边投影      | 卡片与浮层立体感，卡片内部嵌套子表面一律清除外阴影。Soft Glass：`--qb-shadow-glass: inset 0 0 0 1px rgba(255,255,255,0.35), 0 8px 28px rgba(11,19,34,0.1)` |
 | `bottom-clearance`（`--qb-bottom-clearance`）  | 按壳模式动态计算                              | 按壳模式动态计算                                   | 列表滚动底部避让高度，自动适配右下角悬浮按钮、移动底栏与系统安全区                                                                                      |
+
+### Soft Glass 光学默认（`common.scss`）
+
+| 外观档（`glassAppearance`） | `--qb-glass-blur` | `--qb-glass-saturate` | `--qb-glass-surface-opacity` |
+| --------------------------- | ----------------- | --------------------- | ---------------------------- |
+| `clear`                     | `14px`            | `1.05`                | `0.58`                       |
+| `tinted`（**默认**）        | `22px`            | `1.35`                | `0.72`                       |
+| `frosted`                   | `28px`            | `1.4`                 | `0.82`                       |
+
+画质档（`glassQuality`：`standard` / `balanced` / `high`）在上述基础上缩放 blur（及 high 时略提 saturate），默认 `balanced`。
+
+### 圆角：入口面固定 `lg`
+
+下列表面原型外框使用 **`--qb-radius-lg`（20px）**，刻意不跟随 `data-theme-radius` 对 `--qb-radius` 的改写，保证 Soft Glass 入口尺度稳定：
+
+- `.qb-media-surface`（媒体 / 工作台横幅）
+- `.qb-banner-card`（品牌染色横幅卡）
+- `.qb-card-colorful` / `.app-card-colorful`（彩色配置摘要卡）
+- `.qb-workbench`（高密度列表面板外框）
+
+仍使用默认 `--qb-radius`（12px，可随主题圆角档变化）的：
+
+- `.qb-card-shell`
+- `.qb-ops-card`
 
 ## 主题、材质与壁纸
 
-- 明暗模式提供浅色、深色与跟随系统三项。默认玻璃开（Soft Glass，`glassEnabled` 为 true）；材质由布局设置里的「启用玻璃效果」开关切换为 `glass` 或 `plain`，用户仍可在此关闭玻璃、回到平面。玻璃外观（清透、色调、磨砂）与渲染画质（标准、平衡、高画质）收口在布局设置抽屉内联动调节；高画质启用 Canvas 轻量光学层（非完整 Three.js 移植）。
+默认设置（`src/settings.js`，无 `localStorage.layout-setting` 覆盖时生效）：
+
+| 项 | 默认值 | 说明 |
+|----|--------|------|
+| `glassEnabled` | `true` | Soft Glass 默认开玻璃 |
+| `glassAppearance` | `tinted` | 色调玻璃 |
+| `glassQuality` | `balanced` | 平衡画质 |
+| `sideTheme` | `theme-light` | 浅色侧栏 |
+| `colorScheme` | `light` | 浅色明暗 |
+
+已写入本地 `layout-setting` 的用户保留其显式开关（含 `glassEnabled: false`），不会被默认值强行翻开。
+
+- 明暗模式提供浅色、深色与跟随系统三项。材质由布局设置里的「启用玻璃效果」开关切换为 `glass` 或 `plain`，用户仍可关闭玻璃回到平面。玻璃外观（清透、色调、磨砂）与渲染画质（标准、平衡、高画质）收口在布局设置抽屉内联动调节；高画质启用 Canvas 轻量光学层（非完整 Three.js 移植）。
 - 背景壁纸在浅色玻璃与深色玻璃下均可开启（预设 + 本地上传）。深色玻璃压低壁纸曝光烘托浅色正文，浅色玻璃保留自然日光亮度并叠加晨雾柔白遮罩，保证深石板色正文与半透白卡清晰可读。关闭玻璃切到平面模式时不渲染壁纸。
 - 玻璃模糊只在外层主卡片、侧栏与顶栏壳执行一次；卡片内部的底栏、标签、列表与嵌套面板全部使用纯静态吸收色层（`muted`），不重复声明 `backdrop-filter`。
+
+## 壳层与登录
+
+### 侧栏
+
+- 浅色默认：白 / 半透玻璃浮起圆角侧栏卡（非厚重深色条）；玻璃态背景透明度跟随 `--qb-glass-surface-opacity`，阴影对齐 `--qb-shadow`。
+- 激活项：`primary` 约 14% soft 底（`--qb-sidebar-active-bg`）+ 更深前景 `--qb-sidebar-text-active`（不用高饱和色块整条刷满）。
+- 分组标签用 `faint`；信息架构与宽度维持现网，只调材质与间距。
+
+### 顶栏
+
+- 与侧栏同一玻璃 / 卡片表面语言；底边用 `--qb-border-subtle`，避免与侧栏双阴影抢戏（`box-shadow: none`）。
+- 汉堡与右侧图标 hover 使用 `--qb-sidebar-hover`，禁止硬编码 `rgba(0,0,0,…)`。
+- 主按钮用 primary；次要操作描边 / 浅底。头像圆角与 Soft Glass 控件一致（约 `12px`）。
+
+### 工作台首页
+
+- 顶部 `.qb-media-surface` 品牌 / 氛围横幅：`on-media` 文案，产品向短句，避免后台说明书口吻。
+- 下方入口优先「品牌染色横幅卡」与彩色摘要卡；分组设置走 `.app-grouped-list`。
+- 可保留活动 / 运维类面板，外框为 card 原型，不是灰底表格岛。
+
+### 登录
+
+- 保留氛围层动画；主色桥接 `--el-color-primary`（及 light 色阶），随主题包切换。
+- 登录卡：大圆角（`--qb-radius-xl` / 24px 档）、表面走 `--qb-card` / `--qb-border` / `--qb-shadow`，单一主 CTA；品牌名是第一视觉。
+
+### 列表页（壳层视角）
+
+- 根容器加 `.qb-workbench`（或等价 card 外框 + `muted` 工具条）；表内交互不变。
+- 可选薄页头说明，不强制每页都有横幅。
 
 ## 字体与数字
 
@@ -52,14 +123,16 @@ QuickBoot 同时承载品牌登录/工作台入口与全天候后台运维。登
 
 全站页面与业务卡片统一归入七种表面原型，后续新增或调优页面必须复用对应原型，不在全局主题文件里追加私有选择器。
 
-1. **媒体与品牌展示面**（登录品牌区、带底图的仪表横幅等） 图片或品牌视觉铺满展示面并退出玻璃背景填充（`.no-blur`），底部叠 `media-scrim` 渐变遮罩，文字固定使用 `on-media`。
-2. **影像底图运维卡**（监控缩略、文件预览卡、带截图的资源卡等） 底图加载成功时走 `media-scrim` 与 `on-media`，未加载或无图态回退到标准 `card` 与语义前景。
-3. **品牌染色横幅卡**（OAuth 客户端卡、应用/插件摘要卡等） 上半区通过 `--qb-card-accent-rgb` 注入品牌柔和染色（可提取图标调色板中最高饱和度色相，过滤纯白纯黑背景），下半区使用 `muted` 静态吸收底座承托元信息或运行指标，前景全程走 `foreground` 与 `muted-foreground`。
-4. **彩色配置摘要卡**（消息通道、存储、通知、规则组等配置摘要） 沿用 `.app-card-colorful`（或等价 `.qb-card-colorful`）紧凑摘要骨架与统一内边距。
-5. **高密度工作台与资源面板**（`C7JsonTable` 列表、操作日志、文件浏览、缓存与任务明细） 面板外框复用 `card`，工具栏与表头复用 `muted`，状态标签统一消费语义柔和胶囊（`*-soft` 与 `*-border`），不硬编码实底彩色色块。
+1. **媒体与品牌展示面**（登录品牌区、带底图的仪表横幅等） 图片或品牌视觉铺满展示面并退出玻璃背景填充（`.no-blur`），底部叠 `media-scrim` 渐变遮罩，文字固定使用 `on-media`。外框圆角 `--qb-radius-lg`。
+2. **影像底图运维卡**（监控缩略、文件预览卡、带截图的资源卡等） 底图加载成功时走 `media-scrim` 与 `on-media`，未加载或无图态回退到标准 `card` 与语义前景。外框仍 `--qb-radius`（12px 档）。
+3. **品牌染色横幅卡**（OAuth 客户端卡、应用/插件摘要卡等） 上半区通过 `--qb-card-accent-rgb` 注入品牌柔和染色（可提取图标调色板中最高饱和度色相，过滤纯白纯黑背景），下半区使用 `muted` 静态吸收底座承托元信息或运行指标，前景全程走 `foreground` 与 `muted-foreground`。外框 `--qb-radius-lg`。
+4. **彩色配置摘要卡**（消息通道、存储、通知、规则组等配置摘要） 沿用 `.app-card-colorful`（或等价 `.qb-card-colorful`）紧凑摘要骨架与统一内边距。外框 `--qb-radius-lg`。
+5. **高密度工作台与资源面板**（`C7JsonTable` 列表、操作日志、文件浏览、缓存与任务明细） 面板外框复用 `.qb-workbench`（`card` + `--qb-radius-lg`），工具栏与表头复用 `muted`，状态标签统一消费语义柔和胶囊（`*-soft` 与 `*-border`），不硬编码实底彩色色块；**交互骨架仍为表格，不改为摘要卡双栏**。
 6. **分组设置卡片**（各系统设置页与 `.app-grouped-list`） 桌面端使用标准 `card` 圆角与内部分隔线，移动端小屏表单行使用 `.app-responsive-input` 左说明右控件紧凑排版。
 7. **弹出层与浮动导航**（`C7Dialog`、`C7FormDialog`、抽屉、下拉菜单、快捷面板、悬浮按钮） 统一消费 `popover` 表面、`--qb-overlay-radius`（或 `--app-overlay-radius`）与 `--qb-ring` 焦点环。
 
 ## 验收
 
 凡涉及布局、令牌、主题或卡片交互的改动，在完成构建检查与受影响单测后，必须在真实浏览器中同时核验桌面宽度与手机宽度，并至少覆盖「玻璃浅色（含壁纸）」「玻璃暗色（清透与色调）」「平面浅色」「平面暗色」四组状态，确认无文字隐身、无截断吞字、无圆角撞边且底部最后一张卡片不被悬浮栏遮挡。
+
+额外对照：气质接近 `design-previews/consumer-styles.html` 方案 1 与 `layout-b-vs-c.html` 的 B；任意系统列表仍可完成「搜 → 表 → 弹窗」。

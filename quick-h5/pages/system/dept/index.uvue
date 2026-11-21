@@ -1,0 +1,81 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="listDept"
+			:delete-function="removeDept"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:dept:add']"
+			:edit-button-permi="['system:dept:edit']"
+			:delete-button-permi="['system:dept:remove']"
+			delete-label-prop="deptName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 部门管理列表（树已展平）
+	 */
+	import {
+		listDept,
+		removeDept,
+		DeptPayload
+	} from "@/api/system/dept"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "deptName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "orderNum", label: "排序" } as UTSJSONObject,
+		{ prop: "leader", label: "负责人", emptyText: "—" } as UTSJSONObject,
+		{ prop: "phone", label: "电话", emptyText: "—" } as UTSJSONObject,
+		{ prop: "email", label: "邮箱", emptyText: "—" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "deptName", label: "部门名称", type: "input" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/system/dept/form" })
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as DeptPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/system/dept/form?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

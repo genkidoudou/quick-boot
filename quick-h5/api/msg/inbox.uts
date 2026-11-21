@@ -1,0 +1,93 @@
+/**
+ * 站内信 API，对齐 quick-ui `/api/msg/inbox.js` 与后端 `/msg/inbox`。
+ * H5 我的收件箱：pageMineInbox / getInbox / readInbox。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	readStr
+} from "@/api/shared/page"
+import { request, RequestOptions } from "@/api/http"
+
+const BASE = "/msg/inbox"
+
+export type InboxPayload = {
+	id : string
+	title : string
+	content : string
+	readFlag : string
+	createTime : string
+}
+
+function emptyInbox() : InboxPayload {
+	return {
+		id: "",
+		title: "",
+		content: "",
+		readFlag: "0",
+		createTime: ""
+	} as InboxPayload
+}
+
+export function mapInboxRow(row : UTSJSONObject) : InboxPayload {
+	return {
+		id: readStr(row, "id"),
+		title: readStr(row, "title"),
+		content: readStr(row, "content"),
+		readFlag: readStr(row, "readFlag"),
+		createTime: readStr(row, "createTime")
+	} as InboxPayload
+}
+
+/** 当前登录人收件箱分页 */
+export function pageMineInbox(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/mine/page", query, mapInboxRow)
+}
+
+/** 当前登录人未读站内信数量 */
+export function unreadInboxCount() : Promise<number> {
+	return request({
+		url: BASE + "/unread-count",
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : number => {
+		const n = res.getNumber("data")
+		if (n != null) {
+			return n as number
+		}
+		const s = res.getString("data")
+		if (s != null && s.length > 0) {
+			const parsed = parseFloat(s)
+			if (!isNaN(parsed)) {
+				return parsed
+			}
+		}
+		const anyRes = res as any
+		const raw = anyRes["data"]
+		if (typeof raw == "number") {
+			return raw as number
+		}
+		if (raw != null) {
+			const parsed2 = parseFloat(`${raw}`)
+			if (!isNaN(parsed2)) {
+				return parsed2
+			}
+		}
+		return 0
+	})
+}
+
+export function getInbox(id : string) : Promise<InboxPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapInboxRow, emptyInbox()) as Promise<InboxPayload>
+}
+
+/** 标为已读 */
+export function readInbox(id : string) : Promise<void> {
+	return request({
+		url: BASE + "/read/" + encodeURIComponent(id),
+		method: "POST",
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}

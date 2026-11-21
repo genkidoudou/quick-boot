@@ -1,8 +1,14 @@
 <script setup lang="uts">
 	import { initAppTheme } from "@/store/theme"
+	import { setupAuthGuard, ensureCurrentPageAuth } from "@/permission"
 
 	onLaunch(() => {
 		initAppTheme()
+		setupAuthGuard()
+	})
+
+	onShow(() => {
+		ensureCurrentPageAuth()
 	})
 </script>
 

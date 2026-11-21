@@ -1,0 +1,105 @@
+<template>
+	<!-- C7 单选组：rice-radio-group + 归一化选项 -->
+	<view class="c7-radio">
+		<rice-radio-group v-model="inner" direction="row" @change="onChange">
+			<template v-for="(item, idx) in items" :key="idx">
+				<rice-radio
+					:label="item.label"
+					:value="item.value"
+					:disabled="item.disabled || disabled"
+					:custom-style="radioStyle"
+				></rice-radio>
+			</template>
+		</rice-radio-group>
+		<text v-if="items.length == 0" class="c7-radio__empty">{{ emptyText }}</text>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Radio（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Radio` 的**静态选项单选**：`dataList` / `options` + `labelKey` / `valueKey`，
+	 * `v-model` 与 `change` 事件一致。
+	 *
+	 * **交互实现**
+	 * - 底座为 RiceUI `rice-radio-group` / `rice-radio`（横向排列）
+	 * - 选项经 `resolveC7Options` 归一化为 `{ label, value, disabled? }`
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue`：当前选中 value（字符串）
+	 * - `dataList` / `options`：选项源（优先 dataList）
+	 * - `change(v)`：选中变化
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP Radio 样式/尺寸等桌面透传；禁用合并「项级 disabled || 组件 disabled」
+	 * - 无选项时展示 `emptyText`，而非空白
+	 */
+	import { resolveC7Options, C7OptionItem } from "@/components/c7-shared/option.uts"
+
+	defineOptions({ name: "C7Radio" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前选中值（字符串 value） */
+		modelValue : string
+		/** 选项列表（优先于 options） */
+		dataList : any | null
+		/** 备选选项列表；dataList 为空时使用 */
+		options : any | null
+		/** 选项文案字段名，默认 label */
+		labelKey : string
+		/** 选项值字段名，默认 value */
+		valueKey : string
+		/** 整组禁用（会与项级 disabled 合并） */
+		disabled : boolean
+		/** 无选项时的提示文案 */
+		emptyText : string
+	}>(), {
+		modelValue: "",
+		dataList: null,
+		options: null,
+		labelKey: "label",
+		valueKey: "value",
+		disabled: false,
+		emptyText: "暂无选项"
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : string]
+		change : [v : string]
+	}>()
+
+	/** rice-radio 间距样式 */
+	const radioStyle = { marginRight: "16px" } as UTSJSONObject
+
+	/** 归一化后的选项列表 */
+	const items = computed(() : C7OptionItem[] => {
+		return resolveC7Options(props.dataList, props.options, props.labelKey, props.valueKey)
+	})
+
+	/** 双向绑定到 rice-radio-group 的中间值 */
+	const inner = computed({
+		get : () : string => props.modelValue,
+		set : (v : string) => {
+			emit("update:modelValue", v)
+		}
+	})
+
+	/** group change：同步 v-model 与 change 事件 */
+	function onChange(v : any) {
+		const s = v != null ? `${v}` : ""
+		emit("update:modelValue", s)
+		emit("change", s)
+	}
+</script>
+
+<style>
+	.c7-radio {
+		display: flex;
+		flex-direction: column;
+	}
+	.c7-radio__empty {
+		font-size: 12px;
+		color: #8e8e93;
+	}
+</style>

@@ -1,0 +1,114 @@
+<template>
+	<view class="page">
+		<scroll-view scroll-y class="scroll">
+			<view class="content">
+				<c7-card label="C7Select" :show-color-block="true">
+					<c7-select v-model="selectVal" :options="statusOpts" placeholder="请选择状态" @change="onSelect"></c7-select>
+					<text class="hint">值：{{ selectVal }}</text>
+				</c7-card>
+
+				<c7-card label="C7Radio" :show-color-block="true">
+					<c7-radio v-model="radioVal" :options="statusOpts"></c7-radio>
+				</c7-card>
+
+				<c7-card label="C7Checkbox" :show-color-block="true">
+					<c7-checkbox v-model="checkVal" :options="statusOpts"></c7-checkbox>
+					<text class="hint">值：{{ checkValText }}</text>
+				</c7-card>
+
+				<c7-card label="C7Switch" :show-color-block="true">
+					<c7-switch v-model="switchVal" active-value="1" inactive-value="0"></c7-switch>
+					<text class="hint">值：{{ switchVal }}</text>
+				</c7-card>
+
+				<c7-card label="C7DatePicker / C7TimePicker" :show-color-block="true">
+					<c7-form-label text="日期" tip="对齐 packages type=date"></c7-form-label>
+					<view class="mt">
+						<c7-date-picker v-model="dateVal"></c7-date-picker>
+					</view>
+					<view class="mt">
+						<c7-form-label text="时间"></c7-form-label>
+					</view>
+					<view class="mt">
+						<c7-time-picker v-model="timeVal"></c7-time-picker>
+					</view>
+				</c7-card>
+
+				<c7-card label="C7Cascader / C7TreeSelect" :show-color-block="true">
+					<c7-cascader v-model="cascaderVal" :options="treeOpts" placeholder="级联选择"></c7-cascader>
+					<text class="hint">级联：{{ cascaderVal }}</text>
+					<view class="mt">
+						<c7-tree-select v-model="treeVal" :options="treeOpts" placeholder="树选择"></c7-tree-select>
+					</view>
+					<text class="hint">树：{{ treeVal }}</text>
+				</c7-card>
+			</view>
+		</scroll-view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	const statusOpts = ref([
+		{ label: "启用", value: "1" } as UTSJSONObject,
+		{ label: "停用", value: "0" } as UTSJSONObject
+	] as any[])
+
+	const treeOpts = ref([
+		{
+			label: "华北",
+			value: "n",
+			children: [
+				{ label: "北京", value: "bj" } as UTSJSONObject,
+				{ label: "天津", value: "tj" } as UTSJSONObject
+			]
+		} as UTSJSONObject,
+		{
+			label: "华东",
+			value: "e",
+			children: [
+				{ label: "上海", value: "sh" } as UTSJSONObject
+			]
+		} as UTSJSONObject
+	] as any[])
+
+	const selectVal = ref("")
+	const radioVal = ref("1")
+	const checkVal = ref(["1"] as string[])
+	const switchVal = ref("1")
+	const dateVal = ref("")
+	const timeVal = ref("")
+	const cascaderVal = ref("")
+	const treeVal = ref("")
+
+	const checkValText = computed(() : string => {
+		return checkVal.value.join(",")
+	})
+
+	function onSelect(v : string) {
+		console.log("select", v)
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background-color: var(--rice-background);
+	}
+	.scroll {
+		flex: 1;
+		height: 100vh;
+	}
+	.content {
+		padding: 12px 16px 28px;
+	}
+	.hint {
+		margin-top: 8px;
+		font-size: 12px;
+		color: #8e8e93;
+	}
+	.mt {
+		margin-top: 10px;
+	}
+</style>

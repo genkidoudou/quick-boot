@@ -1,0 +1,161 @@
+<template>
+	<!-- C7 字典标签：按 value 匹配 options / dictType 缓存后回显 -->
+	<view class="c7-dict-tag">
+		<template v-if="empty">
+			<text class="c7-dict-tag__dash">-</text>
+		</template>
+		<template v-else-if="plain">
+			<!-- listClass 为空或 default 时纯文本，对齐 quick-ui plain 分支 -->
+			<text class="c7-dict-tag__plain">{{ labelText }}</text>
+		</template>
+		<template v-else>
+			<rice-tag :type="tagType" :text="labelText" size="small"></rice-tag>
+		</template>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7DictTag（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7DictTag` 的**常用单值回显**场景：将 `value` 按字典选项匹配为 label，
+	 * 有样式时用 `rice-tag`，否则纯文本；空值展示 `-`。
+	 *
+	 * **数据来源（二选一优先）**
+	 * - `options` 非空：直接使用外部选项（如页面侧 `loadDict` 结果）
+	 * - `dictType`：内部调用 `loadDict`，走内存缓存
+	 *
+	 * **未匹配**：`showValue=true` 展示原值；否则 `-`
+	 *
+	 * **与 quick-ui 差异（刻意简化）**
+	 * - 仅单值 `value`（字符串），不做多值 / 分隔符 / max / +N
+	 * - 标签实现为 RiceUI `rice-tag`（danger → error）
+	 * - 本组件不 emit，仅只读展示
+	 */
+	import { DictOption } from "@/store/dict"
+	import { loadDict, toRiceTagType, isPlainDictStyle } from "@/utils/dict"
+
+	defineOptions({ name: "C7DictTag" })
+
+	const props = defineProps({
+		/** 当前字典值（只读展示） */
+		value: { type: String, default: "" },
+		/** 字典类型编码，如 user_status、COMMON_STATUS；无 options 时触发 loadDict */
+		dictType: { type: String, default: "" },
+		/** 外部选项 `{ label, value, elTagType, elTagClass }[]`；非空时优先，不再请求 */
+		options: { type: Array, default: () => [] as DictOption[] },
+		/** 未匹配时是否展示原始 value；false 时显示 `-` */
+		showValue: { type: Boolean, default: false }
+	})
+
+	/** 是否无有效展示（空值或未匹配且 showValue=false） */
+	const empty = ref(true)
+	/** 是否纯文本（无 listClass / default） */
+	const plain = ref(true)
+	/** 展示文案 */
+	const labelText = ref("-")
+	/** rice-tag 的 type */
+	const tagType = ref("primary")
+	/** dictType 拉取后的本地选项 */
+	const localOptions = ref([] as DictOption[])
+
+	/** 将 props.options 安全转为 DictOption[]（null → []） */
+	function asOptions(raw : any) : DictOption[] {
+		if (raw == null) {
+			return [] as DictOption[]
+		}
+		const arr = raw as DictOption[]
+		return arr
+	}
+
+	/**
+	 * 按当前 value 在选项中匹配并更新 empty / plain / labelText / tagType。
+	 * 选项来源：外部 options 非空优先，否则 localOptions。
+	 */
+	function resolve() {
+		const val = props.value
+		if (val == null || `${val}`.length == 0) {
+			empty.value = true
+			labelText.value = "-"
+			return
+		}
+		empty.value = false
+		let opts = asOptions(props.options)
+		if (opts.length == 0) {
+			opts = localOptions.value
+		}
+		let hit : DictOption | null = null
+		for (let i = 0; i < opts.length; i++) {
+			if (opts[i].value == `${val}`) {
+				hit = opts[i]
+				break
+			}
+		}
+		if (hit == null) {
+			if (props.showValue) {
+				plain.value = true
+				labelText.value = `${val}`
+			} else {
+				empty.value = true
+				labelText.value = "-"
+			}
+			return
+		}
+		labelText.value = hit.label
+		plain.value = isPlainDictStyle(hit.elTagType, hit.elTagClass)
+		tagType.value = toRiceTagType(hit.elTagType)
+	}
+
+	/**
+	 * 确保选项就绪：优先外部 options，否则按 dictType loadDict 后 resolve。
+	 * dictType 为空时直接 resolve（依赖外部 options）。
+	 */
+	function ensureLoaded() {
+		const dt = props.dictType
+		if (dt.length == 0) {
+			resolve()
+			return
+		}
+		const external = asOptions(props.options)
+		if (external.length > 0) {
+			resolve()
+			return
+		}
+		loadDict(dt).then((opts) => {
+			localOptions.value = opts
+			resolve()
+		}).catch((_e) => {
+			localOptions.value = [] as DictOption[]
+			resolve()
+		})
+	}
+
+	/** value 变化：仅重新匹配，不重新拉字典 */
+	watch(() : string => props.value, () => {
+		resolve()
+	})
+	/** dictType 变化：重新 ensureLoaded（可能触发 loadDict） */
+	watch(() : string => props.dictType, () => {
+		ensureLoaded()
+	})
+
+	onMounted(() => {
+		ensureLoaded()
+	})
+</script>
+
+<style>
+	.c7-dict-tag {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	.c7-dict-tag__dash {
+		font-size: 13px;
+		color: #8e8e93;
+	}
+	.c7-dict-tag__plain {
+		font-size: 13px;
+		color: var(--rice-text-color);
+	}
+</style>

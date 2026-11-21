@@ -1,0 +1,79 @@
+<template>
+	<view class="page">
+		<view class="content">
+			<c7-title label="C7 Packages 示例" label-size="h3"></c7-title>
+			<text class="sub">对齐 quick-ui packages 命名与常用 props，基于 RiceUI。</text>
+
+			<view class="group">
+				<template v-for="(item, idx) in menus" :key="idx">
+					<view class="line" @click="go(item.path)">
+						<text class="line-l">{{ item.label }}</text>
+						<text class="line-r">›</text>
+					</view>
+				</template>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	type MenuItem = {
+		label : string
+		path : string
+	}
+
+	const menus = ref([
+		{ label: "表单控件", path: "/pages/examples/form" } as MenuItem,
+		{ label: "展示组件", path: "/pages/examples/display" } as MenuItem,
+		{ label: "弹层与反馈", path: "/pages/examples/feedback" } as MenuItem,
+		{ label: "其它组件", path: "/pages/examples/misc" } as MenuItem,
+		{ label: "关于 QuickBoot", path: "/pages/examples/about" } as MenuItem
+	] as MenuItem[])
+
+	function go(path : string) {
+		uni.navigateTo({ url: path })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 16px;
+	}
+	.sub {
+		font-size: 13px;
+		color: #8e8e93;
+		margin-bottom: 14px;
+	}
+	.group {
+		border-radius: 16px;
+		overflow: hidden;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+	}
+	.line {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 16px;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: rgba(24, 24, 27, 0.06);
+	}
+	.line-l {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.line-r {
+		font-size: 12px;
+		color: #8e8e93;
+	}
+</style>

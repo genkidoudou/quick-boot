@@ -1,0 +1,42 @@
+/**
+ * 权限校验，对齐 quick-ui `permissionUtils.checkPermission` / v-hasPermi。
+ * 用户 permissions 含 `*:*:*` 或包含任一指定字符即通过；所需列表为空则不做过滤（通过）。
+ */
+import { getPermissions } from "@/store/user"
+
+const ALL_PERMISSION = "*:*:*"
+
+/**
+ * 是否具备所需权限之一。
+ */
+export function hasPermi(needed : string[]) : boolean {
+	if (needed.length == 0) {
+		return true
+	}
+	const userPermissions = getPermissions()
+	for (let i = 0; i < userPermissions.length; i++) {
+		const p = userPermissions[i]
+		if (p == ALL_PERMISSION) {
+			return true
+		}
+		for (let j = 0; j < needed.length; j++) {
+			if (p == needed[j]) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+/**
+ * 工具栏按钮是否展示：开关关闭 → 否；所需权限为空 → 仅看开关；否则校验 hasPermi。
+ */
+export function resolveButtonVisible(showFlag : boolean, permiList : string[]) : boolean {
+	if (!showFlag) {
+		return false
+	}
+	if (permiList.length == 0) {
+		return true
+	}
+	return hasPermi(permiList)
+}

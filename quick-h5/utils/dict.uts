@@ -1,0 +1,92 @@
+/**
+ * 字典工具（对齐 quick-ui utils/dict.js 的 useDict 能力，UTS 友好）。
+ */
+import { fetchDictDataByType } from "@/api/dict"
+import { DictOption, getDict, setDict } from "@/store/dict"
+
+/**
+ * 将后端行映射为选项。
+ */
+export function mapDictRow(row : UTSJSONObject) : DictOption {
+	const label = row.getString("dictLabel") ?? ""
+	const value = row.getString("dictValue") ?? ""
+	const listClass = row.getString("listClass") ?? ""
+	const cssClass = row.getString("cssClass") ?? ""
+	return {
+		label: label,
+		value: value,
+		elTagType: listClass,
+		elTagClass: cssClass
+	} as DictOption
+}
+
+/**
+ * 加载单个字典类型（带缓存）。等价于 useDict 的单 key 拉取。
+ */
+export function loadDict(dictType : string) : Promise<DictOption[]> {
+	const hit = getDict(dictType)
+	if (hit != null) {
+		return Promise.resolve(hit)
+	}
+	return fetchDictDataByType(dictType).then((rows) : DictOption[] => {
+		const options : DictOption[] = []
+		for (let i = 0; i < rows.length; i++) {
+			options.push(mapDictRow(rows[i]))
+		}
+		setDict(dictType, options)
+		return options
+	})
+}
+
+/**
+ * 批量预加载（依次请求，结果写入缓存）。
+ */
+export function loadDicts(dictTypes : string[]) : Promise<void> {
+	let chain = Promise.resolve()
+	for (let i = 0; i < dictTypes.length; i++) {
+		const t = dictTypes[i]
+		chain = chain.then(() : Promise<void> => {
+			return loadDict(t).then((_opts) : void => {})
+		})
+	}
+	return chain
+}
+
+/**
+ * 按 value 取 label；未匹配返回空串或原值。
+ */
+export function getDictLabel(options : DictOption[], value : string, fallbackRaw : boolean = false) : string {
+	const s = value
+	for (let i = 0; i < options.length; i++) {
+		if (options[i].value == s) {
+			return options[i].label
+		}
+	}
+	return fallbackRaw ? value : ""
+}
+
+/**
+ * listClass → rice-tag type。
+ */
+export function toRiceTagType(listClass : string) : string {
+	const raw = listClass.trim().toLowerCase()
+	if (raw.length == 0 || raw == "default") {
+		return "primary"
+	}
+	if (raw == "danger" || raw == "error") {
+		return "error"
+	}
+	if (raw == "success" || raw == "warning" || raw == "info" || raw == "primary") {
+		return raw
+	}
+	return "primary"
+}
+
+/**
+ * 是否纯文本展示（default + 无 cssClass）。
+ */
+export function isPlainDictStyle(listClass : string, cssClass : string) : boolean {
+	const lc = listClass
+	const cc = cssClass
+	return (lc.length == 0 || lc == "default") && (cc.length == 0)
+}

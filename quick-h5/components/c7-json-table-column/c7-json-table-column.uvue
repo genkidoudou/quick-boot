@@ -1,0 +1,345 @@
+<template>
+	<!-- C7JsonTableColumn：按 columns JSON 渲染行内字段；支持 layout=row 横向组 -->
+	<view class="c7-json-table-column">
+		<template v-for="(col, idx) in columnList" :key="idx">
+			<!-- 行组：children 横向排列 -->
+			<view v-if="isRowLayout(col)" class="c7-json-table-column__row">
+				<template v-for="(child, cIdx) in colChildren(col)" :key="cIdx">
+					<view
+						class="c7-json-table-column__row-item"
+						:class="isEmphasize(child) ? 'is-flex' : ''"
+					>
+						<text
+							v-if="!isHideLabel(child) && colLabel(child).length > 0"
+							class="c7-json-table-column__label c7-json-table-column__label--inline"
+						>{{ colLabel(child) }}</text>
+						<view class="c7-json-table-column__val">
+							<c7-dict-tag
+								v-if="colType(child) == 'tag'"
+								:value="cellText(child)"
+								:options="colOptions(child)"
+								:dict-type="colDictType(child)"
+							></c7-dict-tag>
+							<image
+								v-else-if="colType(child) == 'image' && cellText(child).length > 0"
+								class="c7-json-table-column__img"
+								:src="cellText(child)"
+								mode="aspectFill"
+							></image>
+							<text
+								v-else-if="colType(child) == 'link' && cellText(child).length > 0"
+								class="c7-json-table-column__link"
+								@click="onLink(cellText(child))"
+							>{{ cellText(child) }}</text>
+							<slot
+								v-else-if="colType(child) == 'slot'"
+								:name="slotName(child)"
+								:row="row"
+								:column="child"
+							></slot>
+							<text
+								v-else
+								class="c7-json-table-column__t"
+								:class="isEmphasize(child) ? 'is-title' : ''"
+							>{{ displayText(child) }}</text>
+						</view>
+					</view>
+				</template>
+			</view>
+			<!-- 普通列：左 label + 右值 -->
+			<view v-else class="c7-json-table-column__cell">
+				<text
+					v-if="!isHideLabel(col) && colLabel(col).length > 0"
+					class="c7-json-table-column__label"
+				>{{ colLabel(col) }}</text>
+				<view class="c7-json-table-column__val">
+					<c7-dict-tag
+						v-if="colType(col) == 'tag'"
+						:value="cellText(col)"
+						:options="colOptions(col)"
+						:dict-type="colDictType(col)"
+					></c7-dict-tag>
+					<image
+						v-else-if="colType(col) == 'image' && cellText(col).length > 0"
+						class="c7-json-table-column__img"
+						:src="cellText(col)"
+						mode="aspectFill"
+					></image>
+					<text
+						v-else-if="colType(col) == 'link' && cellText(col).length > 0"
+						class="c7-json-table-column__link"
+						@click="onLink(cellText(col))"
+					>{{ cellText(col) }}</text>
+					<slot
+						v-else-if="colType(col) == 'slot'"
+						:name="slotName(col)"
+						:row="row"
+						:column="col"
+					></slot>
+					<text
+						v-else
+						class="c7-json-table-column__t"
+						:class="isEmphasize(col) ? 'is-title' : ''"
+					>{{ displayText(col) }}</text>
+				</view>
+			</view>
+		</template>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7JsonTableColumn（quick-h5）
+	 *
+	 * 移动端「行内字段块」：按 `columns` 配置渲染，通常由 `C7JsonTable` 的
+	 * `tableColumns` 或 `#item` 内使用。
+	 *
+	 * **列项**
+	 * - 普通：`label` + `prop` + 可选 `columnType` / `emptyText` / `hideLabel` / `emphasize`
+	 * - 行组：`layout: "row"` + `children: [...]`，children 横向排在同一行
+	 *
+	 * **columnType**
+	 * - `tag`：C7DictTag（`options`/`dataList` 或 `dictType`）
+	 * - `image` / `link` / `slot` / 缺省文本
+	 *
+	 * **取值**：`prop` 支持点路径（如 a.b.c）
+	 */
+	defineOptions({ name: "C7JsonTableColumn" })
+
+	const props = withDefaults(defineProps<{
+		/** 列配置数组；可含 layout=row 的行组 */
+		columns : any | null
+		/** 当前行数据对象 */
+		row : any | null
+		/** 全局空值占位；列级 emptyText 优先 */
+		emptyText : string
+	}>(), {
+		columns: null,
+		row: null,
+		emptyText: "-"
+	})
+
+	/** 规范化后的顶层列数组 */
+	const columnList = computed(() : any[] => {
+		if (props.columns == null || !Array.isArray(props.columns)) {
+			return []
+		}
+		return props.columns as any[]
+	})
+
+	function asObj(v : any) : UTSJSONObject | null {
+		if (v == null) {
+			return null
+		}
+		return v as UTSJSONObject
+	}
+
+	/** 是否为横向行组 */
+	function isRowLayout(col : any) : boolean {
+		const o = asObj(col)
+		if (o == null) {
+			return false
+		}
+		return `${o["layout"] ?? ""}` == "row"
+	}
+
+	/** 行组 children；非法时返回 [] */
+	function colChildren(col : any) : any[] {
+		const o = asObj(col)
+		if (o == null) {
+			return []
+		}
+		const kids = o["children"]
+		if (kids == null || !Array.isArray(kids)) {
+			return []
+		}
+		return kids as any[]
+	}
+
+	function colLabel(col : any) : string {
+		const o = asObj(col)
+		if (o == null) {
+			return ""
+		}
+		const l = o["label"]
+		return l != null ? `${l}` : ""
+	}
+
+	function colType(col : any) : string {
+		const o = asObj(col)
+		if (o == null) {
+			return "text"
+		}
+		const t = o["columnType"]
+		return t != null && `${t}`.length > 0 ? `${t}` : "text"
+	}
+
+	function slotName(col : any) : string {
+		const o = asObj(col)
+		if (o == null) {
+			return "default"
+		}
+		const s = o["slotName"]
+		return s != null ? `${s}` : "default"
+	}
+
+	/** 是否隐藏左侧 label */
+	function isHideLabel(col : any) : boolean {
+		const o = asObj(col)
+		if (o == null) {
+			return false
+		}
+		const h = o["hideLabel"]
+		return h == true || `${h}` == "true"
+	}
+
+	/** 强调样式（标题字重） */
+	function isEmphasize(col : any) : boolean {
+		const o = asObj(col)
+		if (o == null) {
+			return false
+		}
+		const e = o["emphasize"]
+		return e == true || `${e}` == "true"
+	}
+
+	/** 字典选项：options 优先，否则 dataList */
+	function colOptions(col : any) : any | null {
+		const o = asObj(col)
+		if (o == null) {
+			return null
+		}
+		return o["options"] != null ? o["options"] : o["dataList"]
+	}
+
+	/** tag 列 dictType（无外部 options 时由 C7DictTag 拉缓存） */
+	function colDictType(col : any) : string {
+		const o = asObj(col)
+		if (o == null) {
+			return ""
+		}
+		const d = o["dictType"]
+		return d != null ? `${d}` : ""
+	}
+
+	function getByPath(obj : any, path : string) : any | null {
+		if (obj == null || path.length == 0) {
+			return null
+		}
+		const parts = path.split(".")
+		let cur : any | null = obj
+		for (let i = 0; i < parts.length; i++) {
+			if (cur == null || typeof cur != "object") {
+				return null
+			}
+			cur = (cur as UTSJSONObject)[parts[i]]
+		}
+		return cur
+	}
+
+	function cellText(col : any) : string {
+		const o = asObj(col)
+		if (o == null) {
+			return ""
+		}
+		const prop = o["prop"]
+		const path = prop != null ? `${prop}` : ""
+		const v = getByPath(props.row, path)
+		return v != null ? `${v}` : ""
+	}
+
+	function displayText(col : any) : string {
+		const t = cellText(col)
+		if (t.length == 0) {
+			const o = asObj(col)
+			if (o != null && o["emptyText"] != null) {
+				return `${o["emptyText"]}`
+			}
+			return props.emptyText.length > 0 ? props.emptyText : "-"
+		}
+		return t
+	}
+
+	function onLink(url : string) {
+		uni.setClipboardData({
+			data: url,
+			success: () => uni.showToast({ title: "链接已复制", icon: "none" })
+		})
+	}
+</script>
+
+<style>
+	.c7-json-table-column {
+		display: flex;
+		flex-direction: column;
+	}
+	.c7-json-table-column__row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 8px;
+	}
+	.c7-json-table-column__row-item {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		flex-shrink: 0;
+	}
+	.c7-json-table-column__row-item.is-flex {
+		flex: 1;
+		min-width: 0;
+		margin-right: 10px;
+	}
+	/* 普通字段：左标签右值，横向扁平 */
+	.c7-json-table-column__cell {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 5px;
+	}
+	.c7-json-table-column__cell:last-child {
+		margin-bottom: 0;
+	}
+	.c7-json-table-column__label {
+		width: 64px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #9a96a5;
+		margin-right: 8px;
+		margin-bottom: 0;
+		flex-shrink: 0;
+	}
+	.c7-json-table-column__label--inline {
+		width: auto;
+		margin-right: 6px;
+	}
+	.c7-json-table-column__val {
+		flex: 1;
+		min-width: 0;
+	}
+	.c7-json-table-column__t {
+		font-size: 13px;
+		font-weight: 500;
+		color: #3f3f46;
+		lines: 1;
+		text-overflow: ellipsis;
+	}
+	.c7-json-table-column__t.is-title {
+		font-size: 16px;
+		font-weight: 700;
+		color: #18181b;
+		lines: 1;
+	}
+	.c7-json-table-column__link {
+		font-size: 14px;
+		color: #8d51f9;
+		lines: 1;
+		text-overflow: ellipsis;
+	}
+	.c7-json-table-column__img {
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
+	}
+</style>

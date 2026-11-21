@@ -1,0 +1,125 @@
+<template>
+	<!-- C7 日期选择：触发条 + rice-datetime-picker（date / datetime） -->
+	<view class="c7-date-picker">
+		<view class="c7-date-picker__field" @click="onOpen">
+			<text class="c7-date-picker__text" :class="modelValue.length == 0 ? 'is-placeholder' : ''">{{ modelValue.length > 0 ? modelValue : placeholder }}</text>
+			<text class="c7-date-picker__arrow">›</text>
+		</view>
+		<rice-datetime-picker
+			v-model:show="show"
+			v-model="inner"
+			:mode="pickerMode"
+			:title="title"
+			@confirm="onConfirm"
+			@cancel="onCancel"
+		></rice-datetime-picker>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7DatePicker（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7DatePicker` 的**字符串日期 v-model** 场景：展示触发条，确认后写回字符串。
+	 *
+	 * **交互实现**
+	 * - 底座为 RiceUI `rice-datetime-picker`（自带弹层）
+	 * - `type=date` → mode=`date`；`type=datetime` / `datetimerange` → mode=`datetime`
+	 *
+	 * **关键 props / 事件**
+	 * - `modelValue`：日期/日期时间字符串
+	 * - `change(v)`：确认选择后抛出
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP DatePicker 的 range 双面板等；`datetimerange` 仅映射为单值 datetime 模式
+	 * - 值为字符串，不做 Date 对象互转
+	 */
+	defineOptions({ name: "C7DatePicker" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前日期字符串（空表示未选） */
+		modelValue : string
+		/** 类型：date / datetime（datetimerange 映射为 datetime） */
+		type : string
+		/** 未选中时触发条占位文案 */
+		placeholder : string
+		/** 选择器标题 */
+		title : string
+		/** 是否禁用（不可打开） */
+		disabled : boolean
+	}>(), {
+		modelValue: "",
+		type: "date",
+		placeholder: "请选择日期",
+		title: "选择日期",
+		disabled: false
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : string]
+		change : [v : string]
+	}>()
+
+	/** 选择器弹层是否展示 */
+	const show = ref(false)
+	/** 选择器内部临时值（确认前可取消） */
+	const inner = ref(props.modelValue)
+
+	/** rice-datetime-picker 的 mode */
+	const pickerMode = computed(() : string => {
+		if (props.type == "datetime" || props.type == "datetimerange") {
+			return "datetime"
+		}
+		return "date"
+	})
+
+	watch(() : string => props.modelValue, (v : string) => {
+		inner.value = v
+	})
+
+	/** 打开选择器并同步当前值 */
+	function onOpen() {
+		if (props.disabled) {
+			return
+		}
+		inner.value = props.modelValue
+		show.value = true
+	}
+
+	/** 确认：写回 v-model / change 并关闭 */
+	function onConfirm(_e : any) {
+		const v = `${inner.value}`
+		emit("update:modelValue", v)
+		emit("change", v)
+		show.value = false
+	}
+
+	/** 取消：仅关闭，不改 modelValue */
+	function onCancel(_e : any) {
+		show.value = false
+	}
+</script>
+
+<style>
+	.c7-date-picker__field {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 12px;
+		border-radius: 12px;
+		background-color: rgba(142, 142, 147, 0.12);
+	}
+	.c7-date-picker__text {
+		flex: 1;
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-date-picker__text.is-placeholder {
+		color: #8e8e93;
+	}
+	.c7-date-picker__arrow {
+		font-size: 18px;
+		color: #8e8e93;
+	}
+</style>

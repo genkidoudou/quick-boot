@@ -1,0 +1,95 @@
+/**
+ * 文件分类 API，对齐 quick-ui `/api/system/fileClassify.js` 与后端 `/sys/fileClassify`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr
+} from "@/api/shared/page"
+
+const BASE = "/sys/fileClassify"
+
+export type FileClassifyPayload = {
+	id : string
+	classifyCode : string
+	classifyName : string
+	allowExt : string
+	maxSizeBytes : string
+	maxCount : string
+	status : string
+	anonymous : string
+	remark : string
+}
+
+function emptyClassify() : FileClassifyPayload {
+	return {
+		id: "",
+		classifyCode: "",
+		classifyName: "",
+		allowExt: "",
+		maxSizeBytes: "",
+		maxCount: "1",
+		status: "0",
+		anonymous: "0",
+		remark: ""
+	} as FileClassifyPayload
+}
+
+export function mapFileClassifyRow(row : UTSJSONObject) : FileClassifyPayload {
+	return {
+		id: readStr(row, "id"),
+		classifyCode: readStr(row, "classifyCode"),
+		classifyName: readStr(row, "classifyName"),
+		allowExt: readStr(row, "allowExt"),
+		maxSizeBytes: readStr(row, "maxSizeBytes"),
+		maxCount: readStr(row, "maxCount"),
+		status: readStr(row, "status"),
+		anonymous: readStr(row, "anonymous"),
+		remark: readStr(row, "remark")
+	} as FileClassifyPayload
+}
+
+export function pageFileClassify(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapFileClassifyRow)
+}
+
+export function getFileClassify(id : string) : Promise<FileClassifyPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapFileClassifyRow, emptyClassify()) as Promise<FileClassifyPayload>
+}
+
+export function addFileClassify(payload : FileClassifyPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		classifyCode: payload.classifyCode,
+		classifyName: payload.classifyName,
+		allowExt: payload.allowExt,
+		maxSizeBytes: payload.maxSizeBytes,
+		maxCount: payload.maxCount,
+		status: payload.status,
+		anonymous: payload.anonymous,
+		remark: payload.remark
+	}
+	return postBody(BASE + "/add", body)
+}
+
+export function updateFileClassify(payload : FileClassifyPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		classifyCode: payload.classifyCode,
+		classifyName: payload.classifyName,
+		allowExt: payload.allowExt,
+		maxSizeBytes: payload.maxSizeBytes,
+		maxCount: payload.maxCount,
+		status: payload.status,
+		anonymous: payload.anonymous,
+		remark: payload.remark
+	}
+	return postBody(BASE + "/update", body)
+}
+
+export function removeFileClassify(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}

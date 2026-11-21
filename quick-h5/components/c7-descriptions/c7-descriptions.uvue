@@ -1,0 +1,271 @@
+<template>
+	<!-- C7 描述列表：data + items 驱动的 label/value 行 -->
+	<view class="c7-descriptions">
+		<view class="c7-descriptions__head" v-if="hasHead">
+			<slot name="title"></slot>
+			<slot name="extra"></slot>
+		</view>
+		<template v-for="(item, idx) in itemList" :key="idx">
+			<view class="c7-descriptions__row">
+				<text class="c7-descriptions__label">{{ itemLabel(item) }}</text>
+				<view class="c7-descriptions__value">
+					<!-- tag：字典标签回显 -->
+					<c7-dict-tag
+						v-if="columnTypeOf(item) == 'tag'"
+						:value="cellRaw(item)"
+						:options="itemOptions(item)"
+					></c7-dict-tag>
+					<!-- link：H5 新开窗，其它端复制链接 -->
+					<text
+						v-else-if="columnTypeOf(item) == 'link' && cellText(item).length > 0"
+						class="c7-descriptions__link"
+						@click="onLink(cellText(item))"
+					>{{ cellText(item) }}</text>
+					<!-- copy / copyable：文案 + C7Copy -->
+					<view v-else-if="columnTypeOf(item) == 'copy' || columnTypeOf(item) == 'copyable'" class="c7-descriptions__copy-row">
+						<text class="c7-descriptions__val-t">{{ displayCell(item) }}</text>
+						<c7-copy :text="cellText(item)" mode="text" button-text="复制"></c7-copy>
+					</view>
+					<!-- image：缩略图 -->
+					<image
+						v-else-if="columnTypeOf(item) == 'image' && cellText(item).length > 0"
+						class="c7-descriptions__img"
+						:src="cellText(item)"
+						mode="aspectFill"
+					></image>
+					<!-- 默认纯文本；空值用 emptyText / defaultEmptyText -->
+					<text v-else class="c7-descriptions__val-t">{{ displayCell(item) }}</text>
+				</view>
+			</view>
+		</template>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Descriptions（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Descriptions` 的**数据驱动描述列表**：`data` 为整行对象，
+	 * `items` 为列配置数组，按 `prop` 取值后按 `columnType` 渲染。
+	 *
+	 * **列类型（columnType）**
+	 * - `text`（默认）：纯文本；空值显示 item.emptyText 或 defaultEmptyText
+	 * - `tag`：`c7-dict-tag`，选项取 item.options / item.dataList
+	 * - `link`：可点击；H5 `window.open`，非 H5 复制链接
+	 * - `copy` / `copyable`：文案 + `c7-copy`；也可通过 item.copyable/copy=true 推断
+	 * - `image`：缩略图
+	 *
+	 * **取值**：`item.prop` 支持点路径（如 `user.name`），经 `getByPath` 读取
+	 *
+	 * **插槽**：`title`、`extra`（头部区域）
+	 */
+	defineOptions({ name: "C7Descriptions" })
+
+	const props = withDefaults(defineProps<{
+		/** 整行数据对象；按 items[].prop 取值 */
+		data : any | null
+		/** 列配置数组：`{ label, prop, columnType?, options?, emptyText?, copyable? }[]` */
+		items : any | null
+		/** 单元格空值时的默认占位文案 */
+		defaultEmptyText : string
+	}>(), {
+		data: null,
+		items: null,
+		defaultEmptyText: "暂无"
+	})
+
+	/** 规范化后的列配置列表 */
+	const itemList = computed(() : any[] => {
+		if (props.items == null || !Array.isArray(props.items)) {
+			return []
+		}
+		return props.items as any[]
+	})
+
+	/** 是否渲染头部（始终 true，由插槽决定内容） */
+	const hasHead = computed(() : boolean => {
+		return true
+	})
+
+	/** 将行配置安全转为 UTSJSONObject */
+	function asObj(row : any) : UTSJSONObject | null {
+		if (row == null) {
+			return null
+		}
+		return row as UTSJSONObject
+	}
+
+	/** 读取列 label */
+	function itemLabel(item : any) : string {
+		const o = asObj(item)
+		if (o == null) {
+			return ""
+		}
+		const l = o["label"]
+		return l != null ? `${l}` : ""
+	}
+
+	/**
+	 * 解析列展示类型：优先 columnType；否则 copyable/copy 布尔推断为 copy；默认 text。
+	 */
+	function columnTypeOf(item : any) : string {
+		const o = asObj(item)
+		if (o == null) {
+			return "text"
+		}
+		const t = o["columnType"]
+		if (t != null && `${t}`.length > 0) {
+			return `${t}`
+		}
+		if (o["copyable"] == true || o["copy"] == true) {
+			return "copy"
+		}
+		return "text"
+	}
+
+	/** 字典选项：options 优先，否则 dataList */
+	function itemOptions(item : any) : any | null {
+		const o = asObj(item)
+		if (o == null) {
+			return null
+		}
+		const opts = o["options"]
+		if (opts != null) {
+			return opts
+		}
+		return o["dataList"]
+	}
+
+	/**
+	 * 按点路径从对象取值，如 `a.b.c`。
+	 */
+	function getByPath(obj : any, path : string) : any | null {
+		if (obj == null || path.length == 0) {
+			return null
+		}
+		const parts = path.split(".")
+		let cur : any | null = obj
+		for (let i = 0; i < parts.length; i++) {
+			if (cur == null) {
+				return null
+			}
+			const key = parts[i]
+			if (typeof cur == "object") {
+				cur = (cur as UTSJSONObject)[key]
+			} else {
+				return null
+			}
+		}
+		return cur
+	}
+
+	/** 原始单元格值（供 tag 等） */
+	function cellRaw(item : any) : any | null {
+		const o = asObj(item)
+		if (o == null) {
+			return null
+		}
+		const prop = o["prop"]
+		const path = prop != null ? `${prop}` : ""
+		return getByPath(props.data, path)
+	}
+
+	/** 单元格字符串形式；null → "" */
+	function cellText(item : any) : string {
+		const v = cellRaw(item)
+		if (v == null) {
+			return ""
+		}
+		return `${v}`
+	}
+
+	/**
+	 * 展示文案：非空用 cellText；空则 item.emptyText 或 defaultEmptyText。
+	 */
+	function displayCell(item : any) : string {
+		const t = cellText(item)
+		if (t.length == 0) {
+			const o = asObj(item)
+			if (o != null && o["emptyText"] != null) {
+				return `${o["emptyText"]}`
+			}
+			return props.defaultEmptyText
+		}
+		return t
+	}
+
+	/**
+	 * 链接点击：H5 新开窗；其它端复制到剪贴板并 toast。
+	 */
+	function onLink(url : string) {
+		if (url.length == 0) {
+			return
+		}
+		// #ifdef H5
+		window.open(url)
+		// #endif
+		// #ifndef H5
+		uni.setClipboardData({
+			data: url,
+			success: () => {
+				uni.showToast({ title: "链接已复制", icon: "none" })
+			}
+		})
+		// #endif
+	}
+</script>
+
+<style>
+	.c7-descriptions {
+		display: flex;
+		flex-direction: column;
+		border-radius: 14px;
+		background-color: rgba(255, 255, 255, 0.7);
+		padding: 8px 14px;
+	}
+	.c7-descriptions__head {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.c7-descriptions__row {
+		display: flex;
+		flex-direction: row;
+		padding: 10px 0;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: rgba(60, 60, 67, 0.08);
+	}
+	.c7-descriptions__label {
+		width: 96px;
+		font-size: 13px;
+		color: #8e8e93;
+		flex-shrink: 0;
+	}
+	.c7-descriptions__value {
+		flex: 1;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	.c7-descriptions__val-t {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.c7-descriptions__link {
+		font-size: 14px;
+		color: #007aff;
+	}
+	.c7-descriptions__copy-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		flex: 1;
+	}
+	.c7-descriptions__img {
+		width: 56px;
+		height: 56px;
+		border-radius: 8px;
+	}
+</style>

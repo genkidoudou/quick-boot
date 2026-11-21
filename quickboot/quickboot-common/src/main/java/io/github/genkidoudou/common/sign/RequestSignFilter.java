@@ -11,15 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * 验签过滤器
@@ -100,7 +93,22 @@ public class RequestSignFilter extends OncePerRequestFilter {
             }
 
 
-            // 验证签名
+            // multipart：前端无法用与传输一致的整包 body 加签（FormData / uni.uploadFile），
+            // 约定按空 body 验签；且不要把文件流读进缓存，交给 MultipartResolver。
+            if (isMultipart(request)) {
+                int verify = SignUtils.verify(sign, oauthClientVo, request, signProperties, nonceStore, signAlgorithm, "");
+                log.debug("签名验证(multipart):{},{}", signTicket.clientId(), verify);
+                if (verify != 0) {
+                    ServletUtils.writeResponse(response, verify);
+                    return;
+                }
+                OauthClientHolder.set(oauthClientVo);
+                request.setAttribute(ATTR_CLIENT_ID, signTicket.clientId());
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 验证签名（JSON 等可读 body）
             CachedBodyHttpServletRequest wrapped = new CachedBodyHttpServletRequest(request);
             int verify = SignUtils.verify(sign, oauthClientVo, request, signProperties, nonceStore, signAlgorithm,
                     wrapped.getBodyAsString());
@@ -119,6 +127,16 @@ public class RequestSignFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * 是否 multipart 上传（含 boundary）。
+     */
+    private static boolean isMultipart(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        if (contentType == null || contentType.isBlank()) {
+            return false;
+        }
+        return contentType.toLowerCase().startsWith("multipart/");
+    }
 
     /**
      * 是否匹配忽略url

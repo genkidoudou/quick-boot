@@ -1,0 +1,147 @@
+<template>
+	<view class="page">
+		<view v-if="loading" class="hint"><text class="hint-t">加载中…</text></view>
+		<view v-else class="sheet">
+			<view class="head">
+				<view class="badge">
+					<text class="badge-t">信</text>
+				</view>
+				<view class="head-body">
+					<text class="title">{{ detail.title.length > 0 ? detail.title : "系统通知" }}</text>
+					<text class="meta">{{ detail.createTime }}</text>
+				</view>
+			</view>
+			<view class="divider"></view>
+			<text class="body">{{ detail.content.length > 0 ? detail.content : "暂无正文" }}</text>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 消息详情；打开未读即标已读。
+	 */
+	import { getInbox, readInbox, InboxPayload } from "@/api/msg/inbox"
+
+	const loading = ref(false)
+	const detail = ref({
+		id: "",
+		title: "",
+		content: "",
+		readFlag: "0",
+		createTime: ""
+	} as InboxPayload)
+
+	function markRead(id : string) {
+		if (detail.value.readFlag == "1") {
+			return
+		}
+		readInbox(id).then(() => {
+			detail.value.readFlag = "1"
+		}).catch((_e) => {})
+	}
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid == null || `${qid}`.length == 0) {
+			return
+		}
+		const id = `${qid}`
+		loading.value = true
+		getInbox(id).then((row) => {
+			detail.value = row
+			loading.value = false
+			uni.setNavigationBarTitle({
+				title: row.title.length > 0 ? row.title : "消息详情"
+			})
+			markRead(id)
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载失败", icon: "none" })
+		})
+	})
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+		padding: 16px;
+	}
+	.sheet {
+		border-radius: 18px;
+		padding: 18px 16px 22px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: column;
+	}
+	.head {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+	}
+	.badge {
+		width: 40px;
+		height: 40px;
+		border-radius: 12px;
+		background-color: rgba(0, 122, 255, 0.12);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin-right: 12px;
+		flex-shrink: 0;
+	}
+	.badge-t {
+		font-size: 14px;
+		font-weight: 700;
+		color: #007aff;
+	}
+	.head-body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.title {
+		font-size: 18px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		line-height: 26px;
+		margin-bottom: 6px;
+	}
+	.meta {
+		font-size: 12px;
+		color: #8e8e93;
+	}
+	.divider {
+		height: 1px;
+		background-color: rgba(24, 24, 27, 0.06);
+		margin: 16px 0;
+	}
+	.body {
+		font-size: 15px;
+		color: var(--rice-text-color);
+		line-height: 24px;
+	}
+	.hint {
+		padding: 24px;
+	}
+	.hint-t {
+		font-size: 13px;
+		color: #8e8e93;
+	}
+</style>

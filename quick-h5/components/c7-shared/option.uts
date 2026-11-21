@@ -1,0 +1,110 @@
+/**
+ * C7 选项归一化工具（quick-h5）
+ *
+ * 供 Select / Radio / Checkbox 等表单控件共用，对齐 quick-ui packages 的约定：
+ * - `dataList` 与 `options` 二选一，**dataList 非 null 时优先**
+ * - 通过 `labelKey` / `valueKey` 从行对象取展示文案与绑定值
+ * - 标量行（string/number）视为 label === value
+ * - 取 label 时若字段缺失，回退兼容 `text`
+ *
+ * 输出统一为 `C7OptionItem`，便于各控件直接喂给 Rice 组件。
+ */
+
+/** 归一化后的单条选项 */
+export type C7OptionItem = {
+	/** 展示文案 */
+	label : string
+	/** 绑定值（字符串化后） */
+	value : string
+	/** 是否禁用；来自行上 `disabled === true` */
+	disabled : boolean
+}
+
+/**
+ * 从行对象读取字段并转成字符串；标量行直接 String(row)。
+ * 当 key 为 label 且无值时，尝试读取 `text`（兼容部分后端/旧数据）。
+ */
+function readField(row : any, key : string) : string {
+	if (row == null) {
+		return ""
+	}
+	if (typeof row == "string" || typeof row == "number" || typeof row == "boolean") {
+		return `${row}`
+	}
+	const obj = row as UTSJSONObject
+	const v = obj[key]
+	if (v != null) {
+		return `${v}`
+	}
+	// 兼容 text
+	if (key == "label") {
+		const t = obj["text"]
+		if (t != null) {
+			return `${t}`
+		}
+	}
+	return ""
+}
+
+/**
+ * 将 dataList / options 归一化为 C7OptionItem[]。
+ *
+ * @param dataList 优先数据源（packages 同名）；为 null 时用 options
+ * @param options 备选数据源
+ * @param labelKey 文案字段名，默认业务侧传 "label"
+ * @param valueKey 值字段名，默认业务侧传 "value"；空值时回退为 label
+ */
+export function resolveC7Options(
+	dataList : any | null,
+	options : any | null,
+	labelKey : string,
+	valueKey : string
+) : C7OptionItem[] {
+	let raw : any | null = null
+	if (dataList != null) {
+		raw = dataList
+	} else {
+		raw = options
+	}
+	const out : C7OptionItem[] = []
+	if (raw == null || !Array.isArray(raw)) {
+		return out
+	}
+	const arr = raw as any[]
+	for (let i = 0; i < arr.length; i++) {
+		const row = arr[i]
+		if (row == null) {
+			continue
+		}
+		if (typeof row == "string" || typeof row == "number") {
+			const s = `${row}`
+			out.push({ label: s, value: s, disabled: false } as C7OptionItem)
+			continue
+		}
+		const label = readField(row, labelKey.length > 0 ? labelKey : "label")
+		let value = readField(row, valueKey.length > 0 ? valueKey : "value")
+		if (value.length == 0) {
+			value = label
+		}
+		const obj = row as UTSJSONObject
+		const dis = obj["disabled"]
+		out.push({
+			label: label.length > 0 ? label : value,
+			value: value,
+			disabled: dis == true
+		} as C7OptionItem)
+	}
+	return out
+}
+
+/**
+ * 按 value 在选项列表中查找 label；未命中时返回原 value（便于回显脏数据）。
+ */
+export function findOptionLabel(items : C7OptionItem[], value : string) : string {
+	for (let i = 0; i < items.length; i++) {
+		if (items[i].value == value) {
+			return items[i].label
+		}
+	}
+	return value
+}

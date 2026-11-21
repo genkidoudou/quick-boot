@@ -233,7 +233,7 @@ export function pathAndQuery(path: string, query: string): string {
  * |------|------|
  * | GET / HEAD | `''`（query 走 pathAndQuery，不进 body） |
  * | data 已是 string | 原样使用（调用方已序列化好 JSON/form） |
- * | FormData / multipart | 返回 `null` 表示跳过 HMAC 或应由调用方 ignore |
+ * | FormData / multipart | 返回 `null`；上层按空 body 做 HMAC（与后端约定） |
  * | Content-Type 含 form-urlencoded | `URLSearchParams` 编码，勿 JSON.stringify |
  * | 其它对象 | `JSON.stringify`（默认 JSON API） |
  */
@@ -283,13 +283,8 @@ export async function attachSignHeader(config: InternalAxiosRequestConfig) {
     //  query
     const query = canonicalQuery(params);
     const pathAndQuery2 = pathAndQuery(path, query);
-    const rawBody = resolveRawBody(config, method)
-    if (rawBody === null) {
-        // multipart：仅打标识，或你也可以直接 return config 不签名
-        config.headers = config.headers || {}
-        config.headers.sign = packIdentity(clientId)
-        return config
-    }
+    // multipart / FormData：不整包加签，与后端 RequestSignFilter 约定按空 body 验 HMAC
+    const rawBody = resolveRawBody(config, method) ?? ''
 
     // sign() 的字段名是 path（第 3 段），此处传入已拼好的 pathAndQuery
     const sign2 = clientSecret

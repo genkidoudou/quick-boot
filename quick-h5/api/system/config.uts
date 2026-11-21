@@ -1,0 +1,250 @@
+/**
+ * 参数配置 API，对齐 quick-ui `/api/system/config.js` 与后端 `/sys/config`。
+ */
+import { request, RequestOptions } from "@/api/http"
+
+const BASE = "/sys/config"
+
+/**
+ * 分页查询入参（PageRequest），对齐 quick-ui / 后端：
+ * `{ current, size, param }`，可直接作为 C7JsonTable 的 listFunction。
+ */
+export type ConfigPageQuery = {
+	current : number
+	size : number
+	param : UTSJSONObject
+}
+
+/**
+ * 列表行 / 表单载荷（字段对齐 SysConfigVo）。
+ * id 后端 Long 已按字符串序列化，全程用 string 避免精度丢失。
+ */
+export type ConfigPayload = {
+	id : string
+	configName : string
+	configKey : string
+	configValue : string
+	configType : string
+	remark : string
+}
+
+/**
+ * 分页结果。
+ */
+export type ConfigPageResult = {
+	records : ConfigPayload[]
+	total : number
+	current : number
+	size : number
+	pages : number
+}
+
+function readStr(row : UTSJSONObject, key : string) : string {
+	const s = row.getString(key)
+	if (s != null) {
+		return s
+	}
+	const n = row.getNumber(key)
+	if (n != null) {
+		return `${n}`
+	}
+	return ""
+}
+
+function readNum(row : UTSJSONObject, key : string, fallback : number) : number {
+	const n = row.getNumber(key)
+	if (n != null) {
+		return n
+	}
+	const s = row.getString(key)
+	if (s != null && s.length > 0) {
+		const parsed = parseFloat(s)
+		if (!isNaN(parsed)) {
+			return parsed
+		}
+	}
+	// H5 普通对象兜底
+	const anyRow = row as any
+	const raw = anyRow[key]
+	if (typeof raw == "number") {
+		return raw as number
+	}
+	if (raw != null) {
+		const parsed2 = parseFloat(`${raw}`)
+		if (!isNaN(parsed2)) {
+			return parsed2
+		}
+	}
+	return fallback
+}
+
+function toRowObject(item : any | null) : UTSJSONObject | null {
+	if (item == null) {
+		return null
+	}
+	if (item instanceof UTSJSONObject) {
+		return item as UTSJSONObject
+	}
+	try {
+		return JSON.parseObject(JSON.stringify(item)!)
+	} catch (_e) {
+		return null
+	}
+}
+
+/**
+ * 将后端行映射为 ConfigPayload。
+ */
+export function mapConfigRow(row : UTSJSONObject) : ConfigPayload {
+	return {
+		id: readStr(row, "id"),
+		configName: readStr(row, "configName"),
+		configKey: readStr(row, "configKey"),
+		configValue: readStr(row, "configValue"),
+		configType: readStr(row, "configType"),
+		remark: readStr(row, "remark")
+	} as ConfigPayload
+}
+
+/**
+ * 分页查询。入参与表格 listFunction 一致，空字符串筛选字段不传给后端。
+ */
+export function pageConfig(query : ConfigPageQuery) : Promise<ConfigPageResult> {
+	const raw = query.param
+	const param : UTSJSONObject = {}
+	const keys = UTSJSONObject.keys(raw)
+	for (let i = 0; i < keys.length; i++) {
+		const key = keys[i]
+		const v = raw[key]
+		if (v == null) {
+			continue
+		}
+		const s = `${v}`.trim()
+		if (s.length > 0) {
+			param[key] = s
+		}
+	}
+	const body : UTSJSONObject = {
+		current: query.current,
+		size: query.size,
+		param: param
+	}
+	return request({
+		url: BASE + "/page",
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((res) : ConfigPageResult => {
+		const data = res.getJSON("data")
+		const empty = {
+			records: [] as ConfigPayload[],
+			total: 0,
+			current: query.current,
+			size: query.size,
+			pages: 0
+		} as ConfigPageResult
+		if (data == null) {
+			return empty
+		}
+		let recordsRaw = data.getArray("records")
+		// H5 上偶发 getArray 拿不到，走下标
+		if (recordsRaw == null) {
+			const anyData = data as any
+			const plain = anyData["records"]
+			if (Array.isArray(plain)) {
+				recordsRaw = plain as any[]
+			}
+		}
+		const records : ConfigPayload[] = []
+		if (recordsRaw != null) {
+			for (let i = 0; i < recordsRaw.length; i++) {
+				const rowObj = toRowObject(recordsRaw[i])
+				if (rowObj != null) {
+					records.push(mapConfigRow(rowObj))
+				}
+			}
+		}
+		return {
+			records: records,
+			total: readNum(data, "total", 0),
+			current: readNum(data, "current", query.current),
+			size: readNum(data, "size", query.size),
+			pages: readNum(data, "pages", 0)
+		} as ConfigPageResult
+	})
+}
+
+/**
+ * 详情。
+ */
+export function getConfig(id : string) : Promise<ConfigPayload> {
+	return request({
+		url: BASE + "/" + encodeURIComponent(id),
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : ConfigPayload => {
+		const data = res.getJSON("data")
+		if (data == null) {
+			return {
+				id: "",
+				configName: "",
+				configKey: "",
+				configValue: "",
+				configType: "1",
+				remark: ""
+			} as ConfigPayload
+		}
+		return mapConfigRow(data)
+	})
+}
+
+/**
+ * 新增。
+ */
+export function addConfig(payload : ConfigPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		configName: payload.configName,
+		configKey: payload.configKey,
+		configValue: payload.configValue,
+		configType: payload.configType,
+		remark: payload.remark
+	}
+	return request({
+		url: BASE + "/add",
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}
+
+/**
+ * 修改。
+ */
+export function updateConfig(payload : ConfigPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		configName: payload.configName,
+		configKey: payload.configKey,
+		configValue: payload.configValue,
+		configType: payload.configType,
+		remark: payload.remark
+	}
+	return request({
+		url: BASE + "/update",
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}
+
+/**
+ * 批量删除（传 id 列表）。
+ */
+export function removeConfig(ids : string[]) : Promise<void> {
+	return request({
+		url: BASE + "/remove",
+		method: "POST",
+		data: ids,
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}

@@ -1,0 +1,171 @@
+/**
+ * 文件 API，对齐 quick-ui `/api/system/file.js` 与后端 `/sys/file`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	removeIds,
+	readStr
+} from "@/api/shared/page"
+import { request, RequestOptions } from "@/api/http"
+import { API_BASE } from "@/config/env"
+import { getToken } from "@/store/user"
+import { buildRequestSign } from "@/api/sign"
+
+const BASE = "/sys/file"
+
+export type FilePayload = {
+	id : string
+	fileName : string
+	originalName : string
+	classifyCode : string
+	path : string
+	url : string
+	ext : string
+	size : string
+	sizeBytes : string
+	createTime : string
+}
+
+function emptyFile() : FilePayload {
+	return {
+		id: "",
+		fileName: "",
+		originalName: "",
+		classifyCode: "",
+		path: "",
+		url: "",
+		ext: "",
+		size: "",
+		sizeBytes: "",
+		createTime: ""
+	} as FilePayload
+}
+
+export function mapFileRow(row : UTSJSONObject) : FilePayload {
+	return {
+		id: readStr(row, "id"),
+		fileName: readStr(row, "fileName"),
+		originalName: readStr(row, "originalName"),
+		classifyCode: readStr(row, "classifyCode"),
+		path: readStr(row, "path"),
+		url: readStr(row, "url"),
+		ext: readStr(row, "ext"),
+		size: readStr(row, "size"),
+		sizeBytes: readStr(row, "sizeBytes"),
+		createTime: readStr(row, "createTime")
+	} as FilePayload
+}
+
+export type FileClassifyOption = {
+	classifyCode : string
+	classifyName : string
+	allowExt : string
+	maxSizeBytes : string
+	maxCount : string
+}
+
+/** 启用中的上传分类（对齐 listUploadClassifies） */
+export function listUploadClassifies() : Promise<FileClassifyOption[]> {
+	return request({
+		url: BASE + "/upload-classifies",
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : FileClassifyOption[] => {
+		const raw = res.getArray("data")
+		if (raw == null) {
+			return [] as FileClassifyOption[]
+		}
+		const out : FileClassifyOption[] = []
+		for (let i = 0; i < raw.length; i++) {
+			const item = raw[i]
+			if (item == null) {
+				continue
+			}
+			const row = item as UTSJSONObject
+			out.push({
+				classifyCode: readStr(row, "classifyCode"),
+				classifyName: readStr(row, "classifyName"),
+				allowExt: readStr(row, "allowExt"),
+				maxSizeBytes: readStr(row, "maxSizeBytes"),
+				maxCount: readStr(row, "maxCount")
+			} as FileClassifyOption)
+		}
+		return out
+	})
+}
+
+export function pageFile(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapFileRow)
+}
+
+export function getFile(id : string) : Promise<FilePayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapFileRow, emptyFile()) as Promise<FilePayload>
+}
+
+export function removeFile(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+function joinUrl(path : string) : string {
+	const base = API_BASE.endsWith("/") ? API_BASE.substring(0, API_BASE.length - 1) : API_BASE
+	const p = path.startsWith("/") ? path : ("/" + path)
+	return base + p
+}
+
+/**
+ * 按分类 multipart 上传（H5：uni.uploadFile）。
+ * 签名按空 body（multipart 不整包 HMAC；后端 multipart 亦按空 body 验签）。
+ */
+export function uploadFile(filePath : string, classify : string) : Promise<void> {
+	const url = joinUrl(BASE + "/upload/" + encodeURIComponent(classify))
+	const header = {} as UTSJSONObject
+	const token = getToken()
+	if (token.length > 0) {
+		header.set("Authorization", "Bearer " + token)
+	}
+	const sign = buildRequestSign("POST", url, "")
+	if (sign.length > 0) {
+		header.set("sign", sign)
+	}
+	return new Promise<void>((resolve, reject) => {
+		uni.uploadFile({
+			url: url,
+			filePath: filePath,
+			name: "file",
+			header: header,
+			success: (res) => {
+				if (res.statusCode < 200 || res.statusCode >= 300) {
+					uni.showToast({ title: "上传失败(" + res.statusCode + ")", icon: "none" })
+					reject("upload http " + res.statusCode)
+					return
+				}
+				try {
+					const body = JSON.parseObject(`${res.data}`)
+					if (body != null) {
+						const codeNum = body.getNumber("code")
+						if (codeNum != null && codeNum != 200) {
+							let message = body.getString("msg")
+							if (message == null || message.length == 0) {
+								message = "上传失败"
+							}
+							uni.showToast({ title: message!, icon: "none" })
+							reject(message)
+							return
+						}
+					}
+				} catch (_e) {
+					// 非 JSON 也视为成功（部分环境 data 已是对象）
+				}
+				resolve()
+			},
+			fail: (err) => {
+				const msg = err.errMsg.length > 0 ? err.errMsg : "上传失败"
+				uni.showToast({ title: msg, icon: "none" })
+				reject(msg)
+			}
+		})
+	})
+}

@@ -1,0 +1,95 @@
+/**
+ * C7JsonTable / C7CardGrid（quick-h5）共享类型
+ *
+ * 对齐 quick-ui：listFunction 入参/出参 + searchColumns 声明筛选。
+ * H5 侧在组件内把 searchColumns 映射为：顶栏搜索 / Chip / 筛选抽屉。
+ */
+
+/** listFunction 入参：页码 + 每页条数 + 搜索/筛选合集 */
+export type C7JsonTableQuery = {
+	/** 当前页，从 1 起 */
+	current : number
+	/** 每页条数 */
+	size : number
+	/** 搜索与筛选字段合集 */
+	param : UTSJSONObject
+}
+
+/** listFunction 出参：当前页行 + 总条数 */
+export type C7JsonTableResult = {
+	records : any[]
+	total : number
+}
+
+/** Chip 选项（组件内部 / select.dataList） */
+export type C7JsonTableChipOption = {
+	label : string
+	value : string
+}
+
+/**
+ * 搜索列（对齐 quick-ui searchColumns；业务页可写精简对象，缺省字段由组件解析）。
+ * - type 空或 `input`：文本；首个 input → 顶栏搜索，其余 → 筛选抽屉
+ * - type `select`：Chip；优先 dictType 拉字典，否则用 dataList
+ */
+export type C7JsonTableSearchColumn = {
+	prop : string
+	label : string
+	/** input | select，默认按 input */
+	type : string
+	/** select 时字典类型，如 COMMON_IS */
+	dictType : string
+	/** 占位；input 可空，组件会用「搜索{label}」兜底 */
+	placeholder : string
+	/** select 时手动选项；非空则不再走 dictType */
+	dataList : C7JsonTableChipOption[]
+}
+
+/** 把业务页精简 JSON 归一成 C7JsonTableSearchColumn */
+export function normalizeSearchColumn(raw : any | null) : C7JsonTableSearchColumn | null {
+	if (raw == null) {
+		return null
+	}
+	const o = raw as UTSJSONObject
+	const prop = o["prop"]
+	if (prop == null || `${prop}`.length == 0) {
+		return null
+	}
+	const label = o["label"]
+	const type = o["type"]
+	const dictType = o["dictType"]
+	const placeholder = o["placeholder"]
+	const dataListRaw = o["dataList"]
+	const dataList : C7JsonTableChipOption[] = []
+	if (dataListRaw != null && Array.isArray(dataListRaw)) {
+		const arr = dataListRaw as any[]
+		for (let i = 0; i < arr.length; i++) {
+			const item = arr[i] as UTSJSONObject
+			const dl = item["label"]
+			const dv = item["value"]
+			dataList.push({
+				label: dl != null ? `${dl}` : "",
+				value: dv != null ? `${dv}` : ""
+			} as C7JsonTableChipOption)
+		}
+	}
+	return {
+		prop: `${prop}`,
+		label: label != null ? `${label}` : "",
+		type: type != null ? `${type}` : "input",
+		dictType: dictType != null ? `${dictType}` : "",
+		placeholder: placeholder != null ? `${placeholder}` : "",
+		dataList: dataList
+	} as C7JsonTableSearchColumn
+}
+
+/**
+ * 从 listFunction 的 `param` 安全读取字符串。
+ */
+export function readC7TableParam(param : UTSJSONObject, key : string) : string {
+	const v = param[key]
+	if (v == null) {
+		return ""
+	}
+	return `${v}`.trim()
+}

@@ -1,0 +1,137 @@
+<template>
+	<!-- Soft Glass 列表视觉由 C7JsonTable 内置；本页只配业务 props -->
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageUser"
+			:delete-function="removeUser"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:user:add']"
+			:edit-button-permi="['system:user:edit']"
+			:delete-button-permi="['system:user:remove']"
+			delete-label-prop="userName"
+			@add-click="goAdd"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 用户管理列表（quick-h5）
+	 * 对齐 quick-ui：pageUser / removeUser / resetPassword(+openSafe) / system:user:*。
+	 */
+	import {
+		pageUser,
+		removeUser,
+		resetPassword,
+		openSafe,
+		UserPayload
+	} from "@/api/system/user"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+	import { hasPermi } from "@/utils/permission"
+	import { c7Confirm, c7Prompt } from "@/components/c7-message-box/index.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "userName", hideLabel: true, emphasize: true } as UTSJSONObject,
+				{ prop: "status", hideLabel: true, columnType: "tag", dictType: "COMMON_STATUS" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "nickName", label: "昵称" } as UTSJSONObject,
+		{ prop: "phonenumber", label: "手机号", emptyText: "—" } as UTSJSONObject,
+		{ prop: "userType", label: "用户类型", columnType: "tag", dictType: "user_type" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "userName", label: "用户名", type: "input" } as UTSJSONObject,
+		{ prop: "nickName", label: "昵称", type: "input" } as UTSJSONObject,
+		{ prop: "phonenumber", label: "手机号", type: "input" } as UTSJSONObject,
+		{ prop: "userType", label: "用户类型", type: "select", dictType: "user_type" } as UTSJSONObject,
+		{ prop: "status", label: "状态", type: "select", dictType: "COMMON_STATUS" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goAdd() {
+		uni.navigateTo({ url: "/pages/system/user/form" })
+	}
+
+	function goEdit(id : string) {
+		uni.navigateTo({ url: "/pages/system/user/form?id=" + encodeURIComponent(id) })
+	}
+
+	/** 重置密码：确认 → 二次认证密码 → openSafe → resetPassword */
+	async function resetUserPassword(row : UserPayload) {
+		if (row.id.length == 0) {
+			return
+		}
+		const name = row.userName.length > 0 ? row.userName : (row.nickName.length > 0 ? row.nickName : row.id)
+		const confirmRes = await c7Confirm(`确认重置用户「${name}」的密码？`, "提示")
+		if (confirmRes.action != "confirm") {
+			return
+		}
+		const promptRes = await c7Prompt("请输入当前登录密码以完成二次认证", "二次认证", {
+			inputPlaceholder: "当前登录密码"
+		} as UTSJSONObject)
+		if (promptRes.action != "confirm") {
+			return
+		}
+		const password = promptRes.value.trim()
+		if (password.length == 0) {
+			uni.showToast({ title: "密码不能为空", icon: "none" })
+			return
+		}
+		try {
+			await openSafe(password)
+			await resetPassword(row.id)
+			uni.showToast({ title: "重置成功", icon: "success" })
+		} catch (_e) {
+			// 业务错误已由 request 统一 toast
+		}
+	}
+
+	/** 行点击：编辑 / 重置密码（有权限才显示） */
+	function onRowClick(row : any) {
+		const payload = row as UserPayload
+		if (payload.id.length == 0) {
+			return
+		}
+		const canReset = hasPermi(["system:user:resetPassword"])
+		const itemList = canReset ? (["编辑", "重置密码"] as string[]) : (["编辑"] as string[])
+		uni.showActionSheet({
+			itemList: itemList,
+			success: (res) => {
+				if (res.tapIndex == 0) {
+					goEdit(payload.id)
+					return
+				}
+				if (canReset && res.tapIndex == 1) {
+					resetUserPassword(payload)
+				}
+			}
+		})
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>

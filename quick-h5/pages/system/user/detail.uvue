@@ -1,0 +1,161 @@
+<template>
+	<view class="page">
+		<view class="content">
+			<view class="profile">
+				<view class="big"><text class="big-t">A</text></view>
+				<view class="profile-body">
+					<text class="name">Admin</text>
+					<text class="role">admin · 超级管理员</text>
+				</view>
+			</view>
+			<view class="card">
+				<view class="tags">
+					<text class="badge on">正常</text>
+					<text class="badge pri">超级管理员</text>
+				</view>
+				<view class="kv-row"><text class="k">用户名</text><text class="v">admin</text></view>
+				<view class="kv-row"><text class="k">昵称</text><text class="v">超级管理员</text></view>
+				<view class="kv-row"><text class="k">手机号</text><text class="v">138****0001</text></view>
+				<view class="kv-row"><text class="k">邮箱</text><text class="v">admin@quickboot.local</text></view>
+				<view class="kv-row"><text class="k">部门</text><text class="v">研发中心</text></view>
+				<view class="kv-row"><text class="k">角色</text><text class="v">超级管理员</text></view>
+				<view class="kv-row"><text class="k">创建时间</text><text class="v">2024-01-12 09:30</text></view>
+			</view>
+			<view class="actions">
+				<rice-button type="info" text="返回" @click="goBack"></rice-button>
+				<view class="gap"></view>
+				<rice-button type="info" text="重置密码" @click="toastSoon"></rice-button>
+				<view class="gap"></view>
+				<rice-button type="primary" text="编辑" @click="toastSoon"></rice-button>
+			</view>
+			<text class="hint">假数据样式 · 接口待接入</text>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	function toastSoon() {
+		uni.showToast({ title: "样式预览，接口待接入", icon: "none" })
+	}
+
+	function goBack() {
+		uni.navigateBack()
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 16px;
+	}
+	.profile {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 16px;
+		border-radius: 18px;
+		margin-bottom: 12px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+	}
+	.big {
+		width: 56px;
+		height: 56px;
+		border-radius: 18px;
+		background-color: #8d51f9;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin-right: 14px;
+	}
+	.big-t {
+		font-size: 22px;
+		font-weight: 700;
+		color: #ffffff;
+	}
+	.profile-body {
+		display: flex;
+		flex-direction: column;
+	}
+	.name {
+		font-size: 17px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		margin-bottom: 4px;
+	}
+	.role {
+		font-size: 12px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.card {
+		padding: 16px;
+		border-radius: 18px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		margin-bottom: 12px;
+	}
+	.tags {
+		display: flex;
+		flex-direction: row;
+		margin-bottom: 12px;
+	}
+	.badge {
+		font-size: 11px;
+		font-weight: 600;
+		padding: 3px 8px;
+		border-radius: 999px;
+		margin-right: 8px;
+	}
+	.badge.on {
+		background-color: rgba(36, 138, 61, 0.12);
+		color: #248a3d;
+	}
+	.badge.pri {
+		background-color: rgba(141, 81, 249, 0.12);
+		color: #8d51f9;
+	}
+	.kv-row {
+		display: flex;
+		flex-direction: row;
+		margin-bottom: 10px;
+	}
+	.k {
+		width: 88px;
+		font-size: 13px;
+		color: #8e8e93;
+	}
+	.v {
+		flex: 1;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--rice-text-color);
+	}
+	.actions {
+		display: flex;
+		flex-direction: column;
+	}
+	.gap {
+		height: 10px;
+	}
+	.hint {
+		margin-top: 12px;
+		text-align: center;
+		font-size: 12px;
+		color: #8e8e93;
+	}
+</style>

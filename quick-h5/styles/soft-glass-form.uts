@@ -1,0 +1,31 @@
+/**
+ * Soft Glass 表单控件 custom-style（可选覆盖）。
+ *
+ * 在 `C7FormPage` 内一般不必使用：`soft-glass.css` 已用
+ * `.c7-form-page .rice-input|textarea|radio` 统一外观。
+ * 仅在壳外、或单字段要覆盖默认时再引用。
+ */
+
+/** 单行输入 */
+export const sgControlStyle = {
+	height: "40px",
+	paddingLeft: "12px",
+	paddingRight: "12px",
+	borderRadius: "12px",
+	backgroundColor: "rgba(142,142,147,0.12)"
+} as UTSJSONObject
+
+/** 多行输入 */
+export const sgAreaStyle = {
+	paddingTop: "10px",
+	paddingBottom: "10px",
+	paddingLeft: "12px",
+	paddingRight: "12px",
+	borderRadius: "12px",
+	backgroundColor: "rgba(142,142,147,0.12)"
+} as UTSJSONObject
+
+/** 横向 radio 间距 */
+export const sgRadioStyle = {
+	marginRight: "20px"
+} as UTSJSONObject

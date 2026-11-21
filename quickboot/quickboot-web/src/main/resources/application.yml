@@ -228,6 +228,7 @@ qc:
     enable: true
     nonce-store: redis
     ignore-urls:
+      - /api/captcha/**
       - /jmreport/**
       - /drag/**
       - /jimubi/**

@@ -1,0 +1,81 @@
+/**
+ * 字典类型 API，对齐 quick-ui `/api/system/dict/type.js` 与后端 `/sys/dictType`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr
+} from "@/api/shared/page.uts"
+
+const BASE = "/sys/dictType"
+
+/** 列表行 / 表单载荷；id 全程 string */
+export type DictTypePayload = {
+	id : string
+	dictName : string
+	dictType : string
+	status : string
+	remark : string
+}
+
+function emptyDictType() : DictTypePayload {
+	return {
+		id: "",
+		dictName: "",
+		dictType: "",
+		status: "0",
+		remark: ""
+	} as DictTypePayload
+}
+
+export function mapDictTypeRow(row : UTSJSONObject) : DictTypePayload {
+	return {
+		id: readStr(row, "id"),
+		dictName: readStr(row, "dictName"),
+		dictType: readStr(row, "dictType"),
+		status: readStr(row, "status"),
+		remark: readStr(row, "remark")
+	} as DictTypePayload
+}
+
+/** 分页；可直接作 C7JsonTable listFunction */
+export function pageDictType(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapDictTypeRow)
+}
+
+/** 详情 */
+export function getDictType(id : string) : Promise<DictTypePayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapDictTypeRow, emptyDictType()) as Promise<DictTypePayload>
+}
+
+/** 新增 */
+export function addDictType(payload : DictTypePayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		dictName: payload.dictName,
+		dictType: payload.dictType,
+		status: payload.status,
+		remark: payload.remark
+	}
+	return postBody(BASE + "/add", body)
+}
+
+/** 修改 */
+export function updateDictType(payload : DictTypePayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		dictName: payload.dictName,
+		dictType: payload.dictType,
+		status: payload.status,
+		remark: payload.remark
+	}
+	return postBody(BASE + "/update", body)
+}
+
+/** 批量删除 */
+export function removeDictType(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}

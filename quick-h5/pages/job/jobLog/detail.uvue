@@ -1,0 +1,252 @@
+<template>
+	<view class="page">
+		<view v-if="loading" class="hint"><text class="hint-t">加载中…</text></view>
+		<view v-else class="card">
+			<text class="title">任务日志</text>
+			<text class="line">任务ID：{{ detail.jobId }}</text>
+			<text class="line">触发来源：{{ detail.triggerType.length > 0 ? detail.triggerType : "—" }}</text>
+			<text class="line">实例ID：{{ detail.instanceId.length > 0 ? detail.instanceId : "—" }}</text>
+			<text class="line">续约时间：{{ detail.heartbeatTime.length > 0 ? detail.heartbeatTime : "—" }}</text>
+			<text class="line">状态：{{ detail.status }}</text>
+			<text class="line">开始：{{ detail.startTime.length > 0 ? detail.startTime : "—" }}</text>
+			<text class="line">结束：{{ detail.endTime.length > 0 ? detail.endTime : "—" }}</text>
+			<text class="line">耗时：{{ costText }}</text>
+			<text class="sec">任务参数</text>
+			<text class="body">{{ detail.jobParam.length > 0 ? detail.jobParam : "—" }}</text>
+			<text class="sec">返回结果</text>
+			<text class="body">{{ detail.result.length > 0 ? detail.result : "—" }}</text>
+			<text class="sec">错误异常</text>
+			<text class="body">{{ detail.errorMsg.length > 0 ? detail.errorMsg : "—" }}</text>
+
+			<view class="cat-head">
+				<text class="sec">过程日志</text>
+				<text class="cat-act" @click="onReloadCat">重新加载</text>
+			</view>
+			<text v-if="catMissing" class="cat-warn">日志文件暂不可用（可能跨节点、尚未写出或已清理）</text>
+			<text v-else-if="catPolling" class="cat-live">拉取中…</text>
+			<text v-else-if="catFinished" class="cat-done">已结束</text>
+			<scroll-view class="cat-box" scroll-y="true">
+				<text class="cat-pre">{{ catText.length > 0 ? catText : "暂无过程日志" }}</text>
+			</scroll-view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { getJobLog, catJobLog, JobLogPayload } from "@/api/job/jobLog"
+	import { hasPermi } from "@/utils/permission"
+
+	const loading = ref(false)
+	const detail = ref({
+		id: "",
+		jobId: "",
+		triggerType: "",
+		instanceId: "",
+		heartbeatTime: "",
+		jobParam: "",
+		status: "",
+		startTime: "",
+		endTime: "",
+		costMs: "",
+		result: "",
+		errorMsg: ""
+	} as JobLogPayload)
+
+	const catText = ref("")
+	const catFromLine = ref(1)
+	const catMissing = ref(false)
+	const catPolling = ref(false)
+	const catFinished = ref(false)
+	const catInflight = ref(false)
+	let catTimer : number = 0
+
+	const costText = computed(() : string => {
+		const v = detail.value.costMs
+		if (v.length == 0) {
+			return "—"
+		}
+		return v + " ms"
+	})
+
+	function stopCatPoll() {
+		if (catTimer != 0) {
+			clearInterval(catTimer)
+			catTimer = 0
+		}
+		catPolling.value = false
+	}
+
+	function pullCatOnce() {
+		const id = detail.value.id
+		if (id.length == 0 || catInflight.value) {
+			return
+		}
+		catInflight.value = true
+		catJobLog(id, catFromLine.value).then((data) => {
+			catInflight.value = false
+			catMissing.value = data.missing
+			if (data.content.length > 0) {
+				catText.value = catText.value + data.content
+				const next = data.toLine + 1
+				if (next > catFromLine.value) {
+					catFromLine.value = next
+				}
+			}
+			if (data.end) {
+				catFinished.value = true
+				stopCatPoll()
+				getJobLog(id).then((row) => {
+					detail.value = row
+				}).catch((_e) => {})
+			}
+		}).catch((_e) => {
+			catInflight.value = false
+			stopCatPoll()
+		})
+	}
+
+	function startCatPoll() {
+		stopCatPoll()
+		if (!hasPermi(["job:jobLog:cat"])) {
+			return
+		}
+		catPolling.value = true
+		pullCatOnce()
+		catTimer = setInterval(() => {
+			pullCatOnce()
+		}, 2000) as number
+	}
+
+	function onReloadCat() {
+		if (detail.value.id.length == 0) {
+			return
+		}
+		catText.value = ""
+		catFromLine.value = 1
+		catMissing.value = false
+		catFinished.value = false
+		startCatPoll()
+	}
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid == null || `${qid}`.length == 0) {
+			return
+		}
+		loading.value = true
+		getJobLog(`${qid}`).then((row) => {
+			detail.value = row
+			loading.value = false
+			startCatPoll()
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载失败", icon: "none" })
+		})
+	})
+
+	onUnload(() => {
+		stopCatPoll()
+	})
+
+	onHide(() => {
+		stopCatPoll()
+	})
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+		padding: 16px;
+	}
+	.card {
+		border-radius: 16px;
+		padding: 16px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+		display: flex;
+		flex-direction: column;
+	}
+	.title {
+		font-size: 17px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		margin-bottom: 10px;
+	}
+	.line {
+		font-size: 13px;
+		color: #52525b;
+		margin-bottom: 4px;
+	}
+	.sec {
+		margin-top: 14px;
+		margin-bottom: 6px;
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--rice-text-color);
+	}
+	.body {
+		font-size: 13px;
+		color: #52525b;
+		line-height: 20px;
+	}
+	.cat-head {
+		margin-top: 8px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.cat-act {
+		font-size: 13px;
+		color: #007aff;
+		font-weight: 600;
+	}
+	.cat-warn {
+		font-size: 12px;
+		color: #c0392b;
+		margin-bottom: 6px;
+	}
+	.cat-live {
+		font-size: 12px;
+		color: #007aff;
+		margin-bottom: 6px;
+	}
+	.cat-done {
+		font-size: 12px;
+		color: #34c759;
+		margin-bottom: 6px;
+	}
+	.cat-box {
+		height: 220px;
+		border-radius: 10px;
+		background-color: #111827;
+		padding: 10px;
+	}
+	.cat-pre {
+		font-size: 11px;
+		line-height: 16px;
+		color: #e5e7eb;
+		word-break: break-all;
+	}
+	.hint {
+		padding: 24px;
+		align-items: center;
+	}
+	.hint-t {
+		font-size: 13px;
+		color: #8e8e93;
+	}
+</style>

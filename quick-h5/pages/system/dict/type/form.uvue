@@ -1,0 +1,228 @@
+<template>
+	<!-- 字典类型新增/编辑：C7FormPage 内置 Soft Glass -->
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增字典类型"
+		edit-title="修改字典类型"
+		:show-delete="isEdit"
+		:add-button-permi="['system:dictType:add']"
+		:edit-button-permi="['system:dictType:edit']"
+		:delete-button-permi="['system:dictType:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="dictName" label="字典名称" required>
+				<rice-input
+					v-model="form['dictName']"
+					placeholder="请输入字典名称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="dictType" label="字典类型" required>
+				<rice-input
+					v-model="form['dictType']"
+					placeholder="请输入字典类型"
+					clearable
+					:maxlength="255"
+					:disabled="isEdit"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 字典类型新增 / 编辑（quick-h5）
+	 */
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import {
+		getDictType,
+		addDictType,
+		updateDictType,
+		removeDictType,
+		DictTypePayload
+	} from "@/api/system/dict/type"
+
+	type DictTypeFormModel = {
+		dictName : string
+		dictType : string
+		status : string
+		remark : string
+	}
+
+	const id = ref("")
+	const form = ref({
+		dictName: "",
+		dictType: "",
+		status: "0",
+		remark: ""
+	} as DictTypeFormModel)
+
+	const formRules = new Map<string, FormRules[]>([
+		["dictName", [{ required: true, message: "字典名称不能为空", trigger: "blur" } as FormRules]],
+		["dictType", [{ required: true, message: "字典类型不能为空", trigger: "blur" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	function applyForm(row : DictTypePayload) {
+		form.value = {
+			dictName: row.dictName,
+			dictType: row.dictType,
+			status: row.status.length > 0 ? row.status : "0",
+			remark: row.remark
+		} as DictTypeFormModel
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getDictType(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : DictTypePayload {
+		const f = form.value
+		return {
+			id: id.value,
+			dictName: f.dictName.trim(),
+			dictType: f.dictType.trim(),
+			status: f.status,
+			remark: f.remark.trim()
+		} as DictTypePayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/dict/type/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/dict/type/index" })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateDictType(payload) : addDictType(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.dictName.length > 0 ? form.value.dictName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除字典类型「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				const ids : string[] = [id.value]
+				removeDictType(ids).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>

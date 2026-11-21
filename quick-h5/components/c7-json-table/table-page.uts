@@ -1,0 +1,51 @@
+/**
+ * C7JsonTable 列表页样板：蒸汽 H5 下 expose 可能在实例或 `$.exposed`。
+ * 登录鉴权与列表首刷已由全局 permission + 组件 onShow 处理；
+ * 业务页只需 bindC7TablePage 挂下拉/触底（若 pages.json 开启了对应能力）。
+ */
+
+/**
+ * 调用表 expose 方法（refreshData / loadMore / bumpPerm 等）。
+ */
+export function callC7Table(inst : any | null, method : string) : any | null {
+	if (inst == null) {
+		return null
+	}
+	if (typeof inst[method] == "function") {
+		return inst[method]()
+	}
+	if (inst.$ != null && inst.$.exposed != null && typeof inst.$.exposed[method] == "function") {
+		return inst.$.exposed[method]()
+	}
+	return null
+}
+
+/**
+ * 下拉刷新：调用 refreshData，结束后 stopPullDownRefresh。
+ */
+export function refreshC7TableAndStopPull(inst : any | null) {
+	const ret = callC7Table(inst, "refreshData")
+	if (ret == null || typeof (ret as Promise<void>).then != "function") {
+		uni.stopPullDownRefresh()
+		return
+	}
+	const p = ret as Promise<void>
+	p.then(() => {
+		uni.stopPullDownRefresh()
+	}).catch((_e) => {
+		uni.stopPullDownRefresh()
+	})
+}
+
+/**
+ * 在列表页 setup 中调用一次：绑定下拉刷新与触底加载。
+ * getTable 每次取最新 table 实例（通常 `() => tableRef.value`）。
+ */
+export function bindC7TablePage(getTable : () => any | null) {
+	onPullDownRefresh(() => {
+		refreshC7TableAndStopPull(getTable())
+	})
+	onReachBottom(() => {
+		callC7Table(getTable(), "loadMore")
+	})
+}

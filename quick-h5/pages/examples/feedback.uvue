@@ -1,0 +1,124 @@
+<template>
+	<view class="page">
+		<view class="content">
+			<c7-title label="弹层与反馈" label-size="h3"></c7-title>
+
+			<c7-card label="C7MessageBox" :show-color-block="true">
+				<view class="ops">
+					<rice-button type="primary" size="small" shape="round" text="c7Confirm" @click="onConfirm"></rice-button>
+					<rice-button type="info" size="small" shape="round" text="c7Alert" @click="onAlert"></rice-button>
+					<rice-button type="warning" size="small" shape="round" text="c7Prompt" @click="onPrompt"></rice-button>
+					<rice-button type="error" size="small" shape="round" text="危险确认" @click="onDanger"></rice-button>
+					<rice-button type="primary" plain size="small" shape="round" text="Loading" @click="onLoading"></rice-button>
+				</view>
+				<text class="hint">最近结果：{{ lastResult }}</text>
+			</c7-card>
+
+			<c7-card label="C7Dialog / C7FormDialog" :show-color-block="true">
+				<view class="ops">
+					<rice-button type="primary" size="small" shape="round" text="打开 Dialog" @click="dialogShow = true"></rice-button>
+					<rice-button type="primary" plain size="small" shape="round" text="打开 FormDialog" @click="openForm"></rice-button>
+				</view>
+			</c7-card>
+
+			<c7-dialog v-model="dialogShow" title="示例弹窗" :on-confirm="onDialogConfirm">
+				<text class="body-t">这是 C7Dialog 内容区。</text>
+			</c7-dialog>
+
+			<c7-form-dialog
+				v-model="formShow"
+				:form="form"
+				:get-payload="getPayload"
+				:submit="submitForm"
+				success-message="保存成功"
+			>
+				<rice-input v-model="formName" placeholder="名称" shape="round"></rice-input>
+			</c7-form-dialog>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { c7Confirm, c7Alert, c7Prompt, c7DangerConfirm, c7Loading } from "@/components/c7-message-box/index.uts"
+
+	const lastResult = ref("-")
+	const dialogShow = ref(false)
+	const formShow = ref(false)
+	const formName = ref("")
+	const form = ref({ id: "", name: "" } as UTSJSONObject)
+
+	async function onConfirm() {
+		const r = await c7Confirm("确认执行该操作？", "确认")
+		lastResult.value = r.action
+	}
+
+	async function onAlert() {
+		const r = await c7Alert("仅确定按钮", "提示")
+		lastResult.value = r.action
+	}
+
+	async function onPrompt() {
+		const r = await c7Prompt("请输入备注", "输入")
+		lastResult.value = r.action + ":" + r.value
+	}
+
+	async function onDanger() {
+		const r = await c7DangerConfirm("删除后不可恢复", "危险操作")
+		lastResult.value = r.action
+	}
+
+	function onLoading() {
+		const h = c7Loading("请稍候…")
+		setTimeout(() => {
+			h.close()
+		}, 1200)
+	}
+
+	async function onDialogConfirm() {
+		await new Promise<void>((resolve) => {
+			setTimeout(() => resolve(), 400)
+		})
+	}
+
+	async function openForm() {
+		await getPayload(null)
+		formShow.value = true
+	}
+
+	async function getPayload(_row : any | null) {
+		form.value = { id: "", name: "" } as UTSJSONObject
+		formName.value = ""
+	}
+
+	async function submitForm() {
+		form.value["name"] = formName.value
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 300))
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 12px 16px 28px;
+	}
+	.ops {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.hint {
+		margin-top: 10px;
+		font-size: 12px;
+		color: #8e8e93;
+	}
+	.body-t {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+</style>

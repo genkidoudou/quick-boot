@@ -1,0 +1,128 @@
+<template>
+	<!-- C7 多选：rice-checkbox-group；子项必须 :value 绑定选项值 -->
+	<view class="c7-checkbox">
+		<rice-checkbox-group v-model="innerList" direction="column" @change="onChange">
+			<template v-for="(item, idx) in items" :key="idx">
+				<rice-checkbox
+					:label="item.label"
+					:value="item.value"
+					:disabled="item.disabled || disabled"
+					:custom-style="boxStyle"
+				></rice-checkbox>
+			</template>
+		</rice-checkbox-group>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Checkbox（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Checkbox` 的**静态多选**：`dataList` / `options` + `labelKey` / `valueKey`，
+	 * 以及 `joinValue` 控制 v-model 形态。
+	 *
+	 * **交互实现**
+	 * - 底座为 RiceUI `rice-checkbox-group` / `rice-checkbox`
+	 * - **必须**给 `rice-checkbox` 绑 `:value="item.value"`（仅 label 不够，否则组内无法正确勾选）
+	 *
+	 * **v-model 形态**
+	 * - `joinValue=false`（默认）：`v-model` 为 `string[]`
+	 * - `joinValue=true`：`v-model` 为逗号拼接字符串（如 `"a,b"`）
+	 * - `change` 始终抛出 `string[]`
+	 *
+	 * **与 quick-ui 差异**
+	 * - 无 EP Checkbox 的按钮样式/尺寸等透传；纵向排列 + 项间距
+	 * - 入参兼容数组或逗号串，统一经 `toList` 后再 emit
+	 */
+	import { resolveC7Options, C7OptionItem } from "@/components/c7-shared/option.uts"
+
+	defineOptions({ name: "C7Checkbox" })
+
+	const props = withDefaults(defineProps<{
+		/** 当前选中：joinValue=false 为 string[]；true 为逗号串；也可传入可解析的原始值 */
+		modelValue : any
+		/** 选项列表（优先于 options） */
+		dataList : any | null
+		/** 备选选项列表；dataList 为空时使用 */
+		options : any | null
+		/** 选项文案字段名，默认 label */
+		labelKey : string
+		/** 选项值字段名，默认 value */
+		valueKey : string
+		/** true 时 v-model 输出逗号拼接字符串；false 时输出 string[] */
+		joinValue : boolean
+		/** 整组禁用（会与项级 disabled 合并） */
+		disabled : boolean
+	}>(), {
+		modelValue: null,
+		dataList: null,
+		options: null,
+		labelKey: "label",
+		valueKey: "value",
+		joinValue: false,
+		disabled: false
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : any]
+		change : [v : string[]]
+	}>()
+
+	/** rice-checkbox 项间距样式 */
+	const boxStyle = { marginBottom: "8px" } as UTSJSONObject
+
+	/** 归一化后的选项列表 */
+	const items = computed(() : C7OptionItem[] => {
+		return resolveC7Options(props.dataList, props.options, props.labelKey, props.valueKey)
+	})
+
+	/** 将外部 modelValue（数组 / 逗号串 / 空）转为 string[] */
+	function toList(raw : any) : string[] {
+		if (raw == null) {
+			return [] as string[]
+		}
+		if (Array.isArray(raw)) {
+			const out : string[] = []
+			const arr = raw as any[]
+			for (let i = 0; i < arr.length; i++) {
+				out.push(`${arr[i]}`)
+			}
+			return out
+		}
+		const s = `${raw}`.trim()
+		if (s.length == 0) {
+			return [] as string[]
+		}
+		return s.split(",")
+	}
+
+	/** 绑定到 rice-checkbox-group 的选中列表 */
+	const innerList = computed({
+		get : () : string[] => toList(props.modelValue),
+		set : (list : string[]) => {
+			emitOut(list)
+		}
+	})
+
+	/** 按 joinValue 输出 v-model，并始终 emit change(string[]) */
+	function emitOut(list : string[]) {
+		emit("change", list)
+		if (props.joinValue) {
+			emit("update:modelValue", list.join(","))
+		} else {
+			emit("update:modelValue", list)
+		}
+	}
+
+	/** group change：归一化后 emitOut */
+	function onChange(v : any) {
+		emitOut(toList(v))
+	}
+</script>
+
+<style>
+	.c7-checkbox {
+		display: flex;
+		flex-direction: column;
+	}
+</style>

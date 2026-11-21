@@ -1,0 +1,209 @@
+<template>
+	<view class="c7-button" :class="disabled || busy ? 'is-disabled' : ''">
+		<rice-button
+			:type="resolvedType"
+			:plain="resolvedPlain"
+			:size="resolvedSize"
+			:text="resolvedLabel"
+			:loading="busy"
+			:disabled="disabled || busy"
+			shape="round"
+			@click="onClick"
+		>
+			<slot></slot>
+		</rice-button>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Button（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Button` 的常用 clickFunction 流水线：防抖 → 可选确认 → 执行 →
+	 * success / error toast，并透出 before-click / after-click / success / error。
+	 *
+	 * **交互流水线**
+	 * - `debounceDelay` 内重复点击忽略
+	 * - `confirm=true` 时先 `c7Confirm`，取消则 `after-click(false)`
+	 * - `clickFunction` 为 null 时仍 `after-click(true)`（纯展示/外部分发场景）
+	 * - 执行中 `busy`，按钮禁用并展示 loading
+	 *
+	 * **样式映射（btnType 默认）**
+	 * - label：add→新增 / edit→编辑 / delete→删除 / save→保存 / 其它→确定
+	 * - type：delete→error；add、save→primary；显式 `type` 优先
+	 * - plain：未指定时 delete 默认 true
+	 *
+	 * **size**
+	 * - 仅支持 `large` | `small` | `mini`；空或非法值回落 `small`（默认 small）
+	 *
+	 * **底座**：RiceUI `rice-button`（shape=round）
+	 */
+	import { c7Confirm } from "@/components/c7-message-box/index.uts"
+
+	defineOptions({ name: "C7Button" })
+
+	const props = withDefaults(defineProps<{
+		/** 语义按钮类型：add / edit / delete / save；影响默认 label、type、plain */
+		btnType : string
+		/** 点击执行函数；可返回 Promise；null 时只走确认/事件流水线 */
+		clickFunction : (() => Promise<any> | any) | null
+		/** 防抖间隔（ms）；距上次有效点击不足该值则忽略 */
+		debounceDelay : number
+		/** 是否先弹确认框（c7Confirm） */
+		confirm : boolean
+		/** 确认框文案 */
+		confirmMessage : string
+		/** 成功后 toast；空则不提示 */
+		successMessage : string
+		/** 失败时是否 toast */
+		showErrorToast : boolean
+		/** 失败 toast 文案；空则用异常字符串 */
+		errorMessage : string
+		/** 按钮文案；非空时覆盖 btnType 默认文案 */
+		label : string
+		/** rice-button type；非空时覆盖 btnType 默认映射 */
+		type : string
+		/** 是否描边；null 时按 btnType（delete→true）推断 */
+		plain : boolean | null
+		/**
+		 * 尺寸：仅 `large` | `small` | `mini`。
+		 * 空或其它值回落 `small`（默认 small）。
+		 */
+		size : string
+		/** 是否禁用（busy 时也会禁用） */
+		disabled : boolean
+	}>(), {
+		btnType: "",
+		clickFunction: null,
+		debounceDelay: 300,
+		confirm: false,
+		confirmMessage: "确定执行该操作？",
+		successMessage: "",
+		showErrorToast: true,
+		errorMessage: "",
+		label: "",
+		type: "",
+		plain: null,
+		size: "",
+		disabled: false
+	})
+
+	const emit = defineEmits<{
+		/** 进入流水线、确认前 */
+		"before-click" : []
+		/** 流水线结束；ok=是否成功执行（含无 clickFunction 的成功路径） */
+		"after-click" : [ok : boolean]
+		/** clickFunction resolve 结果 */
+		success : [v : any]
+		/** clickFunction reject / throw */
+		error : [v : any]
+	}>()
+
+	/** 是否正在执行 clickFunction */
+	const busy = ref(false)
+	/** 上次有效点击时间戳（防抖） */
+	let lastClickAt = 0
+
+	/** 最终展示文案：label 优先，否则按 btnType 映射 */
+	const resolvedLabel = computed(() : string => {
+		if (props.label.length > 0) {
+			return props.label
+		}
+		if (props.btnType == "add") {
+			return "新增"
+		}
+		if (props.btnType == "edit") {
+			return "编辑"
+		}
+		if (props.btnType == "delete") {
+			return "删除"
+		}
+		if (props.btnType == "save") {
+			return "保存"
+		}
+		return "确定"
+	})
+
+	/** 最终 rice-button type：显式 type 优先 */
+	const resolvedType = computed(() : string => {
+		if (props.type.length > 0) {
+			return props.type
+		}
+		if (props.btnType == "delete") {
+			return "error"
+		}
+		if (props.btnType == "add" || props.btnType == "save") {
+			return "primary"
+		}
+		return "primary"
+	})
+
+	/** 最终 plain：显式值优先；未指定时 delete 为 true */
+	const resolvedPlain = computed(() : boolean => {
+		if (props.plain != null) {
+			return props.plain as boolean
+		}
+		return props.btnType == "delete"
+	})
+
+	/**
+	 * 最终尺寸：仅放行 large / small / mini，否则 small。
+	 */
+	const resolvedSize = computed(() : string => {
+		if (props.size == "large" || props.size == "small" || props.size == "mini") {
+			return props.size
+		}
+		return "small"
+	})
+
+	/**
+	 * 点击入口：防抖 → before-click → 可选确认 → clickFunction → success/error/after-click。
+	 */
+	async function onClick() {
+		const now = Date.now()
+		if (now - lastClickAt < props.debounceDelay) {
+			return
+		}
+		lastClickAt = now
+		if (props.disabled || busy.value) {
+			return
+		}
+		emit("before-click")
+		if (props.confirm) {
+			const r = await c7Confirm(props.confirmMessage, "确认")
+			if (r.action != "confirm") {
+				emit("after-click", false)
+				return
+			}
+		}
+		const fn = props.clickFunction
+		if (fn == null) {
+			emit("after-click", true)
+			return
+		}
+		busy.value = true
+		try {
+			const res = await fn()
+			emit("success", res)
+			if (props.successMessage.length > 0) {
+				uni.showToast({ title: props.successMessage, icon: "none" })
+			}
+			emit("after-click", true)
+		} catch (e) {
+			emit("error", e)
+			if (props.showErrorToast) {
+				const msg = props.errorMessage.length > 0 ? props.errorMessage : `${e}`
+				uni.showToast({ title: msg, icon: "none" })
+			}
+			emit("after-click", false)
+		} finally {
+			busy.value = false
+		}
+	}
+</script>
+
+<style>
+	.c7-button.is-disabled {
+		opacity: 0.55;
+	}
+</style>

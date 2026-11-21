@@ -1,0 +1,378 @@
+<template>
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增分类"
+		edit-title="修改分类"
+		:show-delete="isEdit"
+		:add-button-permi="['system:fileClassify:add']"
+		:edit-button-permi="['system:fileClassify:edit']"
+		:delete-button-permi="['system:fileClassify:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="classifyCode" label="分类编码" required>
+				<rice-input
+					v-model="form['classifyCode']"
+					placeholder="如 avatar"
+					clearable
+					:maxlength="64"
+					:disabled="isEdit"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="classifyName" label="分类名称" required>
+				<rice-input
+					v-model="form['classifyName']"
+					placeholder="如 用户头像"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="allowTypeList" label="允许类型" required>
+				<c7-checkbox
+					v-model="allowTypeList"
+					:options="fileTypeOpts"
+					label-key="label"
+					value-key="value"
+				></c7-checkbox>
+				<text class="ext-tip">将保存为：{{ allowExtPreview }}</text>
+			</rice-form-item>
+
+			<rice-form-item name="maxSizeBytes" label="大小上限(字节)">
+				<rice-input
+					v-model="form['maxSizeBytes']"
+					placeholder="如 10485760"
+					clearable
+					:maxlength="20"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="maxCount" label="每次个数" required>
+				<rice-input
+					v-model="form['maxCount']"
+					placeholder="1"
+					clearable
+					:maxlength="8"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<!-- COMMON_IS：是=0 / 否=1 -->
+			<rice-form-item name="anonymous" label="是否匿名" required>
+				<rice-radio-group v-model="form['anonymous']" direction="row">
+					<rice-radio label="是" value="0"></rice-radio>
+					<rice-radio label="否" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import { loadDict } from "@/utils/dict"
+	import {
+		getFileClassify,
+		addFileClassify,
+		updateFileClassify,
+		removeFileClassify,
+		FileClassifyPayload
+	} from "@/api/system/fileClassify"
+
+	type ClassifyFormModel = {
+		classifyCode : string
+		classifyName : string
+		allowExt : string
+		maxSizeBytes : string
+		maxCount : string
+		status : string
+		anonymous : string
+		remark : string
+	}
+
+	const id = ref("")
+	const form = ref({
+		classifyCode: "",
+		classifyName: "",
+		allowExt: "",
+		maxSizeBytes: "",
+		maxCount: "1",
+		status: "0",
+		anonymous: "0",
+		remark: ""
+	} as ClassifyFormModel)
+
+	/** 勾选的 FILE_ALLOW_TYPE 字典值（每项本身是逗号后缀） */
+	const allowTypeList = ref([] as string[])
+	const fileTypeOpts = ref([] as any[])
+
+	const allowExtPreview = computed(() : string => {
+		const s = flattenAllowExt(allowTypeList.value)
+		return s.length > 0 ? s : "（请选择类型）"
+	})
+
+	function normalizeExtList(parts : string[]) : string[] {
+		const seen = new Map<string, boolean>()
+		const out : string[] = []
+		for (let i = 0; i < parts.length; i++) {
+			let ext = parts[i].trim().toLowerCase()
+			if (ext.startsWith(".")) {
+				ext = ext.substring(1)
+			}
+			if (ext.length == 0 || seen.get(ext) == true) {
+				continue
+			}
+			seen.set(ext, true)
+			out.push(ext)
+		}
+		return out
+	}
+
+	function flattenAllowExt(typeValues : string[]) : string {
+		const parts : string[] = []
+		for (let i = 0; i < typeValues.length; i++) {
+			const segs = typeValues[i].split(",")
+			for (let j = 0; j < segs.length; j++) {
+				parts.push(segs[j])
+			}
+		}
+		return normalizeExtList(parts).join(",")
+	}
+
+	/** 已存后缀反推勾选类型（简化：类型后缀全部被包含则勾选） */
+	function inferTypesFromExts(allowExt : string) : string[] {
+		const saved = normalizeExtList(allowExt.split(","))
+		if (saved.length == 0) {
+			return [] as string[]
+		}
+		const savedSet = new Map<string, boolean>()
+		for (let i = 0; i < saved.length; i++) {
+			savedSet.set(saved[i], true)
+		}
+		const matched : string[] = []
+		for (let i = 0; i < fileTypeOpts.value.length; i++) {
+			const o = fileTypeOpts.value[i] as UTSJSONObject
+			const key = o["value"] != null ? `${o["value"]}` : ""
+			if (key.length == 0) {
+				continue
+			}
+			const exts = normalizeExtList(key.split(","))
+			if (exts.length == 0) {
+				continue
+			}
+			let all = true
+			for (let j = 0; j < exts.length; j++) {
+				if (savedSet.get(exts[j]) != true) {
+					all = false
+					break
+				}
+			}
+			if (all) {
+				matched.push(key)
+			}
+		}
+		return matched
+	}
+
+	const formRules = new Map<string, FormRules[]>([
+		["classifyCode", [{ required: true, message: "分类编码不能为空", trigger: "blur" } as FormRules]],
+		["classifyName", [{ required: true, message: "分类名称不能为空", trigger: "blur" } as FormRules]],
+		["maxCount", [{ required: true, message: "每次个数不能为空", trigger: "blur" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]],
+		["anonymous", [{ required: true, message: "是否匿名不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	function applyForm(row : FileClassifyPayload) {
+		form.value = {
+			classifyCode: row.classifyCode,
+			classifyName: row.classifyName,
+			allowExt: row.allowExt,
+			maxSizeBytes: row.maxSizeBytes,
+			maxCount: row.maxCount.length > 0 ? row.maxCount : "1",
+			status: row.status.length > 0 ? row.status : "0",
+			anonymous: row.anonymous.length > 0 ? row.anonymous : "0",
+			remark: row.remark
+		} as ClassifyFormModel
+		allowTypeList.value = inferTypesFromExts(row.allowExt)
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getFileClassify(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		loadDict("FILE_ALLOW_TYPE").then((opts) => {
+			const mapped : any[] = []
+			for (let i = 0; i < opts.length; i++) {
+				mapped.push({
+					label: opts[i].label + "（" + opts[i].value + "）",
+					value: opts[i].value
+				} as UTSJSONObject)
+			}
+			fileTypeOpts.value = mapped
+			if (form.value.allowExt.length > 0) {
+				allowTypeList.value = inferTypesFromExts(form.value.allowExt)
+			}
+		}).catch((_e) => {})
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : FileClassifyPayload {
+		const f = form.value
+		return {
+			id: id.value,
+			classifyCode: f.classifyCode.trim(),
+			classifyName: f.classifyName.trim(),
+			allowExt: flattenAllowExt(allowTypeList.value),
+			maxSizeBytes: f.maxSizeBytes.trim(),
+			maxCount: f.maxCount.trim(),
+			status: f.status,
+			anonymous: f.anonymous,
+			remark: f.remark.trim()
+		} as FileClassifyPayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/system/fileClassify/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/fileClassify/index" })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateFileClassify(payload) : addFileClassify(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		if (allowTypeList.value.length == 0) {
+			uni.showToast({ title: "请至少选择一种文件类型", icon: "none" })
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.classifyName.length > 0 ? form.value.classifyName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除分类「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				removeFileClassify([id.value]).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>
+
+<style>
+	.ext-tip {
+		margin-top: 6px;
+		font-size: 12px;
+		color: #8e8e93;
+	}
+</style>

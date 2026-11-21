@@ -1,0 +1,180 @@
+<template>
+	<!-- C7 预览：逗号分隔 urls；图片预览 / 其它复制链接 -->
+	<view class="c7-preview">
+		<slot>
+			<template v-if="coverType == 'button'">
+				<rice-button type="primary" size="small" shape="round" :text="previewText" @click="previewFirst"></rice-button>
+			</template>
+			<template v-else>
+				<view class="c7-preview__list">
+					<template v-for="(url, idx) in urlList" :key="idx">
+						<image
+							v-if="typeOf(url) == 'image'"
+							class="c7-preview__img"
+							:src="url"
+							mode="aspectFill"
+							:style="thumbStyle"
+							@click="onPreview(url, idx)"
+						></image>
+						<view v-else class="c7-preview__file" @click="onPreview(url, idx)">
+							<text class="c7-preview__file-t">{{ fileNameOf(url) }}</text>
+						</view>
+					</template>
+				</view>
+			</template>
+		</slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Preview（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Preview` 的常用预览：`urls` 为逗号分隔的地址列表。
+	 *
+	 * **点击行为**
+	 * - 判定为 `image`：`uni.previewImage`（仅当前列表中的图片 urls）
+	 * - 其它（video / file）：`uni.setClipboardData` 复制链接并 toast「链接已复制」
+	 *
+	 * **类型判定**
+	 * - `autoDetect=true`：按扩展名识别 image / video / file
+	 * - 否则固定使用 `displayType`
+	 *
+	 * **封面**：`coverType=button` 时只显示预览按钮，点后预览第一项；否则缩略图/文件名列表
+	 *
+	 * **事件**：`preview(url, index)`；`close` 预留对齐 packages
+	 */
+	defineOptions({ name: "C7Preview" })
+
+	const props = withDefaults(defineProps<{
+		/** 逗号分隔的资源 URL 列表 */
+		urls : string
+		/** autoDetect=false 时的固定类型：image / video / file */
+		displayType : string
+		/** 是否按扩展名自动识别类型 */
+		autoDetect : boolean
+		/** 封面：none=列表；button=仅预览按钮 */
+		coverType : string
+		/** 缩略图宽度（px） */
+		width : number
+		/** 缩略图高度（px） */
+		height : number
+		/** coverType=button 时的按钮文案 */
+		previewText : string
+		/** 对齐 packages 视频弹窗标题（H5 侧未实现视频弹层） */
+		videoDialogTitle : string
+	}>(), {
+		urls: "",
+		displayType: "image",
+		autoDetect: true,
+		coverType: "none",
+		width: 72,
+		height: 72,
+		previewText: "预览",
+		videoDialogTitle: "视频预览"
+	})
+
+	const emit = defineEmits<{
+		preview : [url : string, index : number]
+		close : []
+	}>()
+
+	/** 拆分、trim 后的非空 URL 列表 */
+	const urlList = computed(() : string[] => {
+		const out : string[] = []
+		const parts = props.urls.split(",")
+		for (let i = 0; i < parts.length; i++) {
+			const s = parts[i].trim()
+			if (s.length > 0) {
+				out.push(s)
+			}
+		}
+		return out
+	})
+
+	/** 缩略图宽高内联样式 */
+	const thumbStyle = computed(() : string => {
+		return `width:${props.width}px;height:${props.height}px;`
+	})
+
+	/**
+	 * 识别资源类型：image / video / file。
+	 */
+	function typeOf(url : string) : string {
+		if (!props.autoDetect) {
+			return props.displayType
+		}
+		const lower = url.toLowerCase()
+		if (lower.indexOf(".mp4") >= 0 || lower.indexOf(".mov") >= 0 || lower.indexOf(".webm") >= 0) {
+			return "video"
+		}
+		if (lower.indexOf(".png") >= 0 || lower.indexOf(".jpg") >= 0 || lower.indexOf(".jpeg") >= 0 || lower.indexOf(".gif") >= 0 || lower.indexOf(".webp") >= 0) {
+			return "image"
+		}
+		return "file"
+	}
+
+	/** 从 URL 取最后一段文件名 */
+	function fileNameOf(url : string) : string {
+		const idx = url.lastIndexOf("/")
+		if (idx >= 0 && idx < url.length - 1) {
+			return url.substring(idx + 1)
+		}
+		return url
+	}
+
+	/**
+	 * 预览单项：图片走 previewImage，其它复制链接。
+	 */
+	function onPreview(url : string, index : number) {
+		emit("preview", url, index)
+		const t = typeOf(url)
+		if (t == "image") {
+			const images = urlList.value.filter((u) => typeOf(u) == "image")
+			uni.previewImage({
+				current: url,
+				urls: images
+			})
+			return
+		}
+		uni.setClipboardData({
+			data: url,
+			success: () => {
+				uni.showToast({ title: "链接已复制", icon: "none" })
+			}
+		})
+	}
+
+	/** 预览列表第一项（button 封面） */
+	function previewFirst() {
+		if (urlList.value.length == 0) {
+			return
+		}
+		onPreview(urlList.value[0], 0)
+	}
+</script>
+
+<style>
+	.c7-preview__list {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	.c7-preview__img {
+		border-radius: 8px;
+		margin-right: 8px;
+		margin-bottom: 8px;
+		background-color: rgba(142, 142, 147, 0.12);
+	}
+	.c7-preview__file {
+		padding: 8px 10px;
+		border-radius: 8px;
+		background-color: rgba(142, 142, 147, 0.12);
+		margin-right: 8px;
+		margin-bottom: 8px;
+	}
+	.c7-preview__file-t {
+		font-size: 12px;
+		color: #007aff;
+	}
+</style>

@@ -1,0 +1,129 @@
+<template>
+	<!-- C7 水印：CSS flex 平铺文本（简化版，无 Canvas） -->
+	<view class="c7-watermark" :class="fullscreen ? 'is-full' : ''" :style="wrapStyle">
+		<slot></slot>
+		<view v-if="!disabled" class="c7-watermark__layer" :style="layerStyle">
+			<template v-for="(cell, idx) in cells" :key="idx">
+				<text class="c7-watermark__text" :style="textStyle">{{ cell }}</text>
+			</template>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Watermark（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Watermark` 的**视觉心智**，但实现为 **CSS 平铺简化版**：
+	 * 用 flex 换行重复若干段文本 + rotate，覆盖在内容之上（`pointer-events: none`）。
+	 *
+	 * **与桌面 packages 差异（刻意简化）**
+	 * - 无 Canvas 绘制、无 MutationObserver 防删
+	 * - `image` prop 保留对齐，H5 侧未渲染图片水印
+	 * - 单元格数量固定约 24，靠 gap / 旋转近似铺满
+	 *
+	 * **模式**
+	 * - `fullscreen=false`：相对定位包住默认插槽内容
+	 * - `fullscreen=true`：fixed 全屏遮罩层
+	 *
+	 * **禁用**：`disabled=true` 不渲染水印层
+	 */
+	defineOptions({ name: "C7Watermark" })
+
+	const props = withDefaults(defineProps<{
+		/** 水印文案；空则默认 QuickBoot */
+		text : string
+		/** 对齐 packages 图片水印（H5 简化版未实现） */
+		image : string
+		/** 是否固定全屏覆盖 */
+		fullscreen : boolean
+		/** 为 true 时不渲染水印层 */
+		disabled : boolean
+		/** 水印层 z-index */
+		zIndex : number
+		/** 文字字号（px） */
+		fontSize : number
+		/** 文字颜色 */
+		fontColor : string
+		/** 水印层整体透明度 */
+		opacity : number
+		/** 文字旋转角度（deg） */
+		rotate : number
+		/** 横向间距（映射到 gap 第二值） */
+		gapX : number
+		/** 纵向间距（映射到 gap 第一值） */
+		gapY : number
+	}>(), {
+		text: "",
+		image: "",
+		fullscreen: false,
+		disabled: false,
+		zIndex: 4100,
+		fontSize: 14,
+		fontColor: "rgba(0,0,0,0.12)",
+		opacity: 1,
+		rotate: -22,
+		gapX: 100,
+		gapY: 100
+	})
+
+	/** 非全屏时包一层 relative */
+	const wrapStyle = computed(() : string => {
+		if (props.fullscreen) {
+			return ""
+		}
+		return "position:relative;"
+	})
+
+	/** 水印层 z-index / opacity / gap */
+	const layerStyle = computed(() : string => {
+		return `z-index:${props.zIndex};opacity:${props.opacity};gap:${props.gapY}px ${props.gapX}px;`
+	})
+
+	/** 单格文字字号、颜色、旋转 */
+	const textStyle = computed(() : string => {
+		return `font-size:${props.fontSize}px;color:${props.fontColor};transform:rotate(${props.rotate}deg);`
+	})
+
+	/**
+	 * 生成平铺用的重复文案数组（固定 24 格）。
+	 */
+	const cells = computed(() : string[] => {
+		const t = props.text.length > 0 ? props.text : "QuickBoot"
+		const out : string[] = []
+		for (let i = 0; i < 24; i++) {
+			out.push(t)
+		}
+		return out
+	})
+</script>
+
+<style>
+	.c7-watermark.is-full {
+		position: fixed;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		pointer-events: none;
+	}
+	.c7-watermark__layer {
+		position: absolute;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: space-around;
+		align-content: space-around;
+		pointer-events: none;
+		overflow: hidden;
+	}
+	.c7-watermark__text {
+		width: 160px;
+		text-align: center;
+		pointer-events: none;
+	}
+</style>

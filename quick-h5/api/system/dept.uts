@@ -1,0 +1,189 @@
+/**
+ * 部门 API，对齐 quick-ui `/api/system/dept.js` 与后端 `/sys/dept`。
+ * 列表接口返回树，H5 展平后供 C7JsonTable 使用。
+ */
+import {
+	PageQuery,
+	PageResult,
+	getById,
+	postBody,
+	removeIds,
+	readStr,
+	toRowObject,
+	cleanParam,
+	readResponseDataArray
+} from "@/api/shared/page"
+import { request, RequestOptions } from "@/api/http"
+
+const BASE = "/sys/dept"
+
+export type DeptPayload = {
+	id : string
+	parentId : string
+	deptName : string
+	orderNum : string
+	leader : string
+	phone : string
+	email : string
+	status : string
+	remark : string
+}
+
+function emptyDept() : DeptPayload {
+	return {
+		id: "",
+		parentId: "0",
+		deptName: "",
+		orderNum: "0",
+		leader: "",
+		phone: "",
+		email: "",
+		status: "0",
+		remark: ""
+	} as DeptPayload
+}
+
+export function mapDeptRow(row : UTSJSONObject) : DeptPayload {
+	let deptName = readStr(row, "deptName")
+	if (deptName.length == 0) {
+		deptName = readStr(row, "name")
+	}
+	let orderNum = readStr(row, "orderNum")
+	if (orderNum.length == 0) {
+		orderNum = readStr(row, "weight")
+	}
+	return {
+		id: readStr(row, "id"),
+		parentId: readStr(row, "parentId"),
+		deptName: deptName,
+		orderNum: orderNum.length > 0 ? orderNum : "0",
+		leader: readStr(row, "leader"),
+		phone: readStr(row, "phone"),
+		email: readStr(row, "email"),
+		status: readStr(row, "status"),
+		remark: readStr(row, "remark")
+	} as DeptPayload
+}
+
+function readChildren(row : UTSJSONObject) : any[] {
+	let kids = row.getArray("children")
+	if (kids == null) {
+		const anyRow = row as any
+		const plain = anyRow["children"]
+		if (plain != null && Array.isArray(plain)) {
+			kids = plain as any[]
+		}
+	}
+	if (kids == null) {
+		return [] as any[]
+	}
+	return kids as any[]
+}
+
+/** 树节点深度优先展平并映射 */
+function flattenDeptNodes(raw : any[]) : any[] {
+	const out : any[] = [] as any[]
+	function walk(list : any[]) {
+		if (list == null) {
+			return
+		}
+		const len = list.length
+		if (typeof len != "number" || len <= 0) {
+			return
+		}
+		for (let i = 0; i < len; i++) {
+			const rowObj = toRowObject(list[i])
+			if (rowObj == null) {
+				continue
+			}
+			out.push(mapDeptRow(rowObj) as any)
+			const kids = readChildren(rowObj)
+			if (kids.length > 0) {
+				walk(kids)
+			}
+		}
+	}
+	walk(raw)
+	return out
+}
+
+/**
+ * 部门列表：POST /page 后展平树。
+ * 可直接作为 C7JsonTable listFunction。
+ */
+export function listDept(query : PageQuery) : Promise<PageResult> {
+	// 对齐桌面：body 为 SysDeptVo 条件；后端返回 List<Tree>，不是分页 records
+	const body = cleanParam(query.param)
+	return request({
+		url: BASE + "/page",
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((res) : PageResult => {
+		const raw = readResponseDataArray(res)
+		const records = flattenDeptNodes(raw)
+		const rows : any[] = [] as any[]
+		for (let i = 0; i < records.length; i++) {
+			rows.push(records[i])
+		}
+		return {
+			records: rows,
+			total: rows.length,
+			current: 1,
+			size: rows.length > 0 ? rows.length : 10,
+			pages: 1
+		} as PageResult
+	})
+}
+
+export function getDept(id : string) : Promise<DeptPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapDeptRow, emptyDept()) as Promise<DeptPayload>
+}
+
+export function addDept(payload : DeptPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		parentId: payload.parentId,
+		deptName: payload.deptName,
+		orderNum: payload.orderNum,
+		leader: payload.leader,
+		phone: payload.phone,
+		email: payload.email,
+		status: payload.status,
+		remark: payload.remark
+	}
+	return postBody(BASE + "/add", body)
+}
+
+export function updateDept(payload : DeptPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		parentId: payload.parentId,
+		deptName: payload.deptName,
+		orderNum: payload.orderNum,
+		leader: payload.leader,
+		phone: payload.phone,
+		email: payload.email,
+		status: payload.status,
+		remark: payload.remark
+	}
+	return postBody(BASE + "/update", body)
+}
+
+export function removeDept(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+/**
+ * 部门树（保留 children），供 C7TreeSelect。
+ * 节点字段：id / deptName / children（与列表接口一致）。
+ */
+export function treeselectDept() : Promise<any[]> {
+	return request({
+		url: BASE + "/page",
+		method: "POST",
+		data: {} as UTSJSONObject,
+		needToken: true
+	} as RequestOptions).then((res) : any[] => {
+		return readResponseDataArray(res)
+	})
+}

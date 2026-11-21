@@ -1,0 +1,118 @@
+<template>
+	<!-- C7 复制：点击后写入系统剪贴板（uni.setClipboardData） -->
+	<view class="c7-copy" :class="disabled ? 'is-disabled' : ''" @click="onClick">
+		<slot>
+			<text v-if="mode == 'button' || mode == 'text' || mode == 'clickable' || mode == 'none'" class="c7-copy__btn">{{ buttonText }}</text>
+			<text v-else class="c7-copy__icon">{{ iconLabel.length > 0 ? iconLabel : '复制' }}</text>
+		</slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Copy（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Copy` 的复制交互：点击后将 `text` 写入剪贴板。
+	 *
+	 * **实现**：使用 uni API `uni.setClipboardData`（非 DOM / navigator.clipboard）。
+	 *
+	 * **流程**
+	 * 1. disabled 或 busy 时忽略
+	 * 2. emit `copy`
+	 * 3. `uni.setClipboardData` → 成功 emit `success`（可选 toast）；失败 emit `error`
+	 *
+	 * **mode**：`button` / `text` / `clickable` / `none` 显示 buttonText；其它显示 iconLabel 或「复制」
+	 *
+	 * **与 quick-ui 差异**：按钮视觉简化为文字色，buttonType / iconButtonType 仅保留 props 对齐
+	 */
+	defineOptions({ name: "C7Copy" })
+
+	const props = withDefaults(defineProps<{
+		/** 要复制到剪贴板的文本 */
+		text : string
+		/** 展示模式：button / text / clickable / none / icon 等 */
+		mode : string
+		/** 禁用点击 */
+		disabled : boolean
+		/** 成功/失败时是否 showToast */
+		showMessage : boolean
+		/** button/text 等模式下的按钮文案 */
+		buttonText : string
+		/** 对齐 packages 按钮类型（H5 侧未驱动样式） */
+		buttonType : string
+		/** 对齐 packages 图标按钮类型（H5 侧未驱动样式） */
+		iconButtonType : string
+		/** icon 模式下的展示文案；空则「复制」 */
+		iconLabel : string
+		/** 成功 toast 文案 */
+		successMessage : string
+		/** 失败 toast 前缀，后接错误信息 */
+		errorMessagePrefix : string
+	}>(), {
+		text: "",
+		mode: "button",
+		disabled: false,
+		showMessage: true,
+		buttonText: "复制",
+		buttonType: "default",
+		iconButtonType: "primary",
+		iconLabel: "",
+		successMessage: "复制成功",
+		errorMessagePrefix: "复制失败："
+	})
+
+	const emit = defineEmits<{
+		copy : [v : string]
+		success : [v : string]
+		error : [v : string]
+	}>()
+
+	/** 防止连点重复写入剪贴板 */
+	let busy = false
+
+	/**
+	 * 点击复制：emit copy → uni.setClipboardData → success/error。
+	 */
+	function onClick() {
+		if (props.disabled || busy) {
+			return
+		}
+		const resolved = props.text != null ? `${props.text}` : ""
+		emit("copy", resolved)
+		busy = true
+		uni.setClipboardData({
+			data: resolved,
+			success: () => {
+				emit("success", resolved)
+				if (props.showMessage) {
+					uni.showToast({ title: props.successMessage, icon: "none" })
+				}
+			},
+			fail: (err) => {
+				const msg = err != null ? `${err}` : "unknown"
+				emit("error", msg)
+				if (props.showMessage) {
+					uni.showToast({ title: props.errorMessagePrefix + msg, icon: "none" })
+				}
+			},
+			complete: () => {
+				busy = false
+			}
+		})
+	}
+</script>
+
+<style>
+	.c7-copy.is-disabled {
+		opacity: 0.45;
+	}
+	.c7-copy__btn {
+		font-size: 14px;
+		color: #007aff;
+		padding: 4px 8px;
+	}
+	.c7-copy__icon {
+		font-size: 13px;
+		color: #007aff;
+	}
+</style>

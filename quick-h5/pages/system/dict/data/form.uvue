@@ -1,0 +1,316 @@
+<template>
+	<!-- 字典数据新增/编辑：C7FormPage 内置 Soft Glass -->
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增字典数据"
+		edit-title="修改字典数据"
+		:show-delete="isEdit"
+		:add-button-permi="['system:dictData:add']"
+		:edit-button-permi="['system:dictData:edit']"
+		:delete-button-permi="['system:dictData:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="dictType" label="字典类型" required>
+				<rice-input
+					v-model="form['dictType']"
+					placeholder="请输入字典类型"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="dictLabel" label="字典标签" required>
+				<rice-input
+					v-model="form['dictLabel']"
+					placeholder="请输入字典标签"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="dictValue" label="字典值" required>
+				<rice-input
+					v-model="form['dictValue']"
+					placeholder="请输入字典值"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="dictSort" label="排序">
+				<rice-input
+					v-model="form['dictSort']"
+					placeholder="请输入排序"
+					clearable
+					:maxlength="10"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="listClass" label="回显样式">
+				<c7-select
+					v-model="form['listClass']"
+					:options="listClassOpts"
+					placeholder="请选择回显样式"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item name="cssClass" label="样式类名">
+				<rice-input
+					v-model="form['cssClass']"
+					placeholder="css class"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<!-- COMMON_IS：0=是 / 1=否 -->
+			<rice-form-item name="isDefault" label="是否默认">
+				<rice-radio-group v-model="form['isDefault']" direction="row">
+					<rice-radio label="是" value="0"></rice-radio>
+					<rice-radio label="否" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="停用" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 字典数据新增 / 编辑（quick-h5）
+	 *
+	 * 新增可带 ?dictType= 预填；保存后按字典类型回列表。
+	 */
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import {
+		getDictData,
+		addDictData,
+		updateDictData,
+		removeDictData,
+		DictDataPayload
+	} from "@/api/system/dict/data"
+
+	type DictDataFormModel = {
+		dictType : string
+		dictLabel : string
+		dictValue : string
+		dictSort : string
+		listClass : string
+		cssClass : string
+		isDefault : string
+		status : string
+		remark : string
+	}
+
+	const listClassOpts = [
+		{ label: "默认", value: "default" } as UTSJSONObject,
+		{ label: "主要", value: "primary" } as UTSJSONObject,
+		{ label: "成功", value: "success" } as UTSJSONObject,
+		{ label: "信息", value: "info" } as UTSJSONObject,
+		{ label: "警告", value: "warning" } as UTSJSONObject,
+		{ label: "危险", value: "danger" } as UTSJSONObject
+	] as any[]
+
+	const id = ref("")
+	const form = ref({
+		dictType: "",
+		dictLabel: "",
+		dictValue: "",
+		dictSort: "0",
+		listClass: "default",
+		cssClass: "",
+		isDefault: "1",
+		status: "0",
+		remark: ""
+	} as DictDataFormModel)
+
+	const formRules = new Map<string, FormRules[]>([
+		["dictType", [{ required: true, message: "字典类型不能为空", trigger: "blur" } as FormRules]],
+		["dictLabel", [{ required: true, message: "字典标签不能为空", trigger: "blur" } as FormRules]],
+		["dictValue", [{ required: true, message: "字典值不能为空", trigger: "blur" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	function applyForm(row : DictDataPayload) {
+		form.value = {
+			dictType: row.dictType,
+			dictLabel: row.dictLabel,
+			dictValue: row.dictValue,
+			dictSort: row.dictSort.length > 0 ? row.dictSort : "0",
+			listClass: row.listClass.length > 0 ? row.listClass : "default",
+			cssClass: row.cssClass,
+			isDefault: row.isDefault.length > 0 ? row.isDefault : "1",
+			status: row.status.length > 0 ? row.status : "0",
+			remark: row.remark
+		} as DictDataFormModel
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getDictData(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+			return
+		}
+		const dt = query["dictType"]
+		if (dt != null && `${dt}`.length > 0) {
+			form.value.dictType = `${dt}`
+			formKey.value = formKey.value + 1
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : DictDataPayload {
+		const f = form.value
+		return {
+			id: id.value,
+			dictType: f.dictType.trim(),
+			dictLabel: f.dictLabel.trim(),
+			dictValue: f.dictValue.trim(),
+			dictSort: f.dictSort.trim().length > 0 ? f.dictSort.trim() : "0",
+			listClass: f.listClass.trim().length > 0 ? f.listClass.trim() : "default",
+			cssClass: f.cssClass.trim(),
+			isDefault: f.isDefault,
+			status: f.status,
+			remark: f.remark.trim()
+		} as DictDataPayload
+	}
+
+	function goList() {
+		const dt = form.value.dictType.trim()
+		let url = "/pages/system/dict/data/index"
+		if (dt.length > 0) {
+			url = url + "?dictType=" + encodeURIComponent(dt)
+		}
+		uni.redirectTo({
+			url: url,
+			fail: (_err) => {
+				uni.reLaunch({ url: url })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateDictData(payload) : addDictData(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.dictLabel.length > 0 ? form.value.dictLabel : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除字典数据「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				const ids : string[] = [id.value]
+				removeDictData(ids).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>

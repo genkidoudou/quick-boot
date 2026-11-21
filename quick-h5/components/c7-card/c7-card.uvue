@@ -1,0 +1,197 @@
+<template>
+	<!-- C7 卡片：标题栏 + 可折叠内容区（Soft Glass） -->
+	<view class="c7-card">
+		<slot name="header">
+			<view class="c7-card__header" v-if="label.length > 0 || collapsible">
+				<view class="c7-card__head-left">
+					<view
+						v-if="colorBlockVisible"
+						class="c7-card__block"
+						:style="'background-color:' + colorBlockColor"
+					></view>
+					<text class="c7-card__label" :class="isBold ? 'is-bold' : ''">{{ label }}</text>
+				</view>
+				<view class="c7-card__head-right">
+					<slot name="extra"></slot>
+					<slot name="toggle">
+						<text
+							v-if="collapsible"
+							class="c7-card__toggle"
+							@click="toggle"
+						>{{ expanded ? collapseText : expandText }}</text>
+					</slot>
+				</view>
+			</view>
+		</slot>
+		<view class="c7-card__body" v-if="expanded">
+			<slot></slot>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Card（quick-h5）
+	 *
+	 * 对齐 quick-ui `C7Card` 的常用卡片场景：标题 + 左侧色块 + 可选折叠，
+	 * 内容区默认插槽；外观为 Soft Glass 圆角半透明卡片。
+	 *
+	 * **插槽**
+	 * - `header`：整块标题栏（覆盖默认 label/色块/折叠）
+	 * - `extra`：标题右侧附加区
+	 * - `toggle`：折叠按钮（可自定义）
+	 * - 默认：正文内容（仅 `expanded=true` 时渲染）
+	 *
+	 * **展开态**
+	 * - `v-model`（`modelValue`）非 null：受控，emit `update:modelValue` + `change`
+	 * - 否则：内部 `innerExpanded`，初始取 `defaultExpanded`
+	 *
+	 * **色块显示**：`showColorBlock` 非 null 优先，否则回退 `isShowColorBlock`
+	 *
+	 * **暴露**：`toggle` / `expand` / `collapse`
+	 */
+	defineOptions({ name: "C7Card" })
+
+	const props = withDefaults(defineProps<{
+		/** 标题文案；空且不可折叠时不渲染默认 header */
+		label : string
+		/** 字号语义（对齐 packages，H5 侧当前未直接驱动样式） */
+		textSize : string
+		/** 标题是否加粗 */
+		isBold : boolean
+		/** 是否显示左侧色块；非 null 时优先于 isShowColorBlock */
+		showColorBlock : boolean | null
+		/** 色块显示（兼容旧 prop）；showColorBlock 为 null 时生效 */
+		isShowColorBlock : boolean
+		/** 左侧色块颜色 */
+		colorBlockColor : string
+		/** 是否可折叠（显示展开/收起文案） */
+		collapsible : boolean
+		/** 非受控时的初始展开态 */
+		defaultExpanded : boolean
+		/** 受控展开态；null 表示非受控 */
+		modelValue : boolean | null
+		/** 收起时按钮文案 */
+		expandText : string
+		/** 展开时按钮文案 */
+		collapseText : string
+	}>(), {
+		label: "",
+		textSize: "h4",
+		isBold: false,
+		showColorBlock: null,
+		isShowColorBlock: false,
+		colorBlockColor: "#007aff",
+		collapsible: false,
+		defaultExpanded: true,
+		modelValue: null,
+		expandText: "展开",
+		collapseText: "收起"
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : boolean]
+		change : [v : boolean]
+	}>()
+
+	/** 非受控时的展开态 */
+	const innerExpanded = ref(props.defaultExpanded)
+
+	/** 当前是否展开（受控优先） */
+	const expanded = computed(() : boolean => {
+		if (props.modelValue != null) {
+			return props.modelValue as boolean
+		}
+		return innerExpanded.value
+	})
+
+	/** 是否显示左侧色块 */
+	const colorBlockVisible = computed(() : boolean => {
+		if (props.showColorBlock != null) {
+			return props.showColorBlock as boolean
+		}
+		return props.isShowColorBlock
+	})
+
+	/**
+	 * 设置展开态：受控则 emit，否则改内部值；始终 emit change。
+	 */
+	function setExpanded(v : boolean) {
+		if (props.modelValue != null) {
+			emit("update:modelValue", v)
+		} else {
+			innerExpanded.value = v
+		}
+		emit("change", v)
+	}
+
+	/** 切换展开/收起 */
+	function toggle() {
+		setExpanded(!expanded.value)
+	}
+
+	/** 展开 */
+	function expand() {
+		setExpanded(true)
+	}
+
+	/** 收起 */
+	function collapse() {
+		setExpanded(false)
+	}
+
+	defineExpose({
+		toggle,
+		expand,
+		collapse
+	})
+</script>
+
+<style>
+	.c7-card {
+		border-radius: 16px;
+		background-color: rgba(255, 255, 255, 0.72);
+		padding: 14px 16px;
+		margin-bottom: 12px;
+	}
+	.c7-card__header {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10px;
+	}
+	.c7-card__head-left {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		flex: 1;
+	}
+	.c7-card__head-right {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	.c7-card__block {
+		width: 4px;
+		height: 16px;
+		border-radius: 2px;
+		margin-right: 8px;
+	}
+	.c7-card__label {
+		font-size: 16px;
+		color: var(--rice-text-color);
+	}
+	.c7-card__label.is-bold {
+		font-weight: 600;
+	}
+	.c7-card__toggle {
+		font-size: 13px;
+		color: #007aff;
+		margin-left: 8px;
+	}
+	.c7-card__body {
+		display: flex;
+		flex-direction: column;
+	}
+</style>

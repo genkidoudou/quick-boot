@@ -1,0 +1,151 @@
+<template>
+	<!-- C7FormDialog：基于 C7Dialog 的新增/编辑流水线壳 -->
+	<c7-dialog
+		v-model="innerShow"
+		:title="dialogTitle"
+		:footer="true"
+		:on-confirm="handleConfirm"
+		:confirm-text="confirmText"
+		:cancel-text="cancelText"
+	>
+		<slot name="title"></slot>
+		<slot name="extra"></slot>
+		<slot></slot>
+		<slot name="footer"></slot>
+	</c7-dialog>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7FormDialog（quick-h5）
+	 *
+	 * 对齐 packages `C7FormDialog` 心智：
+	 * `open(row)` → `getPayload(row)` 填表 → 用户编辑 → 确认时可选 validate →
+	 * `submit()` → toast → `onSuccess` → 关窗。
+	 *
+	 * **底座**：内嵌 `C7Dialog`（`footer` + `on-confirm`）。
+	 * **标题**：显式 `title` 优先；否则按 `isEdit(form)` 或 `form.id` 是否为空判「编辑/新增」。
+	 *
+	 * **expose**
+	 * - `open(row?)`：拉数并打开
+	 * - `confirm()`：走提交并关窗（少用，一般点弹层确定即可）
+	 *
+	 * **插槽**：透传 dialog 的 title / extra / 默认内容 / footer。
+	 */
+	import { resolveRiceFormValidate } from "@/utils/rice-form"
+
+	defineOptions({ name: "C7FormDialog" })
+
+	const props = withDefaults(defineProps<{
+		/** 弹层显隐 v-model */
+		modelValue : boolean
+		/** 当前表单对象（供 isEdit / onSuccess 使用） */
+		form : any | null
+		/** 可选表单实例；若有 `validate()` 则确认前调用 */
+		formRef : any | null
+		/** open(row) 时填充表单；可返回 Promise */
+		getPayload : ((row : any | null) => Promise<any> | any) | null
+		/** 确认时提交；可返回 Promise */
+		submit : (() => Promise<any> | any) | null
+		/** 自定义是否编辑态；null 时看 form.id */
+		isEdit : ((form : any) => boolean) | null
+		/** 成功 toast；空则按新增/编辑给默认文案 */
+		successMessage : string
+		/** 提交成功回调；meta 含 isEdit */
+		onSuccess : ((form : any, meta : UTSJSONObject) => any) | null
+		/** 显式标题；空则自动「新增/编辑」 */
+		title : string
+		confirmText : string
+		cancelText : string
+	}>(), {
+		modelValue: false,
+		form: null,
+		formRef: null,
+		getPayload: null,
+		submit: null,
+		isEdit: null,
+		successMessage: "",
+		onSuccess: null,
+		title: "",
+		confirmText: "确定",
+		cancelText: "取消"
+	})
+
+	const emit = defineEmits<{
+		"update:modelValue" : [v : boolean]
+	}>()
+
+	const innerShow = computed({
+		get : () : boolean => props.modelValue,
+		set : (v : boolean) => emit("update:modelValue", v)
+	})
+
+	/** 是否编辑：优先 isEdit(form)，否则 form.id 非空 */
+	function resolveIsEdit() : boolean {
+		if (props.isEdit != null && props.form != null) {
+			return props.isEdit!(props.form)
+		}
+		if (props.form != null && typeof props.form == "object") {
+			const id = (props.form as UTSJSONObject)["id"]
+			return id != null && `${id}`.length > 0
+		}
+		return false
+	}
+
+	const dialogTitle = computed(() : string => {
+		if (props.title.length > 0) {
+			return props.title
+		}
+		return resolveIsEdit() ? "编辑" : "新增"
+	})
+
+	/** 打开：先 getPayload(row)，再显示弹层 */
+	async function open(row : any | null = null) {
+		const gp = props.getPayload
+		if (gp != null) {
+			await gp(row)
+		}
+		emit("update:modelValue", true)
+	}
+
+	/**
+	 * 确认流水线：validate? → submit → toast → onSuccess。
+	 * 由 C7Dialog on-confirm 调用；成功后 dialog 自行关窗。
+	 */
+	async function handleConfirm() : Promise<any> {
+		const fr = props.formRef
+		if (fr != null) {
+			const validateFn = resolveRiceFormValidate(fr)
+			if (validateFn != null) {
+				await validateFn()
+			}
+		}
+		const sub = props.submit
+		if (sub == null) {
+			return
+		}
+		await sub()
+		const edit = resolveIsEdit()
+		let msg = props.successMessage
+		if (msg.length == 0) {
+			msg = edit ? "修改成功" : "新增成功"
+		}
+		uni.showToast({ title: msg, icon: "none" })
+		const os = props.onSuccess
+		if (os != null && props.form != null) {
+			const meta = { isEdit: edit } as UTSJSONObject
+			os(props.form, meta)
+		}
+	}
+
+	/** 外部强制走一遍确认并关窗 */
+	async function confirm() {
+		await handleConfirm()
+		emit("update:modelValue", false)
+	}
+
+	defineExpose({
+		open,
+		confirm
+	})
+</script>

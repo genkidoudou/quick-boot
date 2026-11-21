@@ -1,0 +1,160 @@
+/**
+ * 定时任务 API，对齐 quick-ui `/api/job/job.js` 与后端 `/job/job`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr
+} from "@/api/shared/page"
+import { request, RequestOptions } from "@/api/http"
+
+const BASE = "/job/job"
+
+export type JobPayload = {
+	id : string
+	jobName : string
+	jobGroup : string
+	jobType : string
+	invokeTarget : string
+	jobParam : string
+	scriptContent : string
+	pythonBin : string
+	cronExpression : string
+	concurrent : string
+	status : string
+	remark : string
+}
+
+function emptyJob() : JobPayload {
+	return {
+		id: "",
+		jobName: "",
+		jobGroup: "DEFAULT",
+		jobType: "BEAN",
+		invokeTarget: "",
+		jobParam: "",
+		scriptContent: "",
+		pythonBin: "python3",
+		cronExpression: "",
+		concurrent: "1",
+		status: "0",
+		remark: ""
+	} as JobPayload
+}
+
+export function mapJobRow(row : UTSJSONObject) : JobPayload {
+	return {
+		id: readStr(row, "id"),
+		jobName: readStr(row, "jobName"),
+		jobGroup: readStr(row, "jobGroup"),
+		jobType: readStr(row, "jobType"),
+		invokeTarget: readStr(row, "invokeTarget"),
+		jobParam: readStr(row, "jobParam"),
+		scriptContent: readStr(row, "scriptContent"),
+		pythonBin: readStr(row, "pythonBin"),
+		cronExpression: readStr(row, "cronExpression"),
+		concurrent: readStr(row, "concurrent"),
+		status: readStr(row, "status"),
+		remark: readStr(row, "remark")
+	} as JobPayload
+}
+
+function toBody(payload : JobPayload, withId : boolean) : UTSJSONObject {
+	const jobType = payload.jobType
+	const body : UTSJSONObject = {
+		jobName: payload.jobName,
+		jobGroup: payload.jobGroup,
+		jobType: jobType,
+		jobParam: payload.jobParam,
+		cronExpression: payload.cronExpression,
+		concurrent: payload.concurrent,
+		status: payload.status,
+		remark: payload.remark
+	}
+	if (withId) {
+		body["id"] = payload.id
+	}
+	if (jobType == "BEAN") {
+		body["invokeTarget"] = payload.invokeTarget
+		body["scriptContent"] = null
+		body["pythonBin"] = null
+	} else {
+		body["invokeTarget"] = null
+		body["scriptContent"] = payload.scriptContent
+		body["pythonBin"] = jobType == "PYTHON" ? payload.pythonBin : null
+	}
+	return body
+}
+
+export function pageJob(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapJobRow)
+}
+
+export function getJob(id : string) : Promise<JobPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapJobRow, emptyJob()) as Promise<JobPayload>
+}
+
+export function addJob(payload : JobPayload) : Promise<void> {
+	return postBody(BASE + "/add", toBody(payload, false))
+}
+
+export function updateJob(payload : JobPayload) : Promise<void> {
+	return postBody(BASE + "/update", toBody(payload, true))
+}
+
+export function removeJob(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+/** 修改启停状态 */
+export function changeJobStatus(id : string, status : string) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: id,
+		status: status
+	}
+	return postBody(BASE + "/changeStatus", body)
+}
+
+/** 立即执行一次 */
+export function runJob(id : string) : Promise<void> {
+	return postBody(BASE + "/run/" + encodeURIComponent(id), {} as UTSJSONObject)
+}
+
+/**
+ * 列出实现 ITask 的 Spring Bean，转为 c7-select options。
+ */
+export function listJobTaskBeans() : Promise<any[]> {
+	return request({
+		url: BASE + "/taskBeans",
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : any[] => {
+		const raw = res.getArray("data")
+		if (raw == null) {
+			return [] as any[]
+		}
+		const out : any[] = []
+		for (let i = 0; i < raw.length; i++) {
+			const item = raw[i]
+			if (item == null) {
+				continue
+			}
+			const row = item as UTSJSONObject
+			const beanName = readStr(row, "beanName")
+			if (beanName.length == 0) {
+				continue
+			}
+			const className = readStr(row, "className")
+			const label = className.length > 0 ? (beanName + " (" + className + ")") : beanName
+			out.push({
+				label: label,
+				value: beanName
+			} as UTSJSONObject)
+		}
+		return out
+	})
+}

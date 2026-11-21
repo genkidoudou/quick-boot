@@ -1,4 +1,15 @@
 import { request, enc, RequestOptions } from "@/api/http"
+import { setPermissions, hasToken, isUserInfoLoaded } from "@/store/user"
+
+/**
+ * /auth/me 解析后的用户摘要。
+ */
+export type UserInfoSummary = {
+	userId : string
+	username : string
+	nickName : string
+	permissions : string[]
+}
 
 /**
  * 从登录 data 解析 accessToken。
@@ -72,4 +83,76 @@ export function loginByPhone(phone : string, smsCode : string) : Promise<string>
 		data: data,
 		needToken: false
 	} as RequestOptions).then((res) : Promise<string> => tokenFromRes(res))
+}
+
+function readPermList(data : UTSJSONObject) : string[] {
+	const out : string[] = []
+	const arr = data.getArray("permissions")
+	if (arr == null) {
+		return out
+	}
+	for (let i = 0; i < arr.length; i++) {
+		const item = arr[i]
+		if (item == null) {
+			continue
+		}
+		const s = `${item}`
+		if (s.length > 0) {
+			out.push(s)
+		}
+	}
+	return out
+}
+
+/**
+ * 拉取当前用户信息与权限（对齐 quick-ui getInfo → /auth/me），并写入本地权限缓存。
+ */
+export function fetchUserInfo() : Promise<UserInfoSummary> {
+	return request({
+		url: "/auth/me",
+		method: "GET",
+		needToken: true
+	} as RequestOptions).then((res) : UserInfoSummary => {
+		const data = res.getJSON("data")
+		if (data == null) {
+			setPermissions([] as string[])
+			return {
+				userId: "",
+				username: "",
+				nickName: "",
+				permissions: [] as string[]
+			} as UserInfoSummary
+		}
+		const permissions = readPermList(data)
+		setPermissions(permissions)
+		const userIdNum = data.getNumber("userId")
+		const userIdStr = data.getString("userId")
+		let userId = ""
+		if (userIdStr != null && userIdStr.length > 0) {
+			userId = userIdStr
+		} else if (userIdNum != null) {
+			userId = `${userIdNum}`
+		}
+		const username = data.getString("username")
+		const nickName = data.getString("nickName")
+		return {
+			userId: userId,
+			username: username != null ? username : "",
+			nickName: nickName != null ? nickName : "",
+			permissions: permissions
+		} as UserInfoSummary
+	})
+}
+
+/**
+ * 已登录且未拉过用户信息时请求 /auth/me；force 时强制刷新。
+ */
+export function ensureUserInfo(force : boolean = false) : Promise<void> {
+	if (!hasToken()) {
+		return Promise.reject("未登录")
+	}
+	if (!force && isUserInfoLoaded()) {
+		return Promise.resolve()
+	}
+	return fetchUserInfo().then((_info) : void => {})
 }

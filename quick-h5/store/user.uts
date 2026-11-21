@@ -1,5 +1,8 @@
 import { TOKEN_KEY } from "@/config/env"
 
+const PERMS_KEY = "qb_permissions"
+const USER_INFO_LOADED_KEY = "qb_user_info_loaded"
+
 /**
  * 读取本地 accessToken；无则空串。
  */
@@ -20,10 +23,11 @@ export function setToken(token : string) : void {
 }
 
 /**
- * 清除登录态。
+ * 清除登录态（含权限缓存）。
  */
 export function clearToken() : void {
 	uni.removeStorageSync(TOKEN_KEY)
+	clearPermissions()
 }
 
 /**
@@ -31,4 +35,66 @@ export function clearToken() : void {
  */
 export function hasToken() : boolean {
 	return getToken().length > 0
+}
+
+/**
+ * 当前用户权限字符列表。
+ */
+export function getPermissions() : string[] {
+	const raw = uni.getStorageSync(PERMS_KEY)
+	if (raw == null) {
+		return [] as string[]
+	}
+	if (Array.isArray(raw)) {
+		const out : string[] = []
+		for (let i = 0; i < raw.length; i++) {
+			out.push(`${raw[i]}`)
+		}
+		return out
+	}
+	if (typeof raw == "string") {
+		const text = (raw as string).trim()
+		if (text.length == 0) {
+			return [] as string[]
+		}
+		try {
+			const parsed = JSON.parse(text)
+			if (parsed == null || !Array.isArray(parsed)) {
+				return [] as string[]
+			}
+			const out : string[] = []
+			const arr = parsed as any[]
+			for (let i = 0; i < arr.length; i++) {
+				out.push(`${arr[i]}`)
+			}
+			return out
+		} catch (_e) {
+			return [] as string[]
+		}
+	}
+	return [] as string[]
+}
+
+/**
+ * 写入权限列表，并标记用户信息已加载。
+ */
+export function setPermissions(list : string[]) : void {
+	uni.setStorageSync(PERMS_KEY, list)
+	uni.setStorageSync(USER_INFO_LOADED_KEY, "1")
+}
+
+/**
+ * 清空权限与加载标记。
+ */
+export function clearPermissions() : void {
+	uni.removeStorageSync(PERMS_KEY)
+	uni.removeStorageSync(USER_INFO_LOADED_KEY)
+}
+
+/**
+ * 本次会话是否已成功拉过 /auth/me（避免空权限用户反复请求）。
+ */
+export function isUserInfoLoaded() : boolean {
+	const raw = uni.getStorageSync(USER_INFO_LOADED_KEY)
+	return raw != null && `${raw}` == "1"
 }

@@ -1,0 +1,297 @@
+<template>
+	<view class="page">
+		<view class="content">
+			<view class="profile" @click="goProfile">
+				<image v-if="avatarUrl.length > 0" class="big-img" :src="avatarUrl" mode="aspectFill"></image>
+				<view v-else class="big">
+					<text class="big-t">{{ avatarLetter }}</text>
+				</view>
+				<view class="profile-body">
+					<text class="name">{{ displayName }}</text>
+					<text class="role">{{ roleLine }}</text>
+				</view>
+			</view>
+
+			<view class="group">
+				<view class="line" @click="goProfile">
+					<text class="line-l">个人资料</text>
+					<text class="line-r">›</text>
+				</view>
+				<view class="line" @click="goProfile">
+					<text class="line-l">修改密码</text>
+					<text class="line-r">›</text>
+				</view>
+				<view class="line" @click="goInbox">
+					<text class="line-l">消息中心</text>
+					<view class="line-trail">
+						<text class="unread-badge" v-if="unreadCount > 0">{{ unreadText }}</text>
+						<text class="line-r">›</text>
+					</view>
+				</view>
+			</view>
+
+			<view class="group">
+				<view class="line" @click="onToggleTheme">
+					<text class="line-l">深色模式</text>
+					<text class="line-r">{{ themeHint }}</text>
+				</view>
+				<view class="line" @click="goAbout">
+					<text class="line-l">关于 QuickBoot</text>
+					<text class="line-r">›</text>
+				</view>
+				<view class="line" @click="goExamples">
+					<text class="line-l">C7 组件示例</text>
+					<text class="line-r">›</text>
+				</view>
+			</view>
+
+			<view class="group">
+				<view class="line logout" @click="onLogout">
+					<text class="logout-t">退出登录</text>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { themeState, toggleTheme } from "@/store/theme"
+	import { clearToken } from "@/store/user"
+	import { cleanDict } from "@/store/dict"
+	import { getUserProfile } from "@/api/system/user"
+	import { unreadInboxCount } from "@/api/msg/inbox"
+
+	const displayName = ref("…")
+	const roleLine = ref("")
+	const avatarUrl = ref("")
+	const avatarLetter = ref("用")
+	const unreadCount = ref(0)
+
+	const themeHint = computed(() : string => {
+		return themeState.isDark ? "深色" : "浅色"
+	})
+
+	const unreadText = computed(() : string => {
+		const n = unreadCount.value
+		if (n <= 0) {
+			return ""
+		}
+		if (n > 99) {
+			return "99+"
+		}
+		return `${n}`
+	})
+
+	function firstLetter(raw : string) : string {
+		const t = raw.trim()
+		if (t.length == 0) {
+			return "用"
+		}
+		return t.substring(0, 1)
+	}
+
+	function joinRoles(names : string[]) : string {
+		if (names == null || names.length == 0) {
+			return ""
+		}
+		let s = ""
+		for (let i = 0; i < names.length; i++) {
+			const n = names[i].trim()
+			if (n.length == 0) {
+				continue
+			}
+			if (s.length > 0) {
+				s = s + " · "
+			}
+			s = s + n
+		}
+		return s
+	}
+
+	function loadMine() {
+		getUserProfile().then((u) => {
+			let name = u.nickName.trim()
+			if (name.length == 0) {
+				name = u.userName.trim()
+			}
+			if (name.length == 0) {
+				name = "用户"
+			}
+			displayName.value = name
+			avatarLetter.value = firstLetter(name)
+			avatarUrl.value = u.avatar.trim()
+
+			const roles = joinRoles(u.roleNames)
+			if (roles.length > 0) {
+				roleLine.value = roles
+			} else if (u.userName.trim().length > 0) {
+				roleLine.value = u.userName.trim()
+			} else {
+				roleLine.value = "QuickBoot"
+			}
+		}).catch((_e) => {
+			if (displayName.value == "…") {
+				displayName.value = "用户"
+				avatarLetter.value = "用"
+				roleLine.value = "QuickBoot"
+			}
+		})
+
+		unreadInboxCount().then((n) => {
+			unreadCount.value = n
+		}).catch((_e) => {
+			unreadCount.value = 0
+		})
+	}
+
+	function goProfile() {
+		uni.navigateTo({ url: "/pages/mine/profile" })
+	}
+
+	function goInbox() {
+		uni.navigateTo({ url: "/pages/msg/inbox/index" })
+	}
+
+	function goAbout() {
+		uni.navigateTo({ url: "/pages/examples/about" })
+	}
+
+	function goExamples() {
+		uni.navigateTo({ url: "/pages/examples/index" })
+	}
+
+	function onToggleTheme() {
+		toggleTheme()
+	}
+
+	function onLogout() {
+		clearToken()
+		cleanDict()
+		uni.reLaunch({ url: "/pages/login/login" })
+	}
+
+	onShow(() => {
+		loadMine()
+	})
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 16px 16px 28px;
+	}
+	.profile {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 16px;
+		border-radius: 20px;
+		margin-bottom: 14px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+	}
+	.big {
+		width: 56px;
+		height: 56px;
+		border-radius: 18px;
+		background-color: #8d51f9;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		margin-right: 14px;
+	}
+	.big-img {
+		width: 56px;
+		height: 56px;
+		border-radius: 18px;
+		margin-right: 14px;
+	}
+	.big-t {
+		font-size: 22px;
+		font-weight: 700;
+		color: #ffffff;
+	}
+	.profile-body {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+	.name {
+		font-size: 18px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+		margin-bottom: 4px;
+	}
+	.role {
+		font-size: 12px;
+		color: var(--rice-text-color-2, #666666);
+	}
+	.group {
+		border-radius: 16px;
+		overflow: hidden;
+		margin-bottom: 12px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+	}
+	.line {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 16px;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: rgba(24, 24, 27, 0.06);
+	}
+	.line:last-child {
+		border-bottom-width: 0;
+	}
+	.line-l {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+	.line-trail {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	.unread-badge {
+		min-width: 18px;
+		padding: 1px 6px;
+		margin-right: 8px;
+		border-radius: 999px;
+		background-color: #ff3b30;
+		color: #ffffff;
+		font-size: 11px;
+		font-weight: 600;
+		text-align: center;
+		line-height: 16px;
+	}
+	.line-r {
+		font-size: 12px;
+		color: #8e8e93;
+	}
+	.logout {
+		justify-content: center;
+	}
+	.logout-t {
+		font-size: 14px;
+		font-weight: 600;
+		color: #dc2626;
+	}
+</style>

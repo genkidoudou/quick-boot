@@ -1,0 +1,82 @@
+<template>
+	<c7-watermark text="QuickBoot" :fullscreen="false">
+		<view class="page">
+			<view class="content">
+				<view class="hero">
+					<text class="brand">QuickBoot</text>
+					<text class="ver">quick-h5 · Soft Glass</text>
+				</view>
+
+				<c7-card label="关于" :show-color-block="true" :is-bold="true">
+					<text class="body-t">移动端管理壳，组件命名对齐 quick-ui packages（C7*），实现基于 RiceUI。</text>
+					<view class="mt">
+						<c7-copy text="https://github.com/quickboot" mode="button" button-text="复制仓库地址"></c7-copy>
+					</view>
+				</c7-card>
+
+				<c7-card label="组件示例" :show-color-block="true">
+					<text class="link" @click="goExamples">进入 C7 Packages 示例 ›</text>
+				</c7-card>
+
+				<c7-descriptions :data="info" :items="items"></c7-descriptions>
+			</view>
+		</view>
+	</c7-watermark>
+</template>
+
+<script setup lang="uts">
+	const info = ref({
+		stack: "uni-app x + RiceUI",
+		packages: "C7* H5 移植",
+		theme: "Soft Glass"
+	} as UTSJSONObject)
+
+	const items = ref([
+		{ label: "技术栈", prop: "stack" } as UTSJSONObject,
+		{ label: "组件", prop: "packages" } as UTSJSONObject,
+		{ label: "主题", prop: "theme" } as UTSJSONObject
+	] as any[])
+
+	function goExamples() {
+		uni.navigateTo({ url: "/pages/examples/index" })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background-color: var(--rice-background);
+	}
+	.content {
+		padding: 16px;
+	}
+	.hero {
+		padding: 28px 8px 18px;
+		display: flex;
+		flex-direction: column;
+	}
+	.brand {
+		font-size: 28px;
+		font-weight: 700;
+		color: var(--rice-text-color);
+	}
+	.ver {
+		margin-top: 6px;
+		font-size: 13px;
+		color: #8e8e93;
+	}
+	.body-t {
+		font-size: 14px;
+		line-height: 22px;
+		color: var(--rice-text-color);
+	}
+	.mt {
+		margin-top: 12px;
+	}
+	.link {
+		font-size: 14px;
+		color: #007aff;
+	}
+</style>

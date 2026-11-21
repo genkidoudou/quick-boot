@@ -1,0 +1,93 @@
+<template>
+	<view class="page">
+		<scroll-view scroll-y class="scroll">
+			<view class="content">
+				<c7-title label="展示组件" label-size="h3"></c7-title>
+
+				<c7-card label="可折叠卡片" :collapsible="true" :show-color-block="true" :is-bold="true">
+					<template #extra>
+						<c7-copy text="QuickBoot-H5" mode="text" button-text="复制"></c7-copy>
+					</template>
+					<text class="body-t">C7Card + C7Copy 示例内容。</text>
+				</c7-card>
+
+				<c7-descriptions :data="detail" :items="descItems"></c7-descriptions>
+
+				<c7-card label="C7DictTag" :show-color-block="true">
+					<c7-dict-tag value="1" :options="statusOpts"></c7-dict-tag>
+				</c7-card>
+
+				<c7-card label="C7JsonTableColumn" :show-color-block="true">
+					<c7-json-table-column :row="detail" :columns="colItems"></c7-json-table-column>
+				</c7-card>
+
+				<c7-card label="C7Pagination" :show-color-block="true">
+					<c7-pagination
+						v-model:current-page="page"
+						v-model:page-size="pageSize"
+						:total="128"
+						:page-sizes="[10, 20, 50]"
+						@change="onPage"
+					></c7-pagination>
+				</c7-card>
+
+				<c7-card label="C7Preview" :show-color-block="true">
+					<c7-preview urls="" cover-type="button" preview-text="无图时点我"></c7-preview>
+				</c7-card>
+			</view>
+		</scroll-view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	const statusOpts = ref([
+		{ label: "启用", value: "1", elTagType: "success" } as UTSJSONObject,
+		{ label: "停用", value: "0", elTagType: "info" } as UTSJSONObject
+	] as any[])
+
+	const detail = ref({
+		name: "QuickBoot",
+		status: "1",
+		url: "https://example.com",
+		remark: "Soft Glass H5"
+	} as UTSJSONObject)
+
+	const descItems = ref([
+		{ label: "名称", prop: "name" } as UTSJSONObject,
+		{ label: "状态", prop: "status", columnType: "tag", options: statusOpts.value } as UTSJSONObject,
+		{ label: "链接", prop: "url", columnType: "link" } as UTSJSONObject,
+		{ label: "备注", prop: "remark", columnType: "copy" } as UTSJSONObject
+	] as any[])
+
+	const colItems = ref([
+		{ label: "名称", prop: "name" } as UTSJSONObject,
+		{ label: "状态", prop: "status", columnType: "tag", options: statusOpts.value } as UTSJSONObject
+	] as any[])
+
+	const page = ref(1)
+	const pageSize = ref(10)
+
+	function onPage(p : number, s : number) {
+		console.log("page", p, s)
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background-color: var(--rice-background);
+	}
+	.scroll {
+		flex: 1;
+		height: 100vh;
+	}
+	.content {
+		padding: 12px 16px 28px;
+	}
+	.body-t {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+</style>

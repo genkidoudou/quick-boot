@@ -1,0 +1,139 @@
+<template>
+	<view class="page">
+		<scroll-view scroll-y class="scroll">
+			<view class="content">
+				<c7-title label="其它组件" label-size="h3"></c7-title>
+
+				<c7-card label="C7Button / C7ButtonGroup" :show-color-block="true">
+					<c7-button label="异步按钮" :click-function="onAsyncBtn" success-message="完成"></c7-button>
+					<view class="mt">
+						<c7-button-group :buttons="groupBtns" mode="auto" :max-visible="2"></c7-button-group>
+					</view>
+				</c7-card>
+
+				<c7-card label="C7Upload" :show-color-block="true">
+					<c7-upload classify="demo" v-model:results="uploadResults" :upload-fn="mockUpload"></c7-upload>
+				</c7-card>
+
+				<c7-card label="Excel 导入 / 导出" :show-color-block="true">
+					<c7-excel-upload :upload-fn="mockExcelUpload"></c7-excel-upload>
+					<view class="mt">
+						<c7-excel-download :download-fn="mockExcelDownload"></c7-excel-download>
+					</view>
+				</c7-card>
+
+				<c7-card label="C7CardGrid" :show-color-block="true">
+					<c7-card-grid :list-function="mockList" :default-page-size="4" :page-sizes="[4, 8]">
+						<template #card="{ row }">
+							<view class="grid-card">
+								<text class="grid-t">{{ rowTitle(row) }}</text>
+							</view>
+						</template>
+					</c7-card-grid>
+				</c7-card>
+			</view>
+		</scroll-view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { C7JsonTableQuery, C7JsonTableResult } from "@/components/c7-json-table/types.uts"
+
+	const uploadResults = ref([] as any[])
+
+	const groupBtns = ref([
+		{
+			label: "新增",
+			btnType: "add",
+			clickFunction: async () => {
+				uni.showToast({ title: "新增", icon: "none" })
+			}
+		} as UTSJSONObject,
+		{
+			label: "编辑",
+			btnType: "edit",
+			clickFunction: async () => {
+				uni.showToast({ title: "编辑", icon: "none" })
+			}
+		} as UTSJSONObject,
+		{
+			label: "删除",
+			btnType: "delete",
+			confirm: true,
+			confirmMessage: "确认删除？",
+			clickFunction: async () => {
+				uni.showToast({ title: "已删除", icon: "none" })
+			}
+		} as UTSJSONObject
+	] as any[])
+
+	async function onAsyncBtn() {
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 500))
+	}
+
+	async function mockUpload(filePath : string, _classify : string) : Promise<any> {
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 300))
+		return { url: filePath } as UTSJSONObject
+	}
+
+	async function mockExcelUpload(_path : string, _strategy : string) : Promise<any> {
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 400))
+		return { ok: true } as UTSJSONObject
+	}
+
+	async function mockExcelDownload() : Promise<any> {
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 400))
+		return true
+	}
+
+	async function mockList(q : C7JsonTableQuery) : Promise<C7JsonTableResult> {
+		const all : any[] = []
+		for (let i = 1; i <= 20; i++) {
+			all.push({ id: `${i}`, title: `卡片 ${i}` } as UTSJSONObject)
+		}
+		const start = (q.current - 1) * q.size
+		const slice = all.slice(start, start + q.size)
+		return { records: slice, total: all.length } as C7JsonTableResult
+	}
+
+	function rowTitle(row : any) : string {
+		if (row == null) {
+			return ""
+		}
+		const t = (row as UTSJSONObject)["title"]
+		return t != null ? `${t}` : ""
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background-color: var(--rice-background);
+	}
+	.scroll {
+		flex: 1;
+		height: 100vh;
+	}
+	.content {
+		padding: 12px 16px 28px;
+	}
+	.mt {
+		margin-top: 10px;
+	}
+	.grid-card {
+		width: 46%;
+		margin: 2%;
+		padding: 16px;
+		border-radius: 14px;
+		background-color: rgba(255, 255, 255, 0.8);
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(24, 24, 27, 0.08);
+	}
+	.grid-t {
+		font-size: 14px;
+		color: var(--rice-text-color);
+	}
+</style>

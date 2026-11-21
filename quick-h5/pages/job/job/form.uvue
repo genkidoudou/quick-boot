@@ -1,0 +1,417 @@
+<template>
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增任务"
+		edit-title="修改任务"
+		:show-delete="isEdit"
+		:add-button-permi="['job:job:add']"
+		:edit-button-permi="['job:job:edit']"
+		:delete-button-permi="['job:job:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="jobName" label="任务名称" required>
+				<rice-input
+					v-model="form['jobName']"
+					placeholder="请输入任务名称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="jobGroup" label="任务分组" required>
+				<c7-select
+					v-model="form['jobGroup']"
+					:options="jobGroupOpts"
+					placeholder="请选择任务分组"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item name="jobType" label="任务类型" required>
+				<c7-select
+					v-model="form['jobType']"
+					:options="jobTypeOpts"
+					placeholder="请选择任务类型"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item v-if="form['jobType'] == 'BEAN'" name="invokeTarget" label="Bean 名称" required>
+				<c7-select
+					v-model="form['invokeTarget']"
+					:options="beanOpts"
+					placeholder="请选择 ITask Bean"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item v-if="isScriptType" name="scriptContent" label="脚本内容" required>
+				<rice-textarea
+					v-model="form['scriptContent']"
+					placeholder="SHELL / PYTHON 脚本"
+					:maxlength="8000"
+					height="160"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+
+			<rice-form-item v-if="form['jobType'] == 'PYTHON'" name="pythonBin" label="解释器" required>
+				<c7-select
+					v-model="form['pythonBin']"
+					:options="pythonBinOpts"
+					placeholder="请选择解释器"
+				></c7-select>
+			</rice-form-item>
+
+			<rice-form-item name="jobParam" label="任务参数">
+				<rice-textarea
+					v-model="form['jobParam']"
+					placeholder="可选，按任务类型传参"
+					:maxlength="2000"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+
+			<rice-form-item name="cronExpression" label="Cron" required>
+				<rice-input
+					v-model="form['cronExpression']"
+					placeholder="如 0 0/1 * * * ?"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="concurrent" label="允许重叠" required>
+				<rice-radio-group v-model="form['concurrent']" direction="row">
+					<rice-radio label="是" value="0"></rice-radio>
+					<rice-radio label="否" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="status" label="状态" required>
+				<rice-radio-group v-model="form['status']" direction="row">
+					<rice-radio label="正常" value="0"></rice-radio>
+					<rice-radio label="暂停" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注" :show-required="false">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="200"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+
+		<view v-if="isEdit" class="ops">
+			<view class="ops-btn" @click="onRunOnce">
+				<text class="ops-t">执行一次</text>
+			</view>
+			<view class="ops-btn" @click="goJobLog">
+				<text class="ops-t">查看执行日志 ›</text>
+			</view>
+		</view>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import { loadDict } from "@/utils/dict"
+	import { c7Confirm } from "@/components/c7-message-box/index.uts"
+	import {
+		getJob,
+		addJob,
+		updateJob,
+		removeJob,
+		runJob,
+		listJobTaskBeans,
+		JobPayload
+	} from "@/api/job/job"
+
+	type JobFormModel = {
+		jobName : string
+		jobGroup : string
+		jobType : string
+		invokeTarget : string
+		jobParam : string
+		scriptContent : string
+		pythonBin : string
+		cronExpression : string
+		concurrent : string
+		status : string
+		remark : string
+	}
+
+	const id = ref("")
+	const form = ref({
+		jobName: "",
+		jobGroup: "DEFAULT",
+		jobType: "BEAN",
+		invokeTarget: "",
+		jobParam: "",
+		scriptContent: "",
+		pythonBin: "python3",
+		cronExpression: "",
+		concurrent: "1",
+		status: "0",
+		remark: ""
+	} as JobFormModel)
+
+	const jobGroupOpts = ref([] as any[])
+	const jobTypeOpts = ref([] as any[])
+	const beanOpts = ref([] as any[])
+	const pythonBinOpts = [
+		{ label: "python3", value: "python3" } as UTSJSONObject,
+		{ label: "python2", value: "python2" } as UTSJSONObject
+	] as any[]
+
+	const formRules = new Map<string, FormRules[]>([
+		["jobName", [{ required: true, message: "任务名称不能为空", trigger: "blur" } as FormRules]],
+		["jobGroup", [{ required: true, message: "分组不能为空", trigger: "change" } as FormRules]],
+		["jobType", [{ required: true, message: "类型不能为空", trigger: "change" } as FormRules]],
+		["cronExpression", [{ required: true, message: "Cron 不能为空", trigger: "blur" } as FormRules]],
+		["concurrent", [{ required: true, message: "请选择是否允许重叠", trigger: "change" } as FormRules]],
+		["status", [{ required: true, message: "状态不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	const isScriptType = computed(() : boolean => {
+		const t = form.value.jobType
+		return t == "SHELL" || t == "PYTHON"
+	})
+
+	function applyForm(row : JobPayload) {
+		form.value = {
+			jobName: row.jobName,
+			jobGroup: row.jobGroup.length > 0 ? row.jobGroup : "DEFAULT",
+			jobType: row.jobType.length > 0 ? row.jobType : "BEAN",
+			invokeTarget: row.invokeTarget,
+			jobParam: row.jobParam,
+			scriptContent: row.scriptContent,
+			pythonBin: row.pythonBin.length > 0 ? row.pythonBin : "python3",
+			cronExpression: row.cronExpression,
+			concurrent: row.concurrent.length > 0 ? row.concurrent : "1",
+			status: row.status.length > 0 ? row.status : "0",
+			remark: row.remark
+		} as JobFormModel
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getJob(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	function mapDictOpts(opts : { label : string, value : string }[]) : any[] {
+		const mapped : any[] = []
+		for (let i = 0; i < opts.length; i++) {
+			mapped.push({
+				label: opts[i].label,
+				value: opts[i].value
+			} as UTSJSONObject)
+		}
+		return mapped
+	}
+
+	function loadBeans() {
+		listJobTaskBeans().then((opts) => {
+			beanOpts.value = opts
+		}).catch((_e) => {})
+	}
+
+	onLoad((query) => {
+		loadDict("JOB_GROUP").then((opts) => {
+			jobGroupOpts.value = mapDictOpts(opts)
+		}).catch((_e) => {})
+		loadDict("JOB_TYPE").then((opts) => {
+			jobTypeOpts.value = mapDictOpts(opts)
+		}).catch((_e) => {})
+		loadBeans()
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	function buildPayload() : JobPayload {
+		const f = form.value
+		return {
+			id: id.value,
+			jobName: f.jobName.trim(),
+			jobGroup: f.jobGroup.trim(),
+			jobType: f.jobType.trim(),
+			invokeTarget: f.invokeTarget.trim(),
+			jobParam: f.jobParam,
+			scriptContent: f.scriptContent,
+			pythonBin: f.pythonBin.trim().length > 0 ? f.pythonBin.trim() : "python3",
+			cronExpression: f.cronExpression.trim(),
+			concurrent: f.concurrent,
+			status: f.status,
+			remark: f.remark.trim()
+		} as JobPayload
+	}
+
+	function goList() {
+		uni.redirectTo({
+			url: "/pages/job/job/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/job/job/index" })
+			}
+		})
+	}
+
+	function goJobLog() {
+		uni.navigateTo({ url: "/pages/job/jobLog/index?jobId=" + encodeURIComponent(id.value) })
+	}
+
+	async function onRunOnce() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.jobName.length > 0 ? form.value.jobName : id.value
+		const r = await c7Confirm(`确认执行一次任务「${name}」？`, "提示")
+		if (r.action != "confirm") {
+			return
+		}
+		saving.value = true
+		runJob(id.value).then(() => {
+			saving.value = false
+			uni.showToast({ title: "已触发执行", icon: "success" })
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		const f = form.value
+		if (f.jobType == "BEAN" && f.invokeTarget.trim().length == 0) {
+			uni.showToast({ title: "请选择 Bean 名称", icon: "none" })
+			return
+		}
+		if ((f.jobType == "SHELL" || f.jobType == "PYTHON") && f.scriptContent.trim().length == 0) {
+			uni.showToast({ title: "请填写脚本内容", icon: "none" })
+			return
+		}
+		if (f.jobType == "PYTHON" && f.pythonBin.trim().length == 0) {
+			uni.showToast({ title: "请选择解释器", icon: "none" })
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateJob(payload) : addJob(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		if (form.value.status == "0") {
+			uni.showToast({ title: "请先停用后再删除", icon: "none" })
+			return
+		}
+		const name = form.value.jobName.length > 0 ? form.value.jobName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除任务「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				removeJob([id.value]).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>
+
+<style>
+	.ops {
+		padding: 8px 4px 24px;
+		display: flex;
+		flex-direction: column;
+	}
+	.ops-btn {
+		padding: 10px 0;
+	}
+	.ops-t {
+		font-size: 14px;
+		color: #007aff;
+		font-weight: 600;
+	}
+</style>

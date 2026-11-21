@@ -1,0 +1,233 @@
+/**
+ * 菜单 API，对齐 quick-ui `/api/system/menu.js` 与后端 `/sys/menu`。
+ * 列表返回树，H5 展平；主键可能是 id 或 menuId。
+ * 须带回 component/routeName/icon/query/isFrame/isCache，避免 update 抹空。
+ */
+import {
+	PageQuery,
+	PageResult,
+	getById,
+	postBody,
+	removeIds,
+	readStr,
+	toRowObject,
+	cleanParam,
+	readResponseDataArray
+} from "@/api/shared/page"
+import { request, RequestOptions } from "@/api/http"
+
+const BASE = "/sys/menu"
+
+export type MenuPayload = {
+	id : string
+	parentId : string
+	menuName : string
+	menuType : string
+	path : string
+	routeName : string
+	component : string
+	perms : string
+	icon : string
+	orderNum : string
+	query : string
+	isFrame : string
+	isCache : string
+	status : string
+	visible : string
+	remark : string
+}
+
+function emptyMenu() : MenuPayload {
+	return {
+		id: "",
+		parentId: "0",
+		menuName: "",
+		menuType: "C",
+		path: "",
+		routeName: "",
+		component: "",
+		perms: "",
+		icon: "",
+		orderNum: "0",
+		query: "",
+		isFrame: "0",
+		isCache: "0",
+		status: "0",
+		visible: "0",
+		remark: ""
+	} as MenuPayload
+}
+
+export function mapMenuRow(row : UTSJSONObject) : MenuPayload {
+	let id = readStr(row, "id")
+	if (id.length == 0) {
+		id = readStr(row, "menuId")
+	}
+	// Hutool Tree 节点：name/weight 为树字段，业务字段在 extra（序列化后常摊平）
+	let menuName = readStr(row, "menuName")
+	if (menuName.length == 0) {
+		menuName = readStr(row, "name")
+	}
+	let orderNum = readStr(row, "orderNum")
+	if (orderNum.length == 0) {
+		orderNum = readStr(row, "weight")
+	}
+	return {
+		id: id,
+		parentId: readStr(row, "parentId"),
+		menuName: menuName,
+		menuType: readStr(row, "menuType"),
+		path: readStr(row, "path"),
+		routeName: readStr(row, "routeName"),
+		component: readStr(row, "component"),
+		perms: readStr(row, "perms"),
+		icon: readStr(row, "icon"),
+		orderNum: orderNum.length > 0 ? orderNum : "0",
+		query: readStr(row, "query"),
+		isFrame: readStr(row, "isFrame"),
+		isCache: readStr(row, "isCache"),
+		status: readStr(row, "status"),
+		visible: readStr(row, "visible"),
+		remark: readStr(row, "remark")
+	} as MenuPayload
+}
+
+function readChildren(row : UTSJSONObject) : any[] {
+	let kids = row.getArray("children")
+	if (kids == null) {
+		const anyRow = row as any
+		const plain = anyRow["children"]
+		if (plain != null && Array.isArray(plain)) {
+			kids = plain as any[]
+		}
+	}
+	if (kids == null) {
+		return [] as any[]
+	}
+	return kids as any[]
+}
+
+function flattenMenuNodes(raw : any[]) : any[] {
+	const out : any[] = [] as any[]
+	function walk(list : any[]) {
+		if (list == null) {
+			return
+		}
+		const len = list.length
+		if (typeof len != "number" || len <= 0) {
+			return
+		}
+		for (let i = 0; i < len; i++) {
+			const rowObj = toRowObject(list[i])
+			if (rowObj == null) {
+				continue
+			}
+			out.push(mapMenuRow(rowObj) as any)
+			const kids = readChildren(rowObj)
+			if (kids.length > 0) {
+				walk(kids)
+			}
+		}
+	}
+	walk(raw)
+	return out
+}
+
+function toBody(payload : MenuPayload, withId : boolean) : UTSJSONObject {
+	const menuType = payload.menuType
+	let component = payload.component
+	if (menuType == "M" && component.trim().length == 0) {
+		component = "Layout"
+	}
+	const body : UTSJSONObject = {
+		parentId: payload.parentId,
+		menuName: payload.menuName,
+		menuType: menuType,
+		perms: payload.perms,
+		orderNum: payload.orderNum,
+		status: payload.status,
+		visible: payload.visible,
+		remark: payload.remark
+	}
+	if (withId) {
+		body["id"] = payload.id
+	}
+	if (menuType == "F") {
+		body["path"] = null
+		body["component"] = null
+		body["routeName"] = null
+		body["icon"] = null
+		body["query"] = null
+		body["isFrame"] = "0"
+		body["isCache"] = "0"
+	} else {
+		body["path"] = payload.path
+		body["routeName"] = payload.routeName
+		body["component"] = component
+		body["icon"] = payload.icon
+		body["query"] = payload.query
+		body["isFrame"] = payload.isFrame
+		body["isCache"] = payload.isCache
+	}
+	return body
+}
+
+/** 菜单列表（树展平），可作 C7JsonTable listFunction */
+export function listMenu(query : PageQuery) : Promise<PageResult> {
+	// 对齐 quick-ui：body 为查询条件（SysMenuVo），不是 PageRequest
+	const body = cleanParam(query.param)
+	return request({
+		url: BASE + "/page",
+		method: "POST",
+		data: body,
+		needToken: true
+	} as RequestOptions).then((res) : PageResult => {
+		// 后端返回 List<Tree>，不是 { records }
+		const raw = readResponseDataArray(res)
+		const records = flattenMenuNodes(raw)
+		// 用普通 any[]，避免 UTS 类型数组在 C7JsonTable 里 Array.isArray 失败
+		const rows : any[] = [] as any[]
+		for (let i = 0; i < records.length; i++) {
+			rows.push(records[i])
+		}
+		return {
+			records: rows,
+			total: rows.length,
+			current: 1,
+			size: rows.length > 0 ? rows.length : 10,
+			pages: 1
+		} as PageResult
+	})
+}
+
+export function getMenu(id : string) : Promise<MenuPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapMenuRow, emptyMenu()) as Promise<MenuPayload>
+}
+
+export function addMenu(payload : MenuPayload) : Promise<void> {
+	return postBody(BASE + "/add", toBody(payload, false))
+}
+
+export function updateMenu(payload : MenuPayload) : Promise<void> {
+	return postBody(BASE + "/update", toBody(payload, true))
+}
+
+/** 删除：POST /remove，body 为 ids 数组（对齐 delMenu） */
+export function removeMenu(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+/**
+ * 菜单树（保留 children），供 C7TreeSelect。
+ * 节点字段：id / menuName / children。
+ */
+export function treeselectMenu() : Promise<any[]> {
+	return request({
+		url: BASE + "/page",
+		method: "POST",
+		data: {} as UTSJSONObject,
+		needToken: true
+	} as RequestOptions).then((res) : any[] => {
+		return readResponseDataArray(res)
+	})
+}

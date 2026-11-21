@@ -1,0 +1,244 @@
+/**
+ * 系统用户 API，对齐 quick-ui `/api/system/user.js` 与后端 `/sys/user`。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	postBody,
+	removeIds,
+	readStr
+} from "@/api/shared/page"
+import { request, RequestOptions, enc } from "@/api/http"
+import { API_BASE } from "@/config/env"
+import { getToken } from "@/store/user"
+import { buildRequestSign } from "@/api/sign"
+
+const BASE = "/sys/user"
+
+export type UserPayload = {
+	id : string
+	userName : string
+	nickName : string
+	phonenumber : string
+	email : string
+	sex : string
+	status : string
+	userType : string
+	deptId : string
+	remark : string
+	password : string
+	avatar : string
+	roleIds : string[]
+	roleNames : string[]
+}
+
+function emptyUser() : UserPayload {
+	return {
+		id: "",
+		userName: "",
+		nickName: "",
+		phonenumber: "",
+		email: "",
+		sex: "1",
+		status: "0",
+		userType: "0",
+		deptId: "",
+		remark: "",
+		password: "",
+		avatar: "",
+		roleIds: [] as string[],
+		roleNames: [] as string[]
+	} as UserPayload
+}
+
+function readStringArray(row : UTSJSONObject, key : string) : string[] {
+	const out : string[] = []
+	const raw = row.getArray(key)
+	if (raw != null) {
+		for (let i = 0; i < raw.length; i++) {
+			const v = raw[i]
+			if (v != null) {
+				out.push(`${v}`)
+			}
+		}
+		return out
+	}
+	const anyRow = row as any
+	const plain = anyRow[key]
+	if (plain != null && Array.isArray(plain)) {
+		const arr = plain as any[]
+		for (let i = 0; i < arr.length; i++) {
+			if (arr[i] != null) {
+				out.push(`${arr[i]}`)
+			}
+		}
+	}
+	return out
+}
+
+export function mapUserRow(row : UTSJSONObject) : UserPayload {
+	return {
+		id: readStr(row, "id"),
+		userName: readStr(row, "userName"),
+		nickName: readStr(row, "nickName"),
+		phonenumber: readStr(row, "phonenumber"),
+		email: readStr(row, "email"),
+		sex: readStr(row, "sex"),
+		status: readStr(row, "status"),
+		userType: readStr(row, "userType"),
+		deptId: readStr(row, "deptId"),
+		remark: readStr(row, "remark"),
+		password: "",
+		avatar: readStr(row, "avatar"),
+		roleIds: readStringArray(row, "roleIds"),
+		roleNames: readStringArray(row, "roleNames")
+	} as UserPayload
+}
+
+export function pageUser(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapUserRow)
+}
+
+export function getUser(id : string) : Promise<UserPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapUserRow, emptyUser()) as Promise<UserPayload>
+}
+
+export function addUser(payload : UserPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		userName: payload.userName,
+		nickName: payload.nickName,
+		phonenumber: payload.phonenumber,
+		email: payload.email,
+		sex: payload.sex,
+		status: payload.status,
+		userType: payload.userType,
+		deptId: payload.deptId.length > 0 ? payload.deptId : null,
+		remark: payload.remark,
+		password: payload.password,
+		roleIds: payload.roleIds
+	}
+	return postBody(BASE + "/add", body)
+}
+
+export function updateUser(payload : UserPayload) : Promise<void> {
+	const body : UTSJSONObject = {
+		id: payload.id,
+		userName: payload.userName,
+		nickName: payload.nickName,
+		phonenumber: payload.phonenumber,
+		email: payload.email,
+		sex: payload.sex,
+		status: payload.status,
+		userType: payload.userType,
+		deptId: payload.deptId.length > 0 ? payload.deptId : null,
+		remark: payload.remark,
+		roleIds: payload.roleIds
+	}
+	if (payload.password.length > 0) {
+		body["password"] = payload.password
+	}
+	return postBody(BASE + "/update", body)
+}
+
+export function removeUser(ids : string[]) : Promise<void> {
+	return removeIds(BASE + "/remove", ids)
+}
+
+/** 当前登录用户个人资料 */
+export function getUserProfile() : Promise<UserPayload> {
+	return getById(BASE + "/profile", mapUserRow, emptyUser()) as Promise<UserPayload>
+}
+
+/** 更新当前登录用户个人资料 */
+export function updateUserProfile(data : UTSJSONObject) : Promise<void> {
+	return postBody(BASE + "/updateProfile", data)
+}
+
+/** 修改当前登录用户密码 */
+export function updatePassword(data : UTSJSONObject) : Promise<void> {
+	return postBody(BASE + "/updatePassword", data)
+}
+
+/** 重置指定用户密码 */
+export function resetPassword(id : string) : Promise<void> {
+	return request({
+		url: BASE + "/resetPassword/" + encodeURIComponent(id),
+		method: "POST",
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}
+
+/** 二级认证：校验当前登录密码并 openSafe */
+export function openSafe(password : string) : Promise<void> {
+	return request({
+		url: BASE + "/openSafe",
+		method: "POST",
+		query: "password=" + enc(password),
+		needToken: true
+	} as RequestOptions).then((_res) : void => {})
+}
+
+/**
+ * 上传并更新当前用户头像（multipart）。
+ * 成功后返回最新 UserPayload（含 avatar）。
+ */
+export function uploadAvatar(filePath : string) : Promise<UserPayload> {
+	const base = API_BASE.endsWith("/") ? API_BASE.substring(0, API_BASE.length - 1) : API_BASE
+	const url = base + BASE + "/avatar"
+	const header = {} as UTSJSONObject
+	const token = getToken()
+	if (token.length > 0) {
+		header.set("Authorization", "Bearer " + token)
+	}
+	const sign = buildRequestSign("POST", url, "")
+	if (sign.length > 0) {
+		header.set("sign", sign)
+	}
+	return new Promise<UserPayload>((resolve, reject) => {
+		uni.uploadFile({
+			url: url,
+			filePath: filePath,
+			name: "file",
+			header: header,
+			success: (res) => {
+				if (res.statusCode < 200 || res.statusCode >= 300) {
+					uni.showToast({ title: "上传失败(" + res.statusCode + ")", icon: "none" })
+					reject("upload http " + res.statusCode)
+					return
+				}
+				try {
+					const body = JSON.parseObject(`${res.data}`)
+					if (body == null) {
+						resolve(emptyUser())
+						return
+					}
+					const codeNum = body.getNumber("code")
+					if (codeNum != null && codeNum != 200) {
+						let message = body.getString("msg")
+						if (message == null || message.length == 0) {
+							message = "上传失败"
+						}
+						uni.showToast({ title: message!, icon: "none" })
+						reject(message)
+						return
+					}
+					const data = body.getJSON("data")
+					if (data == null) {
+						resolve(emptyUser())
+						return
+					}
+					resolve(mapUserRow(data))
+				} catch (_e) {
+					resolve(emptyUser())
+				}
+			},
+			fail: (err) => {
+				const msg = err.errMsg.length > 0 ? err.errMsg : "上传失败"
+				uni.showToast({ title: msg, icon: "none" })
+				reject(msg)
+			}
+		})
+	})
+}

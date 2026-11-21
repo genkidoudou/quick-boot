@@ -1,0 +1,88 @@
+/**
+ * 操作日志 API，对齐 quick-ui `/api/system/operLog.js` 与后端 `/sys/operLog`。
+ * 仅分页与详情，无增删。
+ */
+import {
+	PageQuery,
+	PageResult,
+	postPage,
+	getById,
+	readStr
+} from "@/api/shared/page.uts"
+
+const BASE = "/sys/operLog"
+
+/** 列表行 / 详情载荷；id 全程 string */
+export type OperLogPayload = {
+	id : string
+	operName : string
+	requestMethod : string
+	operUrl : string
+	method : string
+	ipAddr : string
+	loginLocation : string
+	browser : string
+	os : string
+	clientId : string
+	status : string
+	costTime : string
+	traceId : string
+	operTime : string
+	params : string
+	jsonResult : string
+	errorMsg : string
+}
+
+function emptyOperLog() : OperLogPayload {
+	return {
+		id: "",
+		operName: "",
+		requestMethod: "",
+		operUrl: "",
+		method: "",
+		ipAddr: "",
+		loginLocation: "",
+		browser: "",
+		os: "",
+		clientId: "",
+		status: "",
+		costTime: "",
+		traceId: "",
+		operTime: "",
+		params: "",
+		jsonResult: "",
+		errorMsg: ""
+	} as OperLogPayload
+}
+
+export function mapOperLogRow(row : UTSJSONObject) : OperLogPayload {
+	return {
+		id: readStr(row, "id"),
+		operName: readStr(row, "operName"),
+		requestMethod: readStr(row, "requestMethod"),
+		operUrl: readStr(row, "operUrl"),
+		method: readStr(row, "method"),
+		ipAddr: readStr(row, "ipAddr"),
+		loginLocation: readStr(row, "loginLocation"),
+		browser: readStr(row, "browser"),
+		os: readStr(row, "os"),
+		clientId: readStr(row, "clientId"),
+		status: readStr(row, "status"),
+		costTime: readStr(row, "costTime"),
+		traceId: readStr(row, "traceId"),
+		operTime: readStr(row, "operTime"),
+		params: readStr(row, "params"),
+		jsonResult: readStr(row, "jsonResult"),
+		errorMsg: readStr(row, "errorMsg")
+	} as OperLogPayload
+}
+
+/** 分页；可直接作 C7JsonTable listFunction */
+export function pageOperLog(query : PageQuery) : Promise<PageResult> {
+	return postPage(BASE + "/page", query, mapOperLogRow)
+}
+
+/** 详情 */
+export function getOperLog(id : string) : Promise<OperLogPayload> {
+	return getById(BASE + "/" + encodeURIComponent(id), mapOperLogRow, emptyOperLog()) as Promise<OperLogPayload>
+}

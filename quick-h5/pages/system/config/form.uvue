@@ -1,0 +1,264 @@
+<template>
+	<!-- 参数新增/编辑：C7FormPage 内置 Soft Glass；本页只填字段与业务 -->
+	<c7-form-page
+		:saving="saving"
+		:loading="loading"
+		:is-edit="isEdit"
+		add-title="新增参数"
+		edit-title="修改参数"
+		:show-delete="isEdit"
+		:add-button-permi="['system:config:add']"
+		:edit-button-permi="['system:config:edit']"
+		:delete-button-permi="['system:config:remove']"
+		@save="onSave"
+		@delete="onRemove"
+	>
+		<!--
+			:key=formKey：详情回填后强制重挂，规避蒸汽 H5 下 input 不随外部赋值刷新。
+			rules 挂在 Form 上；item 仅 required 声明。
+		-->
+		<rice-form
+			:key="formKey"
+			ref="formRef"
+			:model="form"
+			:rules="formRules"
+			label-position="top"
+			:show-required="true"
+			required-position="left"
+			:border-bottom="false"
+			:show-error="true"
+		>
+			<rice-form-item name="configName" label="参数名称" required>
+				<rice-input
+					v-model="form['configName']"
+					placeholder="请输入参数名称"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="configKey" label="参数键名" required>
+				<rice-input
+					v-model="form['configKey']"
+					placeholder="请输入参数键名"
+					clearable
+					:maxlength="255"
+					border="none"
+				></rice-input>
+			</rice-form-item>
+
+			<rice-form-item name="configValue" label="参数值" required>
+				<rice-textarea
+					v-model="form['configValue']"
+					placeholder="请输入参数值"
+					:maxlength="512"
+					height="96"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+
+			<!-- 字典 COMMON_IS：0=是(内置) / 1=否 -->
+			<rice-form-item name="configType" label="系统内置" required>
+				<rice-radio-group v-model="form['configType']" direction="row">
+					<rice-radio label="是" value="0"></rice-radio>
+					<rice-radio label="否" value="1"></rice-radio>
+				</rice-radio-group>
+			</rice-form-item>
+
+			<rice-form-item name="remark" label="备注">
+				<rice-textarea
+					v-model="form['remark']"
+					placeholder="备注（可选）"
+					:maxlength="100"
+					height="80"
+					border="none"
+				></rice-textarea>
+			</rice-form-item>
+		</rice-form>
+	</c7-form-page>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 参数新增 / 编辑（quick-h5）
+	 *
+	 * 壳：`C7FormPage`（Soft Glass 背景/卡片/底栏；控件外观由 soft-glass.css 统一）。
+	 * 校验：仅 rice-form `formRules`（红字由 rice-form-item 展示）。
+	 *
+	 * 路由：无 id 新增；有 id 拉详情。保存成功 `redirectTo` 回列表。
+	 */
+	import { showDialog, FormRules } from "@/uni_modules/rice-ui"
+	import { callRiceFormValidate } from "@/utils/rice-form"
+	import {
+		getConfig,
+		addConfig,
+		updateConfig,
+		removeConfig,
+		ConfigPayload
+	} from "@/api/system/config"
+
+	/** 表单模型（与 ConfigPayload 业务字段对应，不含多余元数据） */
+	type ConfigFormModel = {
+		configName : string
+		configKey : string
+		configValue : string
+		configType : string
+		remark : string
+	}
+
+	/** 编辑态主键；空串表示新增 */
+	const id = ref("")
+	const form = ref({
+		configName: "",
+		configKey: "",
+		configValue: "",
+		configType: "1",
+		remark: ""
+	} as ConfigFormModel)
+
+	/** 规则挂在 Form 上（官方主推 Map），item 仅声明 required */
+	const formRules = new Map<string, FormRules[]>([
+		["configName", [{ required: true, message: "参数名称不能为空", trigger: "blur" } as FormRules]],
+		["configKey", [{ required: true, message: "参数键名不能为空", trigger: "blur" } as FormRules]],
+		["configValue", [{ required: true, message: "参数值不能为空", trigger: "blur" } as FormRules]],
+		["configType", [{ required: true, message: "是否系统内置不能为空", trigger: "change" } as FormRules]]
+	])
+
+	const formRef = ref<ComponentPublicInstance | null>(null)
+	/** 变更后重挂整个 rice-form */
+	const formKey = ref(0)
+	const loading = ref(false)
+	const saving = ref(false)
+	/** 是否已成功加载过详情（避免 onShow 重复请求） */
+	const detailLoaded = ref(false)
+
+	const isEdit = computed(() : boolean => {
+		return id.value.length > 0
+	})
+
+	/** 详情写入表单并 bump formKey */
+	function applyForm(row : ConfigPayload) {
+		form.value = {
+			configName: row.configName,
+			configKey: row.configKey,
+			configValue: row.configValue,
+			configType: row.configType.length > 0 ? row.configType : "1",
+			remark: row.remark
+		} as ConfigFormModel
+		// 强制重挂，避免 H5 蒸汽下 input 不跟着外部赋值刷新
+		formKey.value = formKey.value + 1
+	}
+
+	function loadDetail() {
+		if (id.value.length == 0 || loading.value) {
+			return
+		}
+		loading.value = true
+		getConfig(id.value).then((row) => {
+			applyForm(row)
+			detailLoaded.value = true
+			loading.value = false
+		}).catch((_e) => {
+			loading.value = false
+			uni.showToast({ title: "加载详情失败", icon: "none" })
+		})
+	}
+
+	onLoad((query) => {
+		if (query == null) {
+			return
+		}
+		const qid = query["id"]
+		if (qid != null && `${qid}`.length > 0) {
+			id.value = `${qid}`
+			loadDetail()
+		}
+	})
+
+	onShow(() => {
+		if (isEdit.value && !detailLoaded.value && !loading.value) {
+			loadDetail()
+		}
+	})
+
+	/** 组装提交体（trim 文本字段） */
+	function buildPayload() : ConfigPayload {
+		const f = form.value
+		return {
+			id: id.value,
+			configName: f.configName.trim(),
+			configKey: f.configKey.trim(),
+			configValue: f.configValue.trim(),
+			configType: f.configType,
+			remark: f.remark.trim()
+		} as ConfigPayload
+	}
+
+	/** 回列表：优先 redirectTo，失败再 reLaunch */
+	function goList() {
+		// H5 上 navigateBack 常假成功不跳转，直接进列表
+		uni.redirectTo({
+			url: "/pages/system/config/index",
+			fail: (_err) => {
+				uni.reLaunch({ url: "/pages/system/config/index" })
+			}
+		})
+	}
+
+	function doSubmit() {
+		if (saving.value) {
+			return
+		}
+		saving.value = true
+		const payload = buildPayload()
+		const task = isEdit.value ? updateConfig(payload) : addConfig(payload)
+		task.then(() => {
+			saving.value = false
+			uni.showToast({ title: "保存成功", icon: "success", duration: 800 })
+			goList()
+		}).catch((_e) => {
+			saving.value = false
+		})
+	}
+
+	/** 保存：只走 rice-form formRules；失败依赖项下红字 */
+	async function onSave() {
+		if (saving.value || loading.value) {
+			return
+		}
+		const ok = await callRiceFormValidate(formRef.value)
+		if (ok == true) {
+			doSubmit()
+			return
+		}
+		if (ok == null) {
+			uni.showToast({ title: "表单未就绪，请稍后重试", icon: "none" })
+		}
+	}
+
+	/** 删除：二次确认后调 removeConfig */
+	function onRemove() {
+		if (!isEdit.value || saving.value) {
+			return
+		}
+		const name = form.value.configName.length > 0 ? form.value.configName : id.value
+		showDialog({
+			title: "删除确认",
+			message: `确认删除参数「${name}」？`,
+			showCancelButton: true,
+			confirmButtonText: "删除",
+			confirm: () => {
+				saving.value = true
+				const ids : string[] = [id.value]
+				removeConfig(ids).then(() => {
+					saving.value = false
+					uni.showToast({ title: "已删除", icon: "success", duration: 800 })
+					goList()
+				}).catch((_e) => {
+					saving.value = false
+				})
+			}
+		})
+	}
+</script>

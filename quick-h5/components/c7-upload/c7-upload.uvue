@@ -1,0 +1,235 @@
+<template>
+	<view class="c7-upload">
+		<rice-uploader
+			v-model="fileList"
+			:max-count="maxCount"
+			:disabled="disabled"
+			:auto-upload="false"
+			accept="image"
+			:after-read="onAfterRead"
+			@remove="onRemove"
+		></rice-uploader>
+		<slot name="tip">
+			<text v-if="classify.length > 0" class="c7-upload__tip">分类：{{ classify }}</text>
+		</slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * C7Upload（quick-h5）
+	 *
+	 * 图片上传封装：对接 RiceUI `rice-uploader` 的 `v-model`（fileList）+ `after-read` /
+	 * `@remove`；业务侧用 `v-model:results` 拿上传结果列表。
+	 *
+	 * **数据流**
+	 * - `results`（v-model）↔ 内部 `resultList`；回显时解析 url / fileUrl 写入 fileList
+	 * - 选图后 `after-read` → `extractPaths` →（autoUpload 时）`uploadFn(path, classify)`
+	 * - rice-uploader 自身 `auto-upload=false`，实际上传由本组件 `uploadFn` 完成
+	 *
+	 * **暴露**
+	 * - `submit`：补传 status=ready 的项
+	 * - `clearFiles` / `getFiles`
+	 *
+	 * **事件**：update:results、change、success、error
+	 */
+	defineOptions({ name: "C7Upload" })
+
+	const props = withDefaults(defineProps<{
+		/** 上传分类参数，传给 uploadFn 第二参；有值时 tip 默认展示 */
+		classify : string
+		/** 选图后是否立即调用 uploadFn；false 时需手动 submit */
+		autoUpload : boolean
+		/** 是否禁用选择/删除 */
+		disabled : boolean
+		/** v-model:results；上传结果数组（字符串 url 或含 url/fileUrl 的对象） */
+		results : any | null
+		/** 实际上传函数 (filePath, classify) => Promise；未配置会 toast */
+		uploadFn? : (filePath : string, classify : string) => Promise<any>
+		/** 最大张数，透传 rice-uploader max-count */
+		maxCount : number
+	}>(), {
+		classify: "",
+		autoUpload: true,
+		disabled: false,
+		results: null,
+		maxCount: 9
+	})
+
+	const emit = defineEmits<{
+		/** 同步 results（v-model） */
+		"update:results" : [v : any[]]
+		/** 单次上传成功 */
+		success : [v : any]
+		/** 单次上传失败 */
+		error : [v : any]
+		/** results 变更（与 update:results 同步发出） */
+		change : [v : any[]]
+	}>()
+
+	/** rice-uploader 绑定的文件列表（含 url / status） */
+	const fileList = ref([] as any[])
+	/** 业务结果列表（与 v-model:results 对应） */
+	const resultList = ref([] as any[])
+	/** 正在从 props.results 回写 fileList，避免 after-read 误触发上传 */
+	let syncingFromProps = false
+
+	/**
+	 * 外部 results 变化时回显到 fileList（status=success）。
+	 */
+	watch(() : any | null => props.results, (v : any | null) => {
+		if (v != null && Array.isArray(v)) {
+			resultList.value = v as any[]
+			const files : any[] = []
+			for (let i = 0; i < resultList.value.length; i++) {
+				const row = resultList.value[i]
+				let url = ""
+				if (typeof row == "string") {
+					url = row
+				} else if (row != null) {
+					const o = row as UTSJSONObject
+					url = o["url"] != null ? `${o["url"]}` : (o["fileUrl"] != null ? `${o["fileUrl"]}` : "")
+				}
+				if (url.length > 0) {
+					files.push({ url: url, status: "success" } as UTSJSONObject)
+				}
+			}
+			syncingFromProps = true
+			fileList.value = files
+			syncingFromProps = false
+		}
+	}, { immediate: true })
+
+	/** 向外同步 results + change */
+	function syncResults() {
+		emit("update:results", resultList.value)
+		emit("change", resultList.value)
+	}
+
+	/**
+	 * 上传单个本地路径，成功则追加到 resultList。
+	 */
+	async function uploadOne(filePath : string) {
+		const fn = props.uploadFn
+		if (fn == null) {
+			uni.showToast({ title: "未配置 uploadFn", icon: "none" })
+			return
+		}
+		try {
+			const res = await fn(filePath, props.classify)
+			resultList.value = resultList.value.concat([res])
+			emit("success", res)
+			syncResults()
+		} catch (e) {
+			emit("error", e)
+			uni.showToast({ title: "上传失败", icon: "none" })
+		}
+	}
+
+	/**
+	 * 从 after-read 入参提取本地路径（兼容数组 / 单对象 / 嵌套 file）。
+	 */
+	function extractPaths(files : any) : string[] {
+		const paths : string[] = []
+		if (files == null) {
+			return paths
+		}
+		if (Array.isArray(files)) {
+			const arr = files as any[]
+			for (let i = 0; i < arr.length; i++) {
+				const f = arr[i]
+				if (f == null) {
+					continue
+				}
+				if (typeof f == "string") {
+					paths.push(f)
+					continue
+				}
+				const o = f as UTSJSONObject
+				const p = o["url"] != null ? `${o["url"]}` : (o["path"] != null ? `${o["path"]}` : "")
+				if (p.length > 0) {
+					paths.push(p)
+				}
+			}
+			return paths
+		}
+		if (typeof files == "object") {
+			const o = files as UTSJSONObject
+			const nested = o["file"]
+			if (nested != null) {
+				return extractPaths(nested)
+			}
+		}
+		return paths
+	}
+
+	/**
+	 * rice-uploader after-read：选图完成后按 autoUpload 决定是否立即上传。
+	 */
+	function onAfterRead(files : any) {
+		if (props.disabled || syncingFromProps) {
+			return
+		}
+		const paths = extractPaths(files)
+		if (!props.autoUpload) {
+			return
+		}
+		for (let i = 0; i < paths.length; i++) {
+			uploadOne(paths[i])
+		}
+	}
+
+	/**
+	 * rice-uploader @remove：同步删除 resultList 对应下标并 emit。
+	 */
+	function onRemove(_file : any, index : number) {
+		if (index >= 0 && index < resultList.value.length) {
+			const next : any[] = []
+			for (let i = 0; i < resultList.value.length; i++) {
+				if (i != index) {
+					next.push(resultList.value[i])
+				}
+			}
+			resultList.value = next
+		}
+		syncResults()
+	}
+
+	/** 清空 fileList / resultList 并同步 */
+	function clearFiles() {
+		fileList.value = []
+		resultList.value = []
+		syncResults()
+	}
+
+	/** 返回当前 rice-uploader 文件列表快照 */
+	function getFiles() : any[] {
+		return fileList.value
+	}
+
+	/**
+	 * 手动提交：对 status=ready 的项调用 uploadOne（配合 autoUpload=false）。
+	 */
+	async function submit() {
+		for (let i = 0; i < fileList.value.length; i++) {
+			const f = fileList.value[i] as UTSJSONObject
+			if (`${f["status"]}` == "ready") {
+				await uploadOne(`${f["url"]}`)
+			}
+		}
+	}
+
+	defineExpose({
+		submit,
+		clearFiles,
+		getFiles
+	})
+</script>
+
+<style>
+	.c7-upload__tip {
+		font-size: 12px;
+		color: #8e8e93;
+		margin-top: 6px;
+	}
+</style>

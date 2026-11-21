@@ -1,0 +1,13 @@
+export const useFormData = (model : any | null) : UTSJSONObject => {
+	// H5 蒸汽模式下必须返回真正的 UTSJSONObject（带 getAny），
+	// 不能返回普通 {}，否则 rice-form-item 会报 formData.value.getAny is not a function。
+	if (model == null || typeof model != 'object' || Array.isArray(model)) {
+		return JSON.parseObject("{}")!
+	}
+	if (model instanceof UTSJSONObject) {
+		return model
+	}
+
+	return JSON.parseObject(JSON.stringify(model)!)!
+
+}

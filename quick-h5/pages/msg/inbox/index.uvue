@@ -1,0 +1,244 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageMineInbox"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="false"
+			:show-count="false"
+			:enable-swipe-delete="false"
+			empty-title="暂时没有消息"
+			empty-sub="有新通知时会出现在这里"
+			@row-click="onRowClick"
+		>
+			<template #item="slotProps">
+				<view class="msg">
+					<view class="msg-ico-wrap">
+						<view class="msg-ico">
+							<text class="msg-ico-t">信</text>
+						</view>
+						<view class="msg-dot" v-if="isUnread(slotProps.row)"></view>
+					</view>
+					<view class="msg-body">
+						<view class="msg-top">
+							<text class="msg-title" :class="isUnread(slotProps.row) ? 'is-unread' : ''">{{ titleOf(slotProps.row) }}</text>
+							<text class="msg-time">{{ timeOf(slotProps.row) }}</text>
+						</view>
+						<text class="msg-preview">{{ previewOf(slotProps.row) }}</text>
+					</view>
+				</view>
+			</template>
+		</c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 消息中心：对齐大厂通知列表（未读点 / 预览 / 相对时间 / 全部·未读·已读）。
+	 */
+	import {
+		pageMineInbox,
+		InboxPayload
+	} from "@/api/msg/inbox"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const searchColumns = [
+		{ prop: "title", label: "标题", type: "input", placeholder: "搜索消息" } as UTSJSONObject,
+		{
+			prop: "readFlag",
+			label: "状态",
+			type: "select",
+			dataList: [
+				{ label: "未读", value: "0" } as UTSJSONObject,
+				{ label: "已读", value: "1" } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function asInbox(row : any | null) : InboxPayload {
+		if (row == null) {
+			return {
+				id: "",
+				title: "",
+				content: "",
+				readFlag: "1",
+				createTime: ""
+			} as InboxPayload
+		}
+		const anyRow = row as any
+		return {
+			id: anyRow.id != null ? `${anyRow.id}` : "",
+			title: anyRow.title != null ? `${anyRow.title}` : "",
+			content: anyRow.content != null ? `${anyRow.content}` : "",
+			readFlag: anyRow.readFlag != null ? `${anyRow.readFlag}` : "1",
+			createTime: anyRow.createTime != null ? `${anyRow.createTime}` : ""
+		} as InboxPayload
+	}
+
+	function isUnread(row : any | null) : boolean {
+		return asInbox(row).readFlag != "1"
+	}
+
+	function titleOf(row : any | null) : string {
+		const t = asInbox(row).title.trim()
+		return t.length > 0 ? t : "系统通知"
+	}
+
+	function previewOf(row : any | null) : string {
+		let c = asInbox(row).content.trim().replace(/\s+/g, " ")
+		if (c.length == 0) {
+			return "暂无正文"
+		}
+		if (c.length > 48) {
+			return c.substring(0, 48) + "…"
+		}
+		return c
+	}
+
+	function pad2(n : number) : string {
+		return n < 10 ? ("0" + n) : `${n}`
+	}
+
+	/** 相对时间：今天 HH:mm / 昨天 / 月-日 / 年-月-日 */
+	function timeOf(row : any | null) : string {
+		const raw = asInbox(row).createTime.trim()
+		if (raw.length < 10) {
+			return raw
+		}
+		// 期望 yyyy-MM-dd HH:mm:ss
+		const y = parseInt(raw.substring(0, 4))
+		const m = parseInt(raw.substring(5, 7))
+		const d = parseInt(raw.substring(8, 10))
+		if (isNaN(y) || isNaN(m) || isNaN(d)) {
+			return raw.length >= 16 ? raw.substring(5, 16) : raw
+		}
+		const now = new Date()
+		const todayY = now.getFullYear()
+		const todayM = now.getMonth() + 1
+		const todayD = now.getDate()
+		const hm = raw.length >= 16 ? raw.substring(11, 16) : ""
+
+		if (y == todayY && m == todayM && d == todayD) {
+			return hm.length > 0 ? hm : "今天"
+		}
+		const yest = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+		if (y == yest.getFullYear() && m == (yest.getMonth() + 1) && d == yest.getDate()) {
+			return hm.length > 0 ? ("昨天 " + hm) : "昨天"
+		}
+		if (y == todayY) {
+			return pad2(m) + "-" + pad2(d)
+		}
+		return `${y}-` + pad2(m) + "-" + pad2(d)
+	}
+
+	function onRowClick(row : any) {
+		const payload = asInbox(row)
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.navigateTo({ url: "/pages/msg/inbox/detail?id=" + encodeURIComponent(payload.id) })
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+	.msg {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 14px 14px 14px 12px;
+		background-color: var(--rice-background-2, #ffffff);
+		border-radius: 16px;
+	}
+	.msg-ico-wrap {
+		position: relative;
+		width: 42px;
+		height: 42px;
+		margin-right: 12px;
+		flex-shrink: 0;
+	}
+	.msg-ico {
+		width: 42px;
+		height: 42px;
+		border-radius: 14px;
+		background-color: rgba(0, 122, 255, 0.12);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+	.msg-ico-t {
+		font-size: 14px;
+		font-weight: 700;
+		color: #007aff;
+	}
+	.msg-dot {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 9px;
+		height: 9px;
+		border-radius: 5px;
+		background-color: #ff3b30;
+		border-width: 1.5px;
+		border-style: solid;
+		border-color: #ffffff;
+	}
+	.msg-body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.msg-top {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 4px;
+	}
+	.msg-title {
+		flex: 1;
+		min-width: 0;
+		font-size: 15px;
+		font-weight: 500;
+		color: var(--rice-text-color);
+		lines: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+		margin-right: 8px;
+	}
+	.msg-title.is-unread {
+		font-weight: 700;
+	}
+	.msg-time {
+		font-size: 11px;
+		color: #8e8e93;
+		flex-shrink: 0;
+	}
+	.msg-preview {
+		font-size: 13px;
+		color: var(--rice-text-color-2, #666666);
+		lines: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+		line-height: 18px;
+	}
+</style>

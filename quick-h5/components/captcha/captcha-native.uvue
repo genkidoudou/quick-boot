@@ -1,26 +1,28 @@
 <template>
-	<view v-if="visible" class="mask" @click="onMaskClick">
-		<view class="panel" @click.stop="">
-			<text class="title">安全验证</text>
-			<view class="bg-wrap">
-				<image v-if="bgSrc.length > 0" class="bg" :src="bgSrc" mode="widthFix"></image>
-				<image v-if="sliderSrc.length > 0" class="slider-img" :src="sliderSrc" :style="sliderStyle"></image>
-			</view>
-			<view class="track">
-				<view class="track-bar" :style="trackBarStyle"></view>
-				<view
-					class="knob"
-					:style="knobStyle"
-					@touchstart="onTouchStart"
-					@touchmove.stop.prevent="onTouchMove"
-					@touchend="onTouchEnd"
-				>
-					<text class="knob-text">||</text>
+	<view class="captcha-native-root">
+		<view v-if="visible" class="mask" @click="onMaskClick">
+			<view class="panel" @click.stop="">
+				<text class="title">安全验证</text>
+				<view class="bg-wrap">
+					<image v-if="bgSrc.length > 0" class="bg" :src="bgSrc" mode="widthFix"></image>
+					<image v-if="sliderSrc.length > 0" class="slider-img" :src="sliderSrc" :style="sliderStyle"></image>
 				</view>
-			</view>
-			<view class="ops">
-				<rice-button size="small" type="info" text="刷新" @click="reload"></rice-button>
-				<rice-button size="small" type="info" text="关闭" @click="close"></rice-button>
+				<view class="track">
+					<view class="track-bar" :style="trackBarStyle"></view>
+					<view
+						class="knob"
+						:style="knobStyle"
+						@touchstart="onTouchStart"
+						@touchmove.stop.prevent="onTouchMove"
+						@touchend="onTouchEnd"
+					>
+						<text class="knob-text">||</text>
+					</view>
+				</view>
+				<view class="ops">
+					<rice-button size="small" type="info" text="刷新" @click="reload"></rice-button>
+					<rice-button size="small" type="info" text="关闭" @click="close"></rice-button>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -28,6 +30,7 @@
 
 <script setup lang="uts">
 	import { getCaptchaTacUrls } from "@/api/captcha"
+	import { registerCaptchaOpen } from "@/components/captcha/bridge.uts"
 
 	const visible = ref(false)
 	const bgSrc = ref("")
@@ -241,9 +244,24 @@
 	defineExpose({
 		open
 	})
+
+	onMounted(() => {
+		registerCaptchaOpen(open)
+		const current = getCurrentInstance()
+		if (current != null && current.proxy != null) {
+			const proxy = current.proxy as any
+			proxy.open = open
+		}
+	})
+
+	onUnmounted(() => {
+		registerCaptchaOpen(null)
+	})
 </script>
 
 <style>
+	.captcha-native-root {
+	}
 	.mask {
 		position: fixed;
 		left: 0;

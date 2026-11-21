@@ -1,0 +1,207 @@
+/**
+ * C7MessageBox（quick-h5）
+ *
+ * 对齐 quick-ui `packages/C7MessageBox` 的函数式 API 心智：
+ * - `c7Confirm` / `c7Alert` / `c7Prompt` / `c7DangerConfirm` / `c7Loading`
+ * - 对话框类 **始终 resolve** 为 `{ action, value }`，用户取消/关闭 **不 reject**
+ *
+ * **实现底座（与桌面差异）**
+ * - 桌面：Element Plus `ElMessageBox` / `ElLoading`
+ * - H5：`uni.showModal` / `uni.showLoading`
+ *
+ * **asyncConfirm 语义**
+ * packages 可在关闭前 await 且失败不关窗；H5 的 showModal 点确定后已关闭，
+ * 若 `asyncConfirm` reject，则 resolve `{ action: 'close' }`，由业务自行重开。
+ *
+ * @example
+ * const r = await c7Confirm('确认删除？', '提示')
+ * if (r.action == 'confirm') { ... }
+ */
+
+/** 对外统一结果：action 为 confirm | cancel | close；prompt 时 value 为输入内容 */
+export type C7MessageBoxResult = {
+	action : string
+	value : string
+}
+
+/** 内部用：与 EP options 命名对齐的常用字段（实际以 UTSJSONObject 透传） */
+type C7MessageBoxOptions = {
+	title : string
+	confirmText : string
+	cancelText : string
+	showCancel : boolean
+	editable : boolean
+	placeholderText : string
+	asyncConfirm : (() => Promise<any>) | null
+}
+
+/** 模块级默认项；可通过 setMessageBoxDefaults 浅合并覆盖 */
+let defaults = {
+	confirmText: "确定",
+	cancelText: "取消"
+} as UTSJSONObject
+
+/**
+ * 设置全局 MessageBox 默认 options（浅合并；后写覆盖同名键）。
+ */
+export function setMessageBoxDefaults(config : UTSJSONObject | null) {
+	if (config == null) {
+		return
+	}
+	const keys = UTSJSONObject.keys(config)
+	for (let i = 0; i < keys.length; i++) {
+		defaults[keys[i]] = config[keys[i]]
+	}
+}
+
+/**
+ * 合并模块默认与单次入参（浅合并，单次优先）。
+ */
+export function mergeMessageBoxOptions(perCall : UTSJSONObject | null) : UTSJSONObject {
+	const out = {} as UTSJSONObject
+	const dk = UTSJSONObject.keys(defaults)
+	for (let i = 0; i < dk.length; i++) {
+		out[dk[i]] = defaults[dk[i]]
+	}
+	if (perCall != null) {
+		const pk = UTSJSONObject.keys(perCall)
+		for (let i = 0; i < pk.length; i++) {
+			out[pk[i]] = perCall[pk[i]]
+		}
+	}
+	return out
+}
+
+/**
+ * 解析第二参：若为对象则整段当作 options（标题空）；否则为标题字符串。
+ * 对齐 packages `splitTitleAndOptions`。
+ */
+function splitTitleAndOptions(title : any | null, options : UTSJSONObject | null) : UTSJSONObject {
+	if (title != null && typeof title == "object" && !Array.isArray(title)) {
+		return { title: "", options: title as UTSJSONObject } as UTSJSONObject
+	}
+	const t = title != null ? `${title}` : ""
+	return { title: t, options: options != null ? options : ({} as UTSJSONObject) } as UTSJSONObject
+}
+
+/** 从单次 options 或 defaults 读字符串配置 */
+function readOpt(opts : UTSJSONObject, key : string, fallback : string) : string {
+	const v = opts[key]
+	if (v != null && `${v}`.length > 0) {
+		return `${v}`
+	}
+	const d = defaults[key]
+	if (d != null && `${d}`.length > 0) {
+		return `${d}`
+	}
+	return fallback
+}
+
+/**
+ * 封装 uni.showModal 为 Promise&lt;C7MessageBoxResult&gt;。
+ * editable=true 时走可输入框（c7Prompt）。
+ */
+function showModalAsync(
+	message : string,
+	title : string,
+	opts : UTSJSONObject,
+	showCancel : boolean,
+	editable : boolean
+) : Promise<C7MessageBoxResult> {
+	return new Promise<C7MessageBoxResult>((resolve) => {
+		const confirmText = readOpt(opts, "confirmButtonText", "确定")
+		const cancelText = readOpt(opts, "cancelButtonText", "取消")
+		const placeholder = readOpt(opts, "inputPlaceholder", "")
+		uni.showModal({
+			title: title.length > 0 ? title : "提示",
+			content: message,
+			showCancel: showCancel,
+			confirmText: confirmText,
+			cancelText: cancelText,
+			editable: editable,
+			placeholderText: placeholder,
+			success: (res) => {
+				if (res.confirm) {
+					const asyncFn = opts["asyncConfirm"]
+					if (asyncFn != null && typeof asyncFn == "function") {
+						const p = (asyncFn as () => Promise<any>)()
+						p.then(() => {
+							const r = { action: "confirm", value: res.content != null ? `${res.content}` : "" } as C7MessageBoxResult
+							resolve(r)
+						}).catch((_e) => {
+							// 失败保持「不关闭」语义：此处 modal 已关，返回 close 供业务自行重开
+							resolve({ action: "close", value: "" } as C7MessageBoxResult)
+						})
+						return
+					}
+					resolve({
+						action: "confirm",
+						value: res.content != null ? `${res.content}` : ""
+					} as C7MessageBoxResult)
+				} else if (res.cancel) {
+					resolve({ action: "cancel", value: "" } as C7MessageBoxResult)
+				} else {
+					resolve({ action: "close", value: "" } as C7MessageBoxResult)
+				}
+			},
+			fail: () => {
+				resolve({ action: "close", value: "" } as C7MessageBoxResult)
+			}
+		})
+	})
+}
+
+/** 确认框（有取消）；取消/关闭不 reject */
+export function c7Confirm(message : string, title : any | null = null, options : UTSJSONObject | null = null) : Promise<C7MessageBoxResult> {
+	const split = splitTitleAndOptions(title, options)
+	const t = `${split["title"]}`
+	const opts = mergeMessageBoxOptions(split["options"] as UTSJSONObject)
+	return showModalAsync(message, t, opts, true, false)
+}
+
+/** 仅确定按钮的提示框 */
+export function c7Alert(message : string, title : any | null = null, options : UTSJSONObject | null = null) : Promise<C7MessageBoxResult> {
+	const split = splitTitleAndOptions(title, options)
+	const t = `${split["title"]}`
+	const opts = mergeMessageBoxOptions(split["options"] as UTSJSONObject)
+	return showModalAsync(message, t, opts, false, false)
+}
+
+/** 带输入框；确认后 value 为输入内容（依赖端上 showModal.editable 支持） */
+export function c7Prompt(message : string, title : any | null = null, options : UTSJSONObject | null = null) : Promise<C7MessageBoxResult> {
+	const split = splitTitleAndOptions(title, options)
+	const t = `${split["title"]}`
+	const opts = mergeMessageBoxOptions(split["options"] as UTSJSONObject)
+	return showModalAsync(message, t, opts, true, true)
+}
+
+/**
+ * 危险操作确认：默认标题「危险操作」、确定文案「删除」（可被 options 覆盖）。
+ */
+export function c7DangerConfirm(message : string, title : any | null = null, options : UTSJSONObject | null = null) : Promise<C7MessageBoxResult> {
+	const split = splitTitleAndOptions(title, options)
+	const t = `${split["title"]}`
+	let opts = mergeMessageBoxOptions(split["options"] as UTSJSONObject)
+	if (opts["confirmButtonText"] == null) {
+		opts["confirmButtonText"] = "删除"
+	}
+	return showModalAsync(message, t.length > 0 ? t : "危险操作", opts, true, false)
+}
+
+/** Loading 句柄：调用 close() 对应 uni.hideLoading */
+export type C7LoadingHandle = {
+	close : () => void
+}
+
+/**
+ * 全屏 Loading；返回带 close 的句柄。
+ * `_options` 预留与 packages LoadingOptions 对齐，当前未透传。
+ */
+export function c7Loading(text : string = "加载中…", _options : UTSJSONObject | null = null) : C7LoadingHandle {
+	uni.showLoading({ title: text, mask: true })
+	return {
+		close: () => {
+			uni.hideLoading()
+		}
+	} as C7LoadingHandle
+}

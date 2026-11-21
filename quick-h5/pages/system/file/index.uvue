@@ -1,0 +1,146 @@
+<template>
+	<view class="page">
+		<c7-json-table
+			ref="tableRef"
+			:list-function="pageFile"
+			:delete-function="removeFile"
+			:table-columns="tableColumns"
+			:search-columns="searchColumns"
+			row-key="id"
+			:show-add-button="true"
+			:add-button-permi="['system:file:add']"
+			:delete-button-permi="['system:file:remove']"
+			delete-label-prop="originalName"
+			@add-click="goUpload"
+			@row-click="onRowClick"
+		></c7-json-table>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * 文件列表：预览 / 复制地址 / 删除；新增跳转上传页。
+	 */
+	import {
+		pageFile,
+		removeFile,
+		FilePayload
+	} from "@/api/system/file"
+	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
+
+	const tableRef = ref<ComponentPublicInstance | null>(null)
+
+	const tableColumns = [
+		{
+			layout: "row",
+			children: [
+				{ prop: "originalName", hideLabel: true, emphasize: true } as UTSJSONObject
+			] as any[]
+		} as UTSJSONObject,
+		{ prop: "classifyCode", label: "分类" } as UTSJSONObject,
+		{ prop: "ext", label: "后缀", emptyText: "—" } as UTSJSONObject,
+		{ prop: "sizeBytes", label: "大小", emptyText: "—" } as UTSJSONObject,
+		{ prop: "createTime", label: "时间", emptyText: "—" } as UTSJSONObject
+	] as any[]
+
+	const searchColumns = [
+		{ prop: "originalName", label: "文件名", type: "input" } as UTSJSONObject,
+		{ prop: "classifyCode", label: "分类编码", type: "input" } as UTSJSONObject,
+		{ prop: "ext", label: "后缀", type: "input" } as UTSJSONObject
+	] as any[]
+
+	bindC7TablePage(() : any | null => {
+		return tableRef.value
+	})
+
+	function goUpload() {
+		uni.navigateTo({ url: "/pages/system/file/upload" })
+	}
+
+	function resolveAccessUrl(row : FilePayload) : string {
+		if (row.path.length > 0) {
+			return row.path
+		}
+		return row.url
+	}
+
+	function isImageExt(ext : string) : boolean {
+		const e = ext.toLowerCase()
+		return e == "png" || e == "jpg" || e == "jpeg" || e == "gif" || e == "webp" || e == "bmp"
+	}
+
+	function previewFile(row : FilePayload) {
+		const access = resolveAccessUrl(row)
+		if (access.length == 0) {
+			uni.showToast({ title: "无访问地址", icon: "none" })
+			return
+		}
+		if (isImageExt(row.ext) || access.indexOf(".png") >= 0 || access.indexOf(".jpg") >= 0 || access.indexOf(".jpeg") >= 0) {
+			uni.previewImage({
+				urls: [access],
+				current: access
+			})
+			return
+		}
+		// #ifdef H5
+		// @ts-ignore
+		if (typeof window != "undefined") {
+			// @ts-ignore
+			window.open(access, "_blank")
+			return
+		}
+		// #endif
+		uni.setClipboardData({
+			data: access,
+			success: () => {
+				uni.showToast({ title: "已复制地址，请在浏览器打开", icon: "none" })
+			}
+		})
+	}
+
+	function copyUrl(row : FilePayload) {
+		const access = resolveAccessUrl(row)
+		if (access.length == 0) {
+			uni.showToast({ title: "无访问地址", icon: "none" })
+			return
+		}
+		uni.setClipboardData({
+			data: access,
+			success: () => {
+				uni.showToast({ title: "已复制", icon: "success" })
+			}
+		})
+	}
+
+	function onRowClick(row : any) {
+		const payload = row as FilePayload
+		if (payload.id.length == 0) {
+			return
+		}
+		uni.showActionSheet({
+			itemList: ["预览", "复制地址"] as string[],
+			success: (res) => {
+				if (res.tapIndex == 0) {
+					previewFile(payload)
+					return
+				}
+				if (res.tapIndex == 1) {
+					copyUrl(payload)
+				}
+			}
+		})
+	}
+</script>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		/* #ifndef APP */
+		min-height: 100vh;
+		/* #endif */
+		/* #ifdef APP */
+		flex: 1;
+		/* #endif */
+	}
+</style>
