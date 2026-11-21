@@ -1,0 +1,1 @@
+<view class="{{['u-config-provider', a, b]}}" style="{{c}}"><slot/></view>

@@ -13,7 +13,7 @@
 			:edit-button-permi="['system:oauthClient:edit']"
 			:delete-button-permi="['system:oauthClient:remove']"
 			delete-label-prop="clientName"
-			@add-click="goAdd"
+			add-path="/pages/system/oauthClient/form"
 			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
@@ -56,10 +56,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function goAdd() {
-		uni.navigateTo({ url: "/pages/system/oauthClient/form" })
-	}
 
 	function goEdit(id : string) {
 		uni.navigateTo({ url: "/pages/system/oauthClient/form?id=" + encodeURIComponent(id) })

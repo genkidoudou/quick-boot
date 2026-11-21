@@ -9,12 +9,12 @@
 			:search-columns="searchColumns"
 			row-key="id"
 			:show-add-button="true"
+			add-path="/pages/system/config/form"
+			edit-path="/pages/system/config/form?id={id}"
 			:add-button-permi="['system:config:add']"
 			:edit-button-permi="['system:config:edit']"
 			:delete-button-permi="['system:config:remove']"
 			delete-label-prop="configName"
-			@add-click="goAdd"
-			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
 </template>
@@ -25,11 +25,11 @@
 	 *
 	 * 对齐 quick-ui：pageConfig / tableColumns / searchColumns / removeConfig。
 	 * 登录鉴权见全局 permission；列表刷新见 C7JsonTable onShow。
+	 * 纯跳转用 add-path / edit-path；复杂交互再用 @add-click / @row-click。
 	 */
 	import {
 		pageConfig,
-		removeConfig,
-		ConfigPayload
+		removeConfig
 	} from "@/api/system/config"
 	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
 
@@ -56,18 +56,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function goAdd() {
-		uni.navigateTo({ url: "/pages/system/config/form" })
-	}
-
-	function onRowClick(row : any) {
-		const payload = row as ConfigPayload
-		if (payload.id.length == 0) {
-			return
-		}
-		uni.navigateTo({ url: "/pages/system/config/form?id=" + encodeURIComponent(payload.id) })
-	}
 </script>
 
 <style>

@@ -10,7 +10,7 @@
 			:show-add-button="false"
 			:enable-swipe-delete="false"
 			:edit-button-permi="['system:operLog:query']"
-			@row-click="onRowClick"
+			edit-path="/pages/system/operLog/detail?id={id}"
 		></c7-json-table>
 	</view>
 </template>
@@ -22,8 +22,7 @@
 	 * 对齐 quick-ui：仅 page / 详情；行点击进 detail。
 	 */
 	import {
-		pageOperLog,
-		OperLogPayload
+		pageOperLog
 	} from "@/api/system/operLog"
 	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
 
@@ -56,14 +55,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function onRowClick(row : any) {
-		const payload = row as OperLogPayload
-		if (payload.id.length == 0) {
-			return
-		}
-		uni.navigateTo({ url: "/pages/system/operLog/detail?id=" + encodeURIComponent(payload.id) })
-	}
 </script>
 
 <style>

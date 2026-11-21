@@ -166,7 +166,9 @@
 		C7JsonTableResult,
 		C7JsonTableChipOption,
 		C7JsonTableSearchColumn,
-		normalizeSearchColumn
+		normalizeSearchColumn,
+		buildC7NavigateUrl,
+		c7NavigateTo
 	} from "./types.uts"
 
 	defineOptions({ name: "C7JsonTable" })
@@ -220,6 +222,16 @@
 		deleteConfirmTitle : string
 		/** 删除确认文案优先取该字段（展示「确认删除「xxx」？」） */
 		deleteLabelProp : string
+		/**
+		 * 新增跳转路径（声明式）。非空时点击新增直接 navigateTo，不再依赖 @add-click。
+		 * 例：`/pages/system/config/form`
+		 */
+		addPath : string
+		/**
+		 * 行点击跳转路径模板（声明式）。非空时优先跳转，支持 `{字段名}` 占位（自动 encode）。
+		 * 例：`/pages/system/config/form?id={id}`；复杂交互（动作面板）请留空并用 @row-click。
+		 */
+		editPath : string
 	}>(), {
 		listFunction: null,
 		deleteFunction: null,
@@ -241,7 +253,9 @@
 		emptySub: "试试调整筛选",
 		emptyAddText: "新增",
 		deleteConfirmTitle: "删除确认",
-		deleteLabelProp: ""
+		deleteLabelProp: "",
+		addPath: "",
+		editPath: ""
 	})
 
 	const emit = defineEmits<{
@@ -662,7 +676,16 @@
 		refreshData()
 	}
 
+	/**
+	 * 新增：addPath 非空则 navigateTo；否则 emit addClick（自定义逻辑）。
+	 * UTS 下 props 不能混用 string|function，故用 path / event 二分。
+	 */
 	function onAdd() {
+		const path = props.addPath.trim()
+		if (path.length > 0) {
+			c7NavigateTo(buildC7NavigateUrl(path, null))
+			return
+		}
 		emit("addClick")
 	}
 
@@ -733,9 +756,15 @@
 					return
 				}
 				const row = findRowById(id)
-				if (row != null) {
-					emit("rowClick", row)
+				if (row == null) {
+					return
 				}
+				const editTpl = props.editPath.trim()
+				if (editTpl.length > 0) {
+					c7NavigateTo(buildC7NavigateUrl(editTpl, row))
+					return
+				}
+				emit("rowClick", row)
 			}
 			return
 		}

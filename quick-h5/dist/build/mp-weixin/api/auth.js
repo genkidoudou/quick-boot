@@ -1,0 +1,1 @@
+"use strict";const t=require("./http.js");exports.fetchMe=function(){return t.request({url:"/auth/me",method:"GET"})},exports.login=function(e,r){return t.request({url:"/login",method:"POST",data:{username:e,password:r},auth:!1})};

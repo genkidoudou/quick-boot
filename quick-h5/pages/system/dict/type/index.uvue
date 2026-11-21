@@ -13,7 +13,7 @@
 			:edit-button-permi="['system:dictType:edit']"
 			:delete-button-permi="['system:dictType:remove']"
 			delete-label-prop="dictName"
-			@add-click="goAdd"
+			add-path="/pages/system/dict/type/form"
 			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
@@ -56,10 +56,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function goAdd() {
-		uni.navigateTo({ url: "/pages/system/dict/type/form" })
-	}
 
 	function goData(dictType : string) {
 		uni.navigateTo({

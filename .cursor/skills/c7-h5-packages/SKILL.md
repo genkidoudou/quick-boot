@@ -21,7 +21,7 @@ description: Use when writing or modifying quick-h5 pages with C7* components (C
 1. **权威源**：① `quick-h5/components/c7-*` 源码 → ② 本技能 `references/` → ③ `quick-ui/src/packages`（仅对照命名/props 心智）→ ④ `c7-packages` api 卡片。冲突以 **H5 源码**为准。
 2. **命名对齐**：组件名、主要 props/events 与 packages 同名（如 `dataList`/`options`/`listFunction`/`v-model`）。
 3. **实现底座**：UI 只用 RiceUI（`rice-*`）+ uni API；禁止在业务页直接引 Element Plus。
-4. **标杆页**：列表对齐 `pages/system/config/index.uvue`；表单对齐 `pages/system/config/form.uvue`；组件演示见 `pages/examples/`。
+4. **标杆页**：列表对齐 `pages/system/config/index.uvue`（纯跳转用 `add-path` / `edit-path`，复杂交互用事件）；表单对齐 `pages/system/config/form.uvue`；组件演示见 `pages/examples/`。
 5. **写前查卡**：用任何 `C7*` 前查 `references/api/`；卡上没有的 props 以组件源码 `defineProps` 为准，不猜桌面 EP 透传。
 6. **写后校验**：`node .cursor/skills/rice-ui/scripts/verify-rice-usage.mjs quick-h5/pages/<页或目录>`，**0 违规**；再跑本技能 `scripts/verify-c7-h5-usage.mjs`。
 

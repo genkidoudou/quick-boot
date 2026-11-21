@@ -44,6 +44,7 @@
 					placeholder="请输入参数键名"
 					clearable
 					:maxlength="255"
+					:disabled="isEdit"
 					border="none"
 				></rice-input>
 			</rice-form-item>

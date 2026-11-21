@@ -10,7 +10,7 @@
 			:enable-swipe-delete="false"
 			empty-title="暂时没有消息"
 			empty-sub="有新通知时会出现在这里"
-			@row-click="onRowClick"
+			edit-path="/pages/msg/inbox/detail?id={id}"
 		>
 			<template #item="slotProps">
 				<view class="msg">
@@ -138,13 +138,6 @@
 		return `${y}-` + pad2(m) + "-" + pad2(d)
 	}
 
-	function onRowClick(row : any) {
-		const payload = asInbox(row)
-		if (payload.id.length == 0) {
-			return
-		}
-		uni.navigateTo({ url: "/pages/msg/inbox/detail?id=" + encodeURIComponent(payload.id) })
-	}
 </script>
 
 <style>

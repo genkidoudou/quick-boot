@@ -46,7 +46,7 @@
           <el-input v-model="form.configName" placeholder="请输入参数名称" maxlength="255" />
         </el-form-item>
         <el-form-item label="参数键名" prop="configKey">
-          <el-input v-model="form.configKey" placeholder="请输入参数键名" maxlength="255" />
+          <el-input v-model="form.configKey" placeholder="请输入参数键名" maxlength="255" :disabled="!!form.id" />
         </el-form-item>
         <el-form-item label="参数值" prop="configValue">
           <el-input v-model="form.configValue" type="textarea" placeholder="请输入参数值" :rows="3" maxlength="512" />

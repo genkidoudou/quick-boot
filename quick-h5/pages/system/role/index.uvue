@@ -9,12 +9,12 @@
 			:search-columns="searchColumns"
 			row-key="id"
 			:show-add-button="true"
+			add-path="/pages/system/role/form"
+			edit-path="/pages/system/role/form?id={id}"
 			:add-button-permi="['system:role:add']"
 			:edit-button-permi="['system:role:edit']"
 			:delete-button-permi="['system:role:remove']"
 			delete-label-prop="roleName"
-			@add-click="goAdd"
-			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
 </template>
@@ -28,8 +28,7 @@
 	 */
 	import {
 		pageRole,
-		removeRole,
-		RolePayload
+		removeRole
 	} from "@/api/system/role"
 	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
 
@@ -57,18 +56,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function goAdd() {
-		uni.navigateTo({ url: "/pages/system/role/form" })
-	}
-
-	function onRowClick(row : any) {
-		const payload = row as RolePayload
-		if (payload.id.length == 0) {
-			return
-		}
-		uni.navigateTo({ url: "/pages/system/role/form?id=" + encodeURIComponent(payload.id) })
-	}
 </script>
 
 <style>

@@ -1,0 +1,7 @@
+{
+  "component": true,
+  "usingComponents": {
+    "u-config-provider": "./node-modules/uview-pro/components/u-config-provider/u-config-provider",
+    "u-toast": "./node-modules/uview-pro/components/u-toast/u-toast"
+  }
+}

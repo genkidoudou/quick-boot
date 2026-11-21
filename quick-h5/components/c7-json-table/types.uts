@@ -93,3 +93,52 @@ export function readC7TableParam(param : UTSJSONObject, key : string) : string {
 	}
 	return `${v}`.trim()
 }
+
+/**
+ * 将路径模板中的 `{field}` 替换为 row 字段（encodeURIComponent）。
+ * 例：`/pages/x/form?id={id}`；add 场景传 null 则原样返回（不含占位符时）。
+ * 若模板含占位符但对应值为空，返回空串表示跳过跳转。
+ */
+export function buildC7NavigateUrl(template : string, row : any | null) : string {
+	const raw = template.trim()
+	if (raw.length == 0) {
+		return ""
+	}
+	let out = raw
+	let start = out.indexOf("{")
+	while (start >= 0) {
+		const end = out.indexOf("}", start + 1)
+		if (end < 0) {
+			break
+		}
+		const key = out.substring(start + 1, end).trim()
+		if (key.length == 0) {
+			out = out.substring(0, start) + out.substring(end + 1)
+			start = out.indexOf("{")
+			continue
+		}
+		let val = ""
+		if (row != null) {
+			const o = row as UTSJSONObject
+			const v = o[key]
+			if (v != null) {
+				val = `${v}`.trim()
+			}
+		}
+		if (val.length == 0) {
+			return ""
+		}
+		out = out.substring(0, start) + encodeURIComponent(val) + out.substring(end + 1)
+		start = out.indexOf("{")
+	}
+	return out
+}
+
+/** 有有效 url 时 navigateTo；空串不跳转 */
+export function c7NavigateTo(url : string) : void {
+	const u = url.trim()
+	if (u.length == 0) {
+		return
+	}
+	uni.navigateTo({ url: u })
+}

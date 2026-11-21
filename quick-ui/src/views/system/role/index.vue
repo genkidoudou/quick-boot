@@ -53,7 +53,7 @@
           <el-input v-model="form.roleName" placeholder="请输入角色名称" maxlength="255" />
         </el-form-item>
         <el-form-item label="角色编码" prop="roleCode">
-          <el-input v-model="form.roleCode" placeholder="请输入角色编码" maxlength="255" />
+          <el-input v-model="form.roleCode" placeholder="请输入角色编码" maxlength="255" :disabled="!!form.id" />
         </el-form-item>
         <el-form-item label="角色排序" prop="roleSort">
           <el-input-number v-model="form.roleSort" :min="0" :max="9999" controls-position="right" />

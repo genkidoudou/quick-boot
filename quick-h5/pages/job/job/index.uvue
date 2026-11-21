@@ -12,7 +12,7 @@
 			:edit-button-permi="['job:job:edit']"
 			:delete-button-permi="['job:job:remove']"
 			delete-label-prop="jobName"
-			@add-click="goAdd"
+			add-path="/pages/job/job/form"
 			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
@@ -61,10 +61,6 @@
 
 	function refreshTable() {
 		callC7Table(tableRef.value, "refreshData")
-	}
-
-	function goAdd() {
-		uni.navigateTo({ url: "/pages/job/job/form" })
 	}
 
 	function goEdit(id : string) {

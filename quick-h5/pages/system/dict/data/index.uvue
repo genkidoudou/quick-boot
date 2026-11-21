@@ -13,8 +13,8 @@
 			:edit-button-permi="['system:dictData:edit']"
 			:delete-button-permi="['system:dictData:remove']"
 			delete-label-prop="dictLabel"
-			@add-click="goAdd"
-			@row-click="onRowClick"
+			:add-path="addPath"
+			edit-path="/pages/system/dict/data/form?id={id}"
 		></c7-json-table>
 	</view>
 </template>
@@ -27,8 +27,7 @@
 	 */
 	import {
 		pageDictData,
-		removeDictData,
-		DictDataPayload
+		removeDictData
 	} from "@/api/system/dict/data"
 	import { PageQuery, PageResult } from "@/api/shared/page.uts"
 	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
@@ -36,6 +35,8 @@
 	const tableRef = ref<ComponentPublicInstance | null>(null)
 	/** 来自路由的固定字典类型 */
 	const fixedDictType = ref("")
+	/** 新增路径（可带固定 dictType） */
+	const addPath = ref("/pages/system/dict/data/form")
 
 	const tableColumns = [
 		{
@@ -79,25 +80,11 @@
 		}
 		const dt = query["dictType"]
 		if (dt != null && `${dt}`.length > 0) {
-			fixedDictType.value = `${dt}`
+			const type = `${dt}`
+			fixedDictType.value = type
+			addPath.value = "/pages/system/dict/data/form?dictType=" + encodeURIComponent(type)
 		}
 	})
-
-	function goAdd() {
-		let url = "/pages/system/dict/data/form"
-		if (fixedDictType.value.length > 0) {
-			url = url + "?dictType=" + encodeURIComponent(fixedDictType.value)
-		}
-		uni.navigateTo({ url: url })
-	}
-
-	function onRowClick(row : any) {
-		const payload = row as DictDataPayload
-		if (payload.id.length == 0) {
-			return
-		}
-		uni.navigateTo({ url: "/pages/system/dict/data/form?id=" + encodeURIComponent(payload.id) })
-	}
 </script>
 
 <style>

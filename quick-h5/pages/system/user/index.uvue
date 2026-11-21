@@ -13,7 +13,7 @@
 			:edit-button-permi="['system:user:edit']"
 			:delete-button-permi="['system:user:remove']"
 			delete-label-prop="userName"
-			@add-click="goAdd"
+			add-path="/pages/system/user/form"
 			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
@@ -61,10 +61,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function goAdd() {
-		uni.navigateTo({ url: "/pages/system/user/form" })
-	}
 
 	function goEdit(id : string) {
 		uni.navigateTo({ url: "/pages/system/user/form?id=" + encodeURIComponent(id) })

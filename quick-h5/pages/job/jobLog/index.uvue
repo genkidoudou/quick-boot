@@ -10,7 +10,7 @@
 			:show-add-button="false"
 			:delete-button-permi="['job:jobLog:remove']"
 			delete-label-prop="jobId"
-			@row-click="onRowClick"
+			edit-path="/pages/job/jobLog/detail?id={id}"
 		></c7-json-table>
 	</view>
 </template>
@@ -22,8 +22,7 @@
 	 */
 	import {
 		pageJobLog,
-		removeJobLog,
-		JobLogPayload
+		removeJobLog
 	} from "@/api/job/jobLog"
 	import { PageQuery, PageResult } from "@/api/shared/page"
 	import { bindC7TablePage } from "@/components/c7-json-table/table-page.uts"
@@ -79,14 +78,6 @@
 			presetJobId.value = `${jid}`
 		}
 	})
-
-	function onRowClick(row : any) {
-		const payload = row as JobLogPayload
-		if (payload.id.length == 0) {
-			return
-		}
-		uni.navigateTo({ url: "/pages/job/jobLog/detail?id=" + encodeURIComponent(payload.id) })
-	}
 </script>
 
 <style>

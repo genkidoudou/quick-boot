@@ -1,0 +1,8 @@
+{
+  "component": true,
+  "usingComponents": {
+    "u-mask": "../u-mask/u-mask",
+    "u-icon": "../u-icon/u-icon",
+    "u-loading": "../u-loading/u-loading"
+  }
+}

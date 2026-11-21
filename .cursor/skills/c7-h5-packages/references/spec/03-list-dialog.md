@@ -5,6 +5,11 @@
 - `listFunction(q: { current, size, param }) => Promise<{ records, total }>`
 - 插槽 `#item="{ row, index }"`
 - 暴露 `refreshData`
+- **声明式跳转**（UTS 不支持 props 混用 string|function，故 path / event 二分）：
+  - `add-path`：新增直接 `navigateTo`；空则 `@add-click`
+  - `edit-path`：行点击按模板跳转，`{字段}` 取自 row 并 `encodeURIComponent`；空则 `@row-click`
+  - 例：`add-path="/pages/system/config/form"`、`edit-path="/pages/system/config/form?id={id}"`
+  - 动作面板 / 二次确认等复杂逻辑：**不要**配 path，继续用事件
 
 标杆：`pages/system/config/index.uvue`。
 

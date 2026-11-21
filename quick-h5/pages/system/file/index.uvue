@@ -11,7 +11,7 @@
 			:add-button-permi="['system:file:add']"
 			:delete-button-permi="['system:file:remove']"
 			delete-label-prop="originalName"
-			@add-click="goUpload"
+			add-path="/pages/system/file/upload"
 			@row-click="onRowClick"
 		></c7-json-table>
 	</view>
@@ -52,10 +52,6 @@
 	bindC7TablePage(() : any | null => {
 		return tableRef.value
 	})
-
-	function goUpload() {
-		uni.navigateTo({ url: "/pages/system/file/upload" })
-	}
 
 	function resolveAccessUrl(row : FilePayload) : string {
 		if (row.path.length > 0) {

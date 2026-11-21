@@ -40,6 +40,7 @@
 					placeholder="请输入角色编码"
 					clearable
 					:maxlength="255"
+					:disabled="isEdit"
 					border="none"
 				></rice-input>
 			</rice-form-item>

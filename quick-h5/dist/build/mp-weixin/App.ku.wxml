@@ -1,0 +1,1 @@
+<u-config-provider wx:if="{{b}}" u-s="{{['d']}}" u-i="65891ce9-0" bind:__l="__l" u-p="{{b}}"><slot/><u-toast wx:if="{{a}}" u-i="65891ce9-1,65891ce9-0" bind:__l="__l" u-p="{{a}}"/></u-config-provider>
